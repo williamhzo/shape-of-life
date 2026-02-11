@@ -44,6 +44,24 @@ contract ConwayEngineParityTest {
         assertRowsEq(nextRed, rows5(0, 0, 0, 0, 0));
     }
 
+    function testVectorHardXEdgeNoWrapStep1() public view {
+        uint64[] memory blue = rows5(0, 0x1, 0x1, 0x1, 0);
+        uint64[] memory red = rows5(0, 0, 0, 0, 0);
+        (uint64[] memory nextBlue, uint64[] memory nextRed) = harness.step(5, 5, blue, red);
+
+        assertRowsEq(nextBlue, rows5(0, 0, 0x3, 0, 0));
+        assertRowsEq(nextRed, rows5(0, 0, 0, 0, 0));
+    }
+
+    function testVectorCylinderWrapMajorityBlueAcrossSeamStep1() public view {
+        uint64[] memory blue = rows5(0, 0, 0, 0, 0x6);
+        uint64[] memory red = rows5(0x8, 0, 0, 0, 0);
+        (uint64[] memory nextBlue, uint64[] memory nextRed) = harness.step(5, 5, blue, red);
+
+        assertRowsEq(nextBlue, rows5(0x4, 0, 0, 0, 0x4));
+        assertRowsEq(nextRed, rows5(0, 0, 0, 0, 0));
+    }
+
     function testVectorImmigrationMajorityRedStep1() public view {
         uint64[] memory blue = rows5(0, 0, 0x8, 0, 0);
         uint64[] memory red = rows5(0, 0, 0x6, 0, 0);

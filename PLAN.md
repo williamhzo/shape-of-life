@@ -659,7 +659,7 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 [ ] Add state-machine tests covering every allowed/disallowed transition.
 [ ] Add payout invariant tests: total payouts + keeper paid + dust <= funded amount.
 [ ] Add keeper reward tests for underfunded and over-requested step batches.
-[ ] Add TS/Solidity parity fixtures for topology edge cases (cylinder wrap boundaries).
+[x] Add TS/Solidity parity fixtures for topology edge cases (cylinder wrap boundaries).
 [ ] Add Sepolia benchmarking script and lock `maxBatch` via measured thresholds.
 [ ] Add indexer reconciliation checks against `Stepped`, `Finalized`, and `Claimed` events.
 
@@ -845,3 +845,6 @@ Execution rules:
     - Added shared golden vectors at `fixtures/engine/parity.v1.json`.
     - Added TS parity suite + deterministic random-seed fuzz harness in `packages/sim/test/parity.test.ts`.
     - Added Solidity parity + deterministic seed fuzz tests in `packages/contracts/test/ConwayEngineParity.t.sol`.
+  - Completed topology edge-case parity hardening:
+    - Added hard-X-edge/no-wrap and seam-wrapped Immigration majority vectors to `fixtures/engine/parity.v1.json`.
+    - Added matching Solidity vector tests in `packages/contracts/test/ConwayEngineParity.t.sol` to prevent TS/Solidity divergence at cylinder boundaries.

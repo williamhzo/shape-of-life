@@ -45,6 +45,34 @@
       }
     },
     {
+      "id": "hard_x_edge_no_wrap_step_1",
+      "width": 5,
+      "height": 5,
+      "steps": 1,
+      "input": {
+        "blueRows": ["0x0", "0x1", "0x1", "0x1", "0x0"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      },
+      "expected": {
+        "blueRows": ["0x0", "0x0", "0x3", "0x0", "0x0"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      }
+    },
+    {
+      "id": "cylinder_wrap_majority_blue_across_seam_step_1",
+      "width": 5,
+      "height": 5,
+      "steps": 1,
+      "input": {
+        "blueRows": ["0x0", "0x0", "0x0", "0x0", "0x6"],
+        "redRows": ["0x8", "0x0", "0x0", "0x0", "0x0"]
+      },
+      "expected": {
+        "blueRows": ["0x4", "0x0", "0x0", "0x0", "0x4"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      }
+    },
+    {
       "id": "immigration_majority_red_step_1",
       "width": 5,
       "height": 5,
