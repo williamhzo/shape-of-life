@@ -1,0 +1,76 @@
+{
+  "version": "v1",
+  "topology": "cylinder",
+  "cases": [
+    {
+      "id": "blinker_blue_step_1",
+      "width": 5,
+      "height": 5,
+      "steps": 1,
+      "input": {
+        "blueRows": ["0x0", "0x0", "0xe", "0x0", "0x0"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      },
+      "expected": {
+        "blueRows": ["0x0", "0x4", "0x4", "0x4", "0x0"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      }
+    },
+    {
+      "id": "immigration_majority_blue_step_1",
+      "width": 5,
+      "height": 5,
+      "steps": 1,
+      "input": {
+        "blueRows": ["0x0", "0x4", "0x2", "0x0", "0x0"],
+        "redRows": ["0x0", "0x0", "0x8", "0x0", "0x0"]
+      },
+      "expected": {
+        "blueRows": ["0x0", "0x4", "0x4", "0x0", "0x0"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      }
+    },
+    {
+      "id": "cylinder_vertical_wrap_step_1",
+      "width": 5,
+      "height": 5,
+      "steps": 1,
+      "input": {
+        "blueRows": ["0x0", "0x0", "0x0", "0x0", "0xe"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      },
+      "expected": {
+        "blueRows": ["0x4", "0x0", "0x0", "0x4", "0x4"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      }
+    },
+    {
+      "id": "immigration_majority_red_step_1",
+      "width": 5,
+      "height": 5,
+      "steps": 1,
+      "input": {
+        "blueRows": ["0x0", "0x0", "0x8", "0x0", "0x0"],
+        "redRows": ["0x0", "0x0", "0x6", "0x0", "0x0"]
+      },
+      "expected": {
+        "blueRows": ["0x0", "0x0", "0x0", "0x0", "0x0"],
+        "redRows": ["0x0", "0x4", "0x4", "0x4", "0x0"]
+      }
+    },
+    {
+      "id": "blinker_blue_step_2",
+      "width": 5,
+      "height": 5,
+      "steps": 2,
+      "input": {
+        "blueRows": ["0x0", "0x0", "0xe", "0x0", "0x0"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      },
+      "expected": {
+        "blueRows": ["0x0", "0x0", "0xe", "0x0", "0x0"],
+        "redRows": ["0x0", "0x0", "0x0", "0x0", "0x0"]
+      }
+    }
+  ]
+}
