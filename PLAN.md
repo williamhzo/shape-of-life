@@ -818,9 +818,25 @@ P3:
 [ ] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
 [ ] Add gas snapshot + regression threshold checks to CI and block regressions by default.
 
-### 18. Progress Log
+## 18. Implementation Standards Mandate (Docs-First)
+
+Most implementation must meticulously follow official documentation and modern best-practice recommendations for the relevant tool/framework.
+
+Required baselines:
+- Contracts/security patterns: OpenZeppelin docs (`https://docs.openzeppelin.com/`).
+- Solidity dev/testing workflows: Foundry guides (`https://www.getfoundry.sh/guides`) and Hardhat docs (`https://hardhat.org/docs/getting-started`).
+- Web app architecture and APIs: Next.js docs (`https://nextjs.org/docs`).
+- Monorepo pipelines/task graph conventions: Turborepo docs (`https://turborepo.dev/docs`).
+
+Execution rules:
+- Prefer official docs for the exact version in use over blog posts or forum snippets.
+- When docs conflict or project constraints require deviation, document the decision and tradeoff in `PLAN.md` before or with implementation.
+- Treat docs-alignment gaps as impact-ordered follow-ups (`P0`-`P3`) and track them in the active plan queue.
+
+## 19. Progress Log
 
 - 2026-02-11:
+  - Added docs-first implementation standards mandate to `PLAN.md` and `AGENTS.md` with explicit OpenZeppelin, Foundry, Hardhat, Next.js, and Turborepo baselines.
   - Completed first immediate testing action item with strict TDD (`Red -> Green`):
     - Added failing tests for pack/unpack, B3/S23 oscillator behavior, and Immigration majority color births in `packages/sim/test/engine.test.ts`.
     - Implemented minimal simulation engine primitives in `packages/sim/src/engine.ts` to make those tests pass.

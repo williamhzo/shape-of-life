@@ -10,6 +10,15 @@
 2. Always write or update tests before implementation for non-trivial behavior changes.
 3. Keep interfaces simple, deterministic, and explicit.
 4. Preserve domain separation/security invariants in all commit/reveal/accounting logic.
+5. Follow official docs and modern best-practice guidance for the relevant stack area on most implementation work.
+
+## Standards and Best-Practice Baselines (Required)
+
+- Contracts: follow OpenZeppelin best practices and security guidance (`https://docs.openzeppelin.com/`).
+- Solidity tooling/tests: follow Foundry guides (`https://www.getfoundry.sh/guides`) and Hardhat docs (`https://hardhat.org/docs/getting-started`).
+- Web app (Next.js): follow official Next.js docs and App Router guidance (`https://nextjs.org/docs`).
+- Monorepo/task orchestration: follow Turborepo docs (`https://turborepo.dev/docs`).
+- If guidance conflicts, prefer official docs for the exact tool/version in use; record rationale in `PLAN.md` when deviating.
 
 ## Progress Tracking and Documentation Sync (Required)
 
