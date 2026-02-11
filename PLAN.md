@@ -812,7 +812,7 @@ P3:
 ### 17.9 Immediate Testing Action Items (append to active execution queue)
 
 [x] Create failing tests first for pack/unpack, B3/S23, and Immigration majority rules.
-[ ] Add TS<->Solidity golden/parity suite with random-seed fuzz harness.
+[x] Add TS<->Solidity golden/parity suite with random-seed fuzz harness.
 [ ] Add round transition guard matrix tests with explicit revert expectations.
 [ ] Add payout/accounting invariants including dust and keeper shortfall handling.
 [ ] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
@@ -825,3 +825,7 @@ P3:
     - Added failing tests for pack/unpack, B3/S23 oscillator behavior, and Immigration majority color births in `packages/sim/test/engine.test.ts`.
     - Implemented minimal simulation engine primitives in `packages/sim/src/engine.ts` to make those tests pass.
   - Added repository-level `AGENTS.md` requiring progress tracking and docs synchronization on every feature change.
+  - Completed second immediate testing action item:
+    - Added shared golden vectors at `fixtures/engine/parity.v1.json`.
+    - Added TS parity suite + deterministic random-seed fuzz harness in `packages/sim/test/parity.test.ts`.
+    - Added Solidity parity + deterministic seed fuzz tests in `packages/contracts/test/ConwayEngineParity.t.sol`.
