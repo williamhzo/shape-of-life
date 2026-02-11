@@ -1,15 +1,6 @@
 # Shape of Life
 
-Conway Arena on Shape L2. See `PLAN.md` for full product spec and phased implementation plan.
-
-## Current Status
-- Started Phase A engine foundation with strict TDD.
-- Implemented first two immediate testing action items:
-  - pack/unpack tests
-  - B3/S23 behavior test
-  - Immigration majority-color birth test
-  - TS golden/parity vectors + deterministic random-seed fuzz harness
-  - Solidity parity vectors + deterministic seed fuzz tests
+Conway Arena on Shape L2. See `PLAN.md` for full product spec, phased implementation plan, and all progress tracking.
 
 ## Workspace
 - Runtime/package manager: Bun
