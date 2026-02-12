@@ -1,4 +1,7 @@
 import { summarizeBoard } from "../lib/board-summary";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const previewSummary = summarizeBoard({
   width: 8,
@@ -9,31 +12,46 @@ const previewSummary = summarizeBoard({
 
 export default function HomePage() {
   return (
-    <main className="page">
-      <section className="hero">
-        <p className="eyebrow">Shape L2</p>
-        <h1>Conway Arena</h1>
-        <p className="lede">
-          Spectator-first multiplayer Conway&apos;s Game of Life with onchain
-          commit/reveal rounds.
-        </p>
-      </section>
+    <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-6 p-6 md:p-10">
+      <Card>
+        <CardHeader className="space-y-3">
+          <Badge variant="secondary" className="w-fit">
+            Shape L2
+          </Badge>
+          <CardTitle className="text-3xl md:text-4xl">Conway Arena</CardTitle>
+          <p className="text-muted-foreground">
+            Spectator-first multiplayer Conway&apos;s Game of Life with onchain
+            commit/reveal rounds.
+          </p>
+        </CardHeader>
+      </Card>
 
-      <section className="panel">
-        <h2>Prototype Status</h2>
-        <ul>
-          <li>Engine parity fixtures: ready</li>
-          <li>Contracts parity tests: ready</li>
-          <li>Web app bootstrap: in progress</li>
-        </ul>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Prototype Status</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p>Engine parity fixtures: ready</p>
+          <p>Contracts parity tests: ready</p>
+          <p>Web app bootstrap: in progress</p>
+        </CardContent>
+      </Card>
 
-      <section className="panel">
-        <h2>Preview Board Summary</h2>
-        <p>Blue cells: {previewSummary.blue}</p>
-        <p>Red cells: {previewSummary.red}</p>
-        <p>Total live cells: {previewSummary.total}</p>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Preview Board Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p>Blue cells: {previewSummary.blue}</p>
+          <p>Red cells: {previewSummary.red}</p>
+          <p>Total live cells: {previewSummary.total}</p>
+          <Separator />
+          <p className="text-muted-foreground">
+            Early scaffold using shadcn/ui defaults while game UX is still
+            being finalized.
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }

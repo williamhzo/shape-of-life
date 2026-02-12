@@ -18,7 +18,14 @@
 - Solidity tooling/tests: follow Foundry guides (`https://www.getfoundry.sh/guides`) and Hardhat docs (`https://hardhat.org/docs/getting-started`).
 - Web app (Next.js): follow official Next.js docs and App Router guidance (`https://nextjs.org/docs`).
 - Monorepo/task orchestration: follow Turborepo docs (`https://turborepo.dev/docs`).
+- UI component system: use shadcn/ui components (`https://ui.shadcn.com/docs/components`) for `apps/web`.
 - If guidance conflicts, prefer official docs for the exact tool/version in use; record rationale in `PLAN.md` when deviating.
+
+## Web UI Baseline (Required)
+
+- `apps/web` uses shadcn/ui as the canonical component source.
+- All UI elements in `apps/web` must be derived from components in `apps/web/components/ui`.
+- Components can be customized, but while the final visual system is being defined, prefer out-of-the-box shadcn styles and variants.
 
 ## Progress Tracking and Documentation Sync (Required)
 

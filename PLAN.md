@@ -812,6 +812,7 @@ P3:
 ### 17.9 Immediate Testing Action Items (append to active execution queue)
 
 [x] Add web bootstrap tests first (`apps/web`) for health route contract and board summary accounting.
+[x] Initialize `apps/web` shadcn/ui baseline and install all registry `ui` components under `apps/web/components/ui`.
 [x] Create failing tests first for pack/unpack, B3/S23, and Immigration majority rules.
 [x] Add TS<->Solidity golden/parity suite with random-seed fuzz harness.
 [ ] Add round transition guard matrix tests with explicit revert expectations.
@@ -836,6 +837,17 @@ Execution rules:
 
 ## 19. Progress Log
 
+- 2026-02-12:
+  - Committed and pushed web bootstrap + plan-sync changes to `main` (`dcda349`).
+  - Initialized shadcn/ui in `apps/web` and installed all current `registry:ui` components into `apps/web/components/ui`.
+    - Note: `shadcn add --all` failed due upstream registry lookup for missing `new-york/combobox.json`; used explicit `registry:ui` enumeration from `shadcn list @shadcn` as a deterministic workaround.
+  - Added project-level UI policy to `AGENTS.md`:
+    - `apps/web` must derive UI elements from `apps/web/components/ui` and use out-of-box shadcn styles while final UI direction is unsettled.
+  - Aligned landing page scaffold with shadcn/ui primitives (`Badge`, `Card`, `Separator`) and removed custom non-shadcn CSS blocks from `apps/web/app/globals.css`.
+  - Validation:
+    - `bun test apps/web/test` passed.
+    - `bun test` passed.
+    - `cd apps/web && bun run build` passed.
 - 2026-02-11:
   - Added docs-first implementation standards mandate to `PLAN.md` and `AGENTS.md` with explicit OpenZeppelin, Foundry, Hardhat, Next.js, and Turborepo baselines.
   - Completed first immediate testing action item with strict TDD (`Red -> Green`):
