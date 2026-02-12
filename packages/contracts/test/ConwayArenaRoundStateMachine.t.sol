@@ -5,10 +5,12 @@ import {ConwayArenaRound} from "../src/ConwayArenaRound.sol";
 
 interface Vm {
     function warp(uint256) external;
+    function prank(address caller) external;
 }
 
 contract ConwayArenaRoundStateMachineTest {
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    address private constant RED_PLAYER = address(0xCAFE);
 
     ConwayArenaRound internal round;
 
@@ -106,8 +108,22 @@ contract ConwayArenaRoundStateMachineTest {
     }
 
     function testFinalizeRevertsWhenRoundNotTerminal() public {
+        bytes32 blueSalt = bytes32("state-blue");
+        bytes32 redSalt = bytes32("state-red");
+        uint64 blueSeedBits = 0x3;
+        uint64 redSeedBits = 0x3;
+        bytes32 blueCommitHash = round.hashCommit(1, address(this), 0, 0, blueSeedBits, blueSalt);
+        bytes32 redCommitHash = round.hashCommit(1, RED_PLAYER, 1, 32, redSeedBits, redSalt);
+
+        round.commit(0, 0, blueCommitHash);
+        vm.prank(RED_PLAYER);
+        round.commit(1, 32, redCommitHash);
+
         vm.warp(111);
         round.beginReveal();
+        round.reveal(1, 0, 0, blueSeedBits, blueSalt);
+        vm.prank(RED_PLAYER);
+        round.reveal(1, 1, 32, redSeedBits, redSalt);
         vm.warp(122);
         round.initialize();
         expectRevertSelector(ConwayArenaRound.RoundNotTerminal.selector, abi.encodeCall(ConwayArenaRound.finalize, ()));

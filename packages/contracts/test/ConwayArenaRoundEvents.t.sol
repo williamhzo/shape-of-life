@@ -52,7 +52,6 @@ contract ConwayArenaRoundEventsTest {
         legacy.beginReveal();
         vm.warp(144);
         legacy.initialize();
-        legacy.setExtinction(true, false);
         legacy.finalize();
 
         vm.expectEmit(false, false, false, true);

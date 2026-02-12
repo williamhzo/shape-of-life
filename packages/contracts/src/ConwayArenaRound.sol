@@ -205,6 +205,7 @@ contract ConwayArenaRound {
         }
 
         materializeBoardFromRevealedSeeds();
+        refreshBoardStatus();
         phase = Phase.Sim;
     }
 
@@ -255,21 +256,10 @@ contract ConwayArenaRound {
         emit Stepped(fromGen, gen, msg.sender, keeperReward);
     }
 
-    function setExtinction(bool blueIsExtinct, bool redIsExtinct) external {
-        blueExtinct = blueIsExtinct;
-        redExtinct = redIsExtinct;
-    }
-
     function finalize() external {
         requirePhase(Phase.Sim);
-
-        bool terminalByExtinctionFlag = blueExtinct || redExtinct;
-        if (gen == maxGen) {
-            refreshBoardStatus();
-            terminalByExtinctionFlag = blueExtinct || redExtinct;
-        }
-
-        if (gen != maxGen && !terminalByExtinctionFlag) {
+        refreshBoardStatus();
+        if (gen != maxGen && !(blueExtinct || redExtinct)) {
             revert RoundNotTerminal();
         }
 

@@ -66,7 +66,7 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
     function testNonWinningSlotClaimReturnsZeroButMarksClaimed() public {
         commitRevealSlot(address(this), 0, 1, 0x1, bytes32("loser-blue"));
-        commitRevealSlot(RED_PLAYER, 1, 33, 0x1, bytes32("winner-red"));
+        commitRevealSlot(RED_PLAYER, 1, 33, 0x303, bytes32("winner-red"));
 
         transitionToClaimByRedWin();
 
@@ -108,7 +108,6 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
         vm.warp(122);
         round.initialize();
-        round.setExtinction(false, true);
         round.finalize();
     }
 
@@ -133,11 +132,12 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
         round.reveal(1, 0, 1, 0x1, bytes32("loser-blue"));
         vm.prank(RED_PLAYER);
-        round.reveal(1, 1, 33, 0x1, bytes32("winner-red"));
+        round.reveal(1, 1, 33, 0x303, bytes32("winner-red"));
 
         vm.warp(122);
         round.initialize();
-        round.setExtinction(true, false);
+        round.stepBatch(2);
+        round.stepBatch(2);
         round.finalize();
     }
 }

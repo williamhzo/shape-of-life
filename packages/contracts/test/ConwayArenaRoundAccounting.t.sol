@@ -64,7 +64,6 @@ contract ConwayArenaRoundAccountingTest {
 
         vm.warp(122);
         round.initialize();
-        round.setExtinction(false, true);
         round.finalize();
 
         round.claim(1);
@@ -83,7 +82,6 @@ contract ConwayArenaRoundAccountingTest {
         round.configureAccounting(10, 0);
         transitionToSim();
 
-        round.setExtinction(true, false);
         round.finalize();
 
         require(round.winnerPaid() == 0, "winner payout should be zero");
@@ -96,7 +94,6 @@ contract ConwayArenaRoundAccountingTest {
         vm.deal(address(round), 10);
         round.configureAccounting(10, 0);
         transitionToSim();
-        round.setExtinction(true, false);
         round.finalize();
 
         expectRevertSelector(

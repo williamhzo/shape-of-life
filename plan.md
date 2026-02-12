@@ -847,15 +847,31 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P0.3 deterministic terminal-resolution hardening slice with strict TDD (`Red -> Green`):
+    - Removed mutable `setExtinction` path from `packages/contracts/src/ConwayArenaRound.sol`.
+    - `initialize()` now refreshes board status after seed materialization so extinction state is board-derived from first Sim tick.
+    - `finalize()` now always refreshes board status and only allows early terminal transition when board-derived extinction is true.
+    - Updated lifecycle/accounting/winner-claim tests to remove helper overrides and assert terminal behavior via real board state:
+      - `packages/contracts/test/ConwayArenaRoundWinnerPayout.t.sol`
+      - `packages/contracts/test/ConwayArenaRoundClaimSafety.t.sol`
+      - `packages/contracts/test/ConwayArenaRoundAccounting.t.sol`
+      - `packages/contracts/test/ConwayArenaRoundEvents.t.sol`
+      - `packages/contracts/test/ConwayArenaRoundStateMachine.t.sol`
+    - Refreshed Solidity gas baseline snapshot at `packages/contracts/.gas-snapshot`.
+  - Validation:
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
   - Performed docs + implementation audit and aligned closeout tracking with a new readiness checklist + impact-ordered Sepolia plan in section 20.
   - Latest local validation in this workspace:
     - `bun run test` passed.
     - `bun run test:contracts:gas` passed.
     - `bun run lint:web` passed.
     - `cd apps/web && bun run build` passed.
-  - Sepolia benchmark lock remains blocked in this environment without:
-    - `SHAPE_SEPOLIA_RPC_URL`
-    - `ROUND_ADDRESS`
+  - Sepolia benchmark lock remains blocked in this environment due to missing `ROUND_ADDRESS` (RPC is now configured and reachable).
+  - Validation:
+    - `SHAPE_SEPOLIA_RPC_URL=<configured> bun run benchmark:sepolia:max-batch` failed with `--round or ROUND_ADDRESS is required`.
   - Completed P0 simulation-foundation slice with strict TDD (`Red -> Green`):
     - Added failing simulation behavior tests in `packages/contracts/test/ConwayArenaRoundSimulation.t.sol` for:
       - revealed-seed materialization into board rows at `initialize`
@@ -1109,11 +1125,10 @@ Execution rules:
   - Status: PARTIAL
   - Done: one-generation immigration engine with deterministic vector/fuzz parity coverage.
   - Missing to fully match plan intent: explicit Solidity pack/unpack utilities as first-class tested helpers.
-- Phase C: Round manager contract
+  - Phase C: Round manager contract
   - Status: PARTIAL
   - Done: phase guards, commit/reveal payload checks, slot ownership/idempotency, 64x64 board seed materialization, engine-backed `stepBatch`, board-derived max-gen winner resolution, accounting clamps, transfer-capable keeper/winner claim paths, event and gas regression tests.
   - Missing to satisfy "playable on local + Shape Sepolia":
-    - remove/harden mutable terminal helper path (`setExtinction`) so board-derived terminal logic is canonical
     - implement spec-complete finalize scoring (final population + invasion weighting), not winner-side resolution only
     - keep gas envelope acceptable after simulation integration and lock Sepolia-proven batch thresholds
 - Phase D: Deployments and scripts (Hardhat + viem)
@@ -1129,7 +1144,6 @@ Execution rules:
 ### 20.2 Impact-Ordered Priorities
 
 - P0:
-  - Remove or hard-gate mutable test helper paths from production outcome logic so terminal checks are board-derived.
   - Extend finalize to spec-complete scoring outputs (final population + invasion weights) and deterministically map score to winner.
   - Keep transfer paths explicitly reentrancy-safe and invariants preserved after simulation integration.
 - P1:
@@ -1147,10 +1161,10 @@ Execution rules:
 
 [x] P0.1 Write failing Foundry tests for seed materialization, simulation stepping, and board-derived finalize scoring.
 [x] P0.2 Implement board-state storage + `initialize` seed placement + `stepBatch` board progression with bounded write strategy.
-[ ] P0.3 Replace mutable terminal-resolution helpers with deterministic board-derived terminal checks in production flow.
+[x] P0.3 Replace mutable terminal-resolution helpers with deterministic board-derived terminal checks in production flow.
 [ ] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
 [ ] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
-[ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch`.
+[ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `ROUND_ADDRESS`).
 [ ] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
 [ ] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
 [ ] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.

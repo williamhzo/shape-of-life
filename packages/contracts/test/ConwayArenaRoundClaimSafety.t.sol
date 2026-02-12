@@ -31,7 +31,8 @@ contract ConwayArenaRoundClaimSafetyTest {
 
         vm.warp(122);
         round.initialize();
-        round.setExtinction(true, false);
+        round.stepBatch(2);
+        round.stepBatch(2);
         round.finalize();
 
         round.claim(5);
@@ -55,7 +56,8 @@ contract ConwayArenaRoundClaimSafetyTest {
 
         vm.warp(122);
         round.initialize();
-        round.setExtinction(true, false);
+        round.stepBatch(2);
+        round.stepBatch(2);
         round.finalize();
 
         vm.prank(address(0xCAFE));
@@ -73,7 +75,6 @@ contract ConwayArenaRoundClaimSafetyTest {
 
         vm.warp(122);
         round.initialize();
-        round.setExtinction(true, false);
         round.finalize();
 
         expectRevertSelector(ConwayArenaRound.SlotNotRevealed.selector, abi.encodeWithSignature("claim(uint8)", 9));

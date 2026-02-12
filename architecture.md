@@ -172,7 +172,7 @@ The plan defines eventual expansion to:
 Status snapshot:
 
 - Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, simulation-backed round progression (seed materialization + board stepping), transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, winner payout transfer allocation, accounting invariants, local round E2E, and gas regression CI.
-- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact.
+- Pending/high impact next: extend simulation-backed accounting invariants for mixed claim ordering, then execute Sepolia benchmark run with deployment metadata to lock `maxBatch`.
 
 ## 6. Architectural Invariants
 
@@ -197,7 +197,6 @@ Current gaps relative to full plan:
 
 - Accounting is currently a primitive slice (native transfers only; no ERC20 payout path).
 - Non-reveal forfeits and zero-eligible payout routing are still covered mostly by accounting-path tests rather than full slot-level adversarial flows.
-- Manual extinction helper (`setExtinction`) still exists for tests and should be removed or hardened as board-derived terminal logic becomes canonical.
 - Reconciliation checks are implemented, but a chain-ingesting indexer pipeline and keeper bot are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.
