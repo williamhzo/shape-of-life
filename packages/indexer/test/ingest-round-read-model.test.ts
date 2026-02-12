@@ -182,6 +182,11 @@ _assertRoundModelType({
   maxGen: 256,
   maxBatch: 16,
   lifecycle: { finalized: false, finalGen: null, winnerPoolFinal: null },
+  events: {
+    stepped: [],
+    finalized: [],
+    claimed: [],
+  },
   eventCounts: { stepped: 0, finalized: 0, claimed: 0 },
   accounting: {
     totalFunded: 0n,

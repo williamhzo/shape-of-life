@@ -68,6 +68,11 @@ export type RoundReadModel = {
     finalGen: number | null;
     winnerPoolFinal: bigint | null;
   };
+  events: {
+    stepped: SteppedIndexedEvent[];
+    finalized: FinalizedIndexedEvent[];
+    claimed: ClaimedIndexedEvent[];
+  };
   eventCounts: {
     stepped: number;
     finalized: number;
@@ -91,6 +96,7 @@ export type BuildRoundReadModelParams = {
   fromBlock?: bigint;
   toBlock?: bigint;
   syncedAt?: string;
+  previousModel?: RoundReadModel;
 };
 
 const ROUND_READ_ABI = parseAbi([
@@ -171,9 +177,26 @@ export async function buildRoundReadModel(params: BuildRoundReadModelParams): Pr
     params.client.getClaimedEvents(params.roundAddress, range),
   ]);
 
-  const stepped = [...steppedUnsorted].sort(compareLogOrder);
-  const finalized = [...finalizedUnsorted].sort(compareLogOrder);
-  const claimed = [...claimedUnsorted].sort(compareLogOrder);
+  if (params.previousModel && params.previousModel.roundAddress.toLowerCase() !== params.roundAddress.toLowerCase()) {
+    throw new Error("previous model round address does not match target round");
+  }
+  if (params.previousModel && params.previousModel.chainId !== chainId) {
+    throw new Error("previous model chain id does not match target chain");
+  }
+
+  const previousStepped = params.previousModel
+    ? params.previousModel.events.stepped.filter((event) => event.blockNumber < fromBlock)
+    : [];
+  const previousFinalized = params.previousModel
+    ? params.previousModel.events.finalized.filter((event) => event.blockNumber < fromBlock)
+    : [];
+  const previousClaimed = params.previousModel
+    ? params.previousModel.events.claimed.filter((event) => event.blockNumber < fromBlock)
+    : [];
+
+  const stepped = [...previousStepped, ...steppedUnsorted].sort(compareLogOrder);
+  const finalized = [...previousFinalized, ...finalizedUnsorted].sort(compareLogOrder);
+  const claimed = [...previousClaimed, ...claimedUnsorted].sort(compareLogOrder);
 
   const finalizedEvent = finalized.length > 0 ? finalized[finalized.length - 1] : null;
 
@@ -224,6 +247,11 @@ export async function buildRoundReadModel(params: BuildRoundReadModelParams): Pr
       finalized: finalizedEvent !== null,
       finalGen: finalizedEvent?.finalGen ?? null,
       winnerPoolFinal: finalizedEvent?.winnerPoolFinal ?? null,
+    },
+    events: {
+      stepped,
+      finalized,
+      claimed,
     },
     eventCounts: {
       stepped: stepped.length,

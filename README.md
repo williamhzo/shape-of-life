@@ -55,6 +55,14 @@ ROUND_ADDRESS=<deployed-round-address> \
 bun run indexer:sync:round
 ```
 
+- Sync with resumable cursor + confirmation/reorg controls:
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run indexer:sync:round --confirmations 2 --reorg-lookback 12
+```
+
 - Run web app with wallet + live round panels enabled:
 
 ```bash

@@ -847,6 +847,19 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P2.3 indexer cursor resume + confirmation-depth/reorg handling slice with strict TDD (`Red -> Green`):
+    - Added failing tests first:
+      - `packages/indexer/test/sync-window.test.ts` (cursor window derivation + confirmation-depth clamping)
+      - `packages/indexer/test/round-sync.test.ts` (incremental merge + overlap replacement for reorg-safe refresh)
+    - Extended indexer ingestion/read model:
+      - `buildRoundReadModel` now supports incremental merge via `previousModel` and persists full sorted event streams for resumable sync.
+      - Added overlap-pruning merge semantics so reprocessed windows replace prior events in the overlap range.
+    - Upgraded sync CLI in `packages/indexer/src/sync-round-read-model.ts`:
+      - persisted cursor file (`round-read-model.cursor.json`)
+      - `--confirmations` and `--reorg-lookback` controls
+      - cursor-aware sync window selection and overlap replay.
+  - Validation:
+    - `bun test packages/indexer/test` passed.
   - Completed P2.2 web wallet journey + realtime spectator state slice with strict TDD (`Red -> Green`):
     - Added failing tests first:
       - `apps/web/test/round-tx.test.ts` (commit preimage/domain-separation hash + calldata encoding for commit/reveal/claim)
@@ -1235,8 +1248,8 @@ Execution rules:
   - Missing: live Sepolia deploy execution, artifact capture, and smoke/release gate automation.
 - Phase E: Indexer + production UI
   - Status: PARTIAL
-  - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, and baseline wallet/realtime spectator web surfaces.
-  - Missing: production hardening for indexer cursor/reorg handling and advanced commit/reveal UX (slot picker + seed editor + optimistic conflict handling).
+  - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, and baseline wallet/realtime spectator web surfaces.
+  - Missing: advanced commit/reveal UX (slot picker + seed editor + optimistic conflict handling) and web-level commit/reveal/claim integration test coverage.
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1249,7 +1262,6 @@ Execution rules:
   - Execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds.
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
 - P2:
-  - Harden chain-ingesting indexer with resumable cursors and confirmation-depth/reorg handling.
   - Add integration tests for user-visible commit/reveal/claim failure states.
   - Expand wallet flow with slot-picker/seed-editor UX and optimistic reservation feedback.
 - P3:
@@ -1266,8 +1278,9 @@ Execution rules:
 [x] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
 [x] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
 [x] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.
-[ ] P2.3 Add indexer cursor resume + confirmation-depth reorg handling.
+[x] P2.3 Add indexer cursor resume + confirmation-depth reorg handling.
 [ ] P2.4 Expand wallet UX with slot picker, seed editor, and optimistic reservation/reveal feedback.
+[ ] P2.5 Add web integration tests covering commit/reveal/claim failure states and route-driven spectator consistency.
 
 ### 20.4 Validation Gates
 

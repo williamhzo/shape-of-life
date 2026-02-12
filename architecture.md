@@ -119,6 +119,8 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - File read/write helpers for indexer snapshot artifacts
   - `src/sync-round-read-model.ts`:
     - CLI entrypoint for RPC-backed sync (`--rpc`, `--round`, optional block bounds, output path)
+    - confirmation-depth filtering and resumable cursor windowing (`--confirmations`, `--reorg-lookback`)
+    - overlap reprocessing for reorg-safe event replacement before merge
   - `src/reconcile-round-events.ts`:
     - Deterministic event-stream reconciliation over `Stepped`, `Finalized`, and `Claimed` payloads
     - Enforces keeper-reward consistency (`sum(stepped.reward) == finalized.keeperPaid`)
@@ -231,6 +233,6 @@ Current gaps relative to full plan:
 
 - Accounting is currently a primitive slice (native transfers only; no ERC20 payout path).
 - Non-reveal forfeits and zero-eligible payout routing are still covered mostly by accounting-path tests rather than full slot-level adversarial flows.
-- Keeper bot and advanced wallet UX (slot picker, 8x8 seed editor, optimistic reservation handling) are not yet implemented.
+- Keeper bot, advanced wallet UX (slot picker, 8x8 seed editor, optimistic reservation handling), and web-level commit/reveal/claim integration tests are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.
