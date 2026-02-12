@@ -87,6 +87,70 @@ contract ConwayArenaRoundSimulationTest {
         require(round.redExtinct(), "expected red extinction");
     }
 
+    function testFinalizeUsesWeightedPopulationAndInvasionScoring() public {
+        vm.warp(100);
+        ConwayArenaRound round = new ConwayArenaRound(10, 10, 1, 1);
+
+        uint64 blueSeed = 0x2460064000108300;
+        uint64 redSeed = 0x080A40A0020810B0;
+        bytes32 blueSalt = bytes32("blue-score");
+        bytes32 redSalt = bytes32("red-score");
+
+        commitFor(round, address(this), 0, 4, blueSeed, blueSalt);
+        commitFor(round, RED_PLAYER, 1, 36, redSeed, redSalt);
+
+        vm.warp(111);
+        round.beginReveal();
+        round.reveal(1, 0, 4, blueSeed, blueSalt);
+        vm.prank(RED_PLAYER);
+        round.reveal(1, 1, 36, redSeed, redSalt);
+
+        vm.warp(122);
+        round.initialize();
+        round.stepBatch(1);
+        round.finalize();
+
+        require(round.finalBluePopulation() == 8, "blue population mismatch");
+        require(round.finalRedPopulation() == 9, "red population mismatch");
+        require(round.scoreBlue() == 40, "blue score mismatch");
+        require(round.scoreRed() == 27, "red score mismatch");
+        require(round.winnerTeam() == round.TEAM_BLUE(), "blue should win on weighted score");
+        require(!round.blueExtinct(), "blue should survive");
+        require(!round.redExtinct(), "red should survive");
+    }
+
+    function testFinalizeSetsDrawWhenWeightedScoresMatch() public {
+        vm.warp(100);
+        ConwayArenaRound round = new ConwayArenaRound(10, 10, 1, 1);
+
+        uint64 blueSeed = 0x0000000000000303;
+        uint64 redSeed = 0x0000000000000303;
+        bytes32 blueSalt = bytes32("blue-draw");
+        bytes32 redSalt = bytes32("red-draw");
+
+        commitFor(round, address(this), 0, 4, blueSeed, blueSalt);
+        commitFor(round, RED_PLAYER, 1, 32, redSeed, redSalt);
+
+        vm.warp(111);
+        round.beginReveal();
+        round.reveal(1, 0, 4, blueSeed, blueSalt);
+        vm.prank(RED_PLAYER);
+        round.reveal(1, 1, 32, redSeed, redSalt);
+
+        vm.warp(122);
+        round.initialize();
+        round.stepBatch(1);
+        round.finalize();
+
+        require(round.finalBluePopulation() == 4, "blue population mismatch");
+        require(round.finalRedPopulation() == 4, "red population mismatch");
+        require(round.scoreBlue() == 20, "blue score mismatch");
+        require(round.scoreRed() == 20, "red score mismatch");
+        require(round.winnerTeam() == round.WINNER_DRAW(), "expected draw winner");
+        require(!round.blueExtinct(), "blue should survive");
+        require(!round.redExtinct(), "red should survive");
+    }
+
     function commitFor(
         ConwayArenaRound round,
         address player,

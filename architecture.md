@@ -46,10 +46,10 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Invariant checks (`InvalidDimensions`, `InvalidRowsLength`, `OverlappingCells`)
   - `src/ConwayArenaRound.sol`:
     - Commit/reveal/sim/claim phase state machine with explicit phase and time-window guards
-    - 64x64 board-state storage (`blueRows`, `redRows`) and final population snapshots
+    - 64x64 board-state storage (`blueRows`, `redRows`) and final board-derived population/invasion snapshots
     - `initialize()` materializes revealed slot seed bits into deterministic board coordinates
     - `stepBatch()` advances board state by invoking `ConwayEngine.step` across bounded batches
-    - `finalize()` derives board status and winner resolution at max generation from simulated board populations
+    - `finalize()` derives board status and winner resolution at max generation from weighted score outputs (`3*population + 2*invasion`)
     - Step clamping semantics: `actualSteps = min(requestedSteps, maxBatch, maxGen - gen)`
     - Commit-domain separation primitive `hashCommit(roundId, chainId, arena, player, team, slotIndex, seedBits, salt)`
     - Accounting primitives for v0.1 payout safety:

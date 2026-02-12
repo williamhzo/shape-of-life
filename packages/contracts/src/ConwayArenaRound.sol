@@ -52,6 +52,10 @@ contract ConwayArenaRound {
     uint8 public constant BOARD_WIDTH = 64;
     uint8 public constant BOARD_HEIGHT = 64;
     uint8 public constant SEED_BUDGET = 12;
+    uint8 public constant SCORE_WEIGHT_POP = 3;
+    uint8 public constant SCORE_WEIGHT_INVADE = 2;
+    uint64 private constant RIGHT_HALF_MASK = type(uint64).max << 32;
+    uint64 private constant LEFT_HALF_MASK = uint64(type(uint32).max);
 
     event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward);
     event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust);
@@ -85,6 +89,10 @@ contract ConwayArenaRound {
     uint8 public revealedRedCount;
     uint16 public finalBluePopulation;
     uint16 public finalRedPopulation;
+    uint16 public finalBlueInvasion;
+    uint16 public finalRedInvasion;
+    uint32 public scoreBlue;
+    uint32 public scoreRed;
     uint256 public totalFunded;
     uint256 public rewardPerGen;
     uint256 public payoutPerClaim;
@@ -532,10 +540,16 @@ contract ConwayArenaRound {
     function refreshBoardStatus() internal {
         uint16 bluePop;
         uint16 redPop;
+        uint16 blueInvade;
+        uint16 redInvade;
 
         for (uint8 y = 0; y < BOARD_HEIGHT;) {
-            bluePop += uint16(popcount(blueRows[y]));
-            redPop += uint16(popcount(redRows[y]));
+            uint64 blueRow = blueRows[y];
+            uint64 redRow = redRows[y];
+            bluePop += uint16(popcount(blueRow));
+            redPop += uint16(popcount(redRow));
+            blueInvade += uint16(popcount(blueRow & RIGHT_HALF_MASK));
+            redInvade += uint16(popcount(redRow & LEFT_HALF_MASK));
 
             unchecked {
                 y += 1;
@@ -544,6 +558,10 @@ contract ConwayArenaRound {
 
         finalBluePopulation = bluePop;
         finalRedPopulation = redPop;
+        finalBlueInvasion = blueInvade;
+        finalRedInvasion = redInvade;
+        scoreBlue = uint32(bluePop) * SCORE_WEIGHT_POP + uint32(blueInvade) * SCORE_WEIGHT_INVADE;
+        scoreRed = uint32(redPop) * SCORE_WEIGHT_POP + uint32(redInvade) * SCORE_WEIGHT_INVADE;
         blueExtinct = bluePop == 0;
         redExtinct = redPop == 0;
     }
@@ -555,10 +573,10 @@ contract ConwayArenaRound {
         if (redExtinct && !blueExtinct) {
             return TEAM_BLUE;
         }
-        if (finalBluePopulation > finalRedPopulation) {
+        if (scoreBlue > scoreRed) {
             return TEAM_BLUE;
         }
-        if (finalRedPopulation > finalBluePopulation) {
+        if (scoreRed > scoreBlue) {
             return TEAM_RED;
         }
         return WINNER_DRAW;
