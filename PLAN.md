@@ -811,6 +811,7 @@ P3:
 
 ### 17.9 Immediate Testing Action Items (append to active execution queue)
 
+[x] Add web bootstrap tests first (`apps/web`) for health route contract and board summary accounting.
 [x] Create failing tests first for pack/unpack, B3/S23, and Immigration majority rules.
 [x] Add TS<->Solidity golden/parity suite with random-seed fuzz harness.
 [ ] Add round transition guard matrix tests with explicit revert expectations.
@@ -848,3 +849,17 @@ Execution rules:
   - Completed topology edge-case parity hardening:
     - Added hard-X-edge/no-wrap and seam-wrapped Immigration majority vectors to `fixtures/engine/parity.v1.json`.
     - Added matching Solidity vector tests in `packages/contracts/test/ConwayEngineParity.t.sol` to prevent TS/Solidity divergence at cylinder boundaries.
+  - Started Phase A web implementation with strict TDD (`Red -> Green`) for an atomic `P1` bootstrap slice:
+    - Added failing tests for web health route and board-summary accounting in `apps/web/test/health-route.test.ts` and `apps/web/test/board-summary.test.ts`.
+    - Implemented minimal web primitives to satisfy tests:
+      - `apps/web/app/api/health/route.ts` (`GET` route handler contract)
+      - `apps/web/lib/board-summary.ts` (board population accounting + overlap/width invariants)
+      - `apps/web/app/layout.tsx`, `apps/web/app/page.tsx`, `apps/web/app/globals.css` (initial spectator shell)
+    - Added web workspace bootstrap files:
+      - `apps/web/package.json`, `apps/web/tsconfig.json`, `apps/web/next.config.ts`, `apps/web/next-env.d.ts`
+    - Updated workspace/test docs:
+      - Root workspaces/scripts in `package.json` now include `apps/*` and `test:web`.
+      - `README.md` now documents web package scope and web test command.
+    - Validation:
+      - `bun test apps/web/test` passed (4 tests, 0 failures).
+      - `bun test` passed (16 tests, 0 failures).

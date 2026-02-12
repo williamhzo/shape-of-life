@@ -3,11 +3,13 @@
   "private": true,
   "packageManager": "bun@1.3.6",
   "workspaces": [
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "test": "bun test packages/sim/test",
+    "test": "bun test packages/sim/test apps/web/test",
     "test:sim": "bun test packages/sim/test",
+    "test:web": "bun test apps/web/test",
     "test:contracts": "cd packages/contracts && forge test"
   }
 }
