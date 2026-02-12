@@ -662,6 +662,7 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 [x] Add TS/Solidity parity fixtures for topology edge cases (cylinder wrap boundaries).
 [x] Add commit/reveal payload validation tests and enforce slot reservation/ownership + seed budget guards.
 [x] Add slot-claim ownership/idempotency tests and enforce one-claim-only claim path.
+[x] Add keeper pull-withdraw payout plumbing with no-credit guard and transfer tests.
 [ ] Add Sepolia benchmarking script and lock `maxBatch` via measured thresholds.
 [x] Add indexer reconciliation checks against `Stepped`, `Finalized`, and `Claimed` events.
 
@@ -842,6 +843,24 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Attempted to execute Sepolia benchmark lock step in this environment; still blocked by missing runtime inputs:
+    - `SHAPE_SEPOLIA_RPC_URL`
+    - `ROUND_ADDRESS` (deployed round in `Sim` phase)
+  - Validation:
+    - `bun run benchmark:sepolia:max-batch` failed with `SHAPE_SEPOLIA_RPC_URL is required`.
+  - Completed P1 keeper reward pull-withdraw payout plumbing slice with strict TDD (`Red -> Green`):
+    - Added failing tests in `packages/contracts/test/ConwayArenaRoundKeeperWithdraw.t.sol` for:
+      - successful keeper credit withdrawal transfer + credit reset
+      - no-credit revert path
+    - Extended `packages/contracts/src/ConwayArenaRound.sol` with:
+      - `withdrawKeeperCredit()` pull-payment function
+      - payable `receive()` for native-fund intake
+      - `NoKeeperCredit` / `TransferFailed` errors and `KeeperCreditWithdrawn` event
+    - Refreshed Solidity gas baseline snapshot at `packages/contracts/.gas-snapshot`.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --match-path test/ConwayArenaRoundKeeperWithdraw.t.sol` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
   - Completed P1 one-claim-only slot safety slice with strict TDD (`Red -> Green`):
     - Added failing tests in `packages/contracts/test/ConwayArenaRoundClaimSafety.t.sol` covering:
       - only revealed slot owner can claim

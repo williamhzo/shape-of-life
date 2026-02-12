@@ -49,6 +49,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Commit-domain separation primitive `hashCommit(roundId, chainId, arena, player, team, slotIndex, seedBits, salt)`
     - Accounting primitives for v0.1 payout safety:
       - keeper reward shortfall clamp
+      - keeper pull-withdraw credits (`withdrawKeeperCredit`) with no-credit guard
       - finalize-time keeper remainder rollover into winner pool
       - claim-settlement dust routing and invariant-traceable counters
   - `test/ConwayEngineParity.t.sol`:
@@ -161,8 +162,8 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, commit/reveal slot payload guards, accounting invariants, local round E2E, and gas regression CI.
-- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact; complete payout transfer plumbing.
+- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, accounting invariants, local round E2E, and gas regression CI.
+- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact; complete winner payout transfer plumbing.
 
 ## 6. Architectural Invariants
 
@@ -174,6 +175,7 @@ The current implementation assumes and tests these invariants:
 - Lifecycle guard correctness: round calls must be phase-valid and respect commit/reveal windows.
 - Commit/reveal binding: slot reservations are team-territory constrained, reveal is slot-owner bound, and reveal preimage must match committed hash.
 - Claim idempotency: only revealed slot owners can execute `claim(uint8)` and each slot can be claimed at most once.
+- Keeper payout safety: keeper rewards accrue in credits and are withdrawn via pull transfer with zero-credit rejection.
 - Accounting safety: `winnerPaid + keeperPaid + treasuryDust` must never exceed `totalFunded`.
 - Width safety: no bits outside configured width are accepted in web summary logic.
 
@@ -182,6 +184,7 @@ The current implementation assumes and tests these invariants:
 Current gaps relative to full plan:
 
 - Accounting is currently a test-oriented primitive slice (no ERC20/ETH pull-payment transfers yet).
+- Keeper pull-withdraw is implemented, but winner payout transfer distribution is still accounting-only (no per-slot transfer settlement).
 - Non-reveal forfeits and winner-routing edge cases are still covered only by coarse accounting tests, not full slot-level payout distribution flows.
 - Reconciliation checks are implemented, but a chain-ingesting indexer pipeline and keeper bot are not yet implemented.
 
