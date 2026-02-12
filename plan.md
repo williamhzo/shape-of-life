@@ -896,6 +896,22 @@ Execution rules:
     - `bun run lint:web` passed.
     - `cd apps/web && bun run build` passed.
     - `bun run contracts:hardhat:compile` currently fails in this sandbox with Hardhat `HHE905` (compiler list download requires internet access).
+  - Advanced P1.2 benchmark lock pipeline while live Sepolia execution remains environment-blocked:
+    - Added lock utility + tests:
+      - `packages/contracts/scripts/lock-max-batch-from-benchmark.ts`
+      - `packages/contracts/scripts/lock-max-batch-from-benchmark.test.ts`
+    - Added command wiring:
+      - `lock:sepolia:max-batch`
+      - `benchmark:sepolia:max-batch:lock`
+      - `packages/contracts` script alias `lock:max-batch:shape-sepolia`
+    - Updated `README.md` with benchmark-lock workflow commands.
+  - Validation:
+    - `bun run deploy:contracts:shape-sepolia` failed with Hardhat `HHE7` (`SHAPE_SEPOLIA_RPC_URL` missing in current environment).
+    - `bun run benchmark:sepolia:max-batch` failed with `SHAPE_SEPOLIA_RPC_URL is required`.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
   - Performed docs + implementation audit and aligned closeout tracking with a new readiness checklist + impact-ordered Sepolia plan in section 20.
   - Latest local validation in this workspace:
     - `bun run test` passed.
@@ -1197,7 +1213,7 @@ Execution rules:
 [x] P0.3 Replace mutable terminal-resolution helpers with deterministic board-derived terminal checks in production flow.
 [x] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
 [x] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
-[ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `ROUND_ADDRESS`).
+[ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployed `ROUND_ADDRESS`).
 [ ] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
 [ ] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
 [ ] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.

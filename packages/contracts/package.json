@@ -6,7 +6,8 @@
     "hardhat:compile": "hardhat compile",
     "deploy:shape-sepolia": "hardhat ignition deploy ignition/modules/ConwayArenaRound.ts --network shapeSepolia --parameters ignition/parameters/shape-sepolia.json",
     "verify:shape-sepolia": "hardhat run scripts/verify-shape-sepolia.ts --network shapeSepolia",
-    "show:shape-sepolia:round": "hardhat run scripts/show-shape-sepolia-round.ts --network shapeSepolia"
+    "show:shape-sepolia:round": "hardhat run scripts/show-shape-sepolia-round.ts --network shapeSepolia",
+    "lock:max-batch:shape-sepolia": "bun run scripts/lock-max-batch-from-benchmark.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.0.7",

@@ -109,3 +109,17 @@ SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
 ROUND_ADDRESS=<deployed-round-address> \
 bun run benchmark:sepolia:max-batch
 ```
+
+- Lock `maxBatch` in Sepolia ignition params from the latest benchmark artifact:
+
+```bash
+bun run lock:sepolia:max-batch
+```
+
+- Run benchmark + lock sequence in one command:
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run benchmark:sepolia:max-batch:lock
+```

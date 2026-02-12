@@ -80,6 +80,9 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Uses `cast estimate` against Shape Sepolia to measure `stepBatch(uint16)` gas across candidate step sizes
     - Selects a lock recommendation using configurable gas-limit headroom (`safetyBps`)
     - Writes reproducible benchmark artifact JSON for review/plan sync
+  - `scripts/lock-max-batch-from-benchmark.ts`:
+    - Applies measured `lockedMaxBatch` from benchmark artifacts to `ignition/parameters/shape-sepolia.json`
+    - Emits a lock summary artifact for release/audit traceability
   - `hardhat.config.ts`:
     - viem-first Hardhat 3 scaffold using `@nomicfoundation/hardhat-toolbox-viem`
     - Shape Sepolia/Mainnet deterministic network wiring from env (`SHAPE_SEPOLIA_RPC_URL`, `SHAPE_MAINNET_RPC_URL`, `DEPLOYER_PRIVATE_KEY`)

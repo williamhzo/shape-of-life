@@ -17,6 +17,8 @@
     "test:contracts": "cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline",
     "test:contracts:gas": "cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge snapshot --offline --match-test testGas --check",
     "benchmark:sepolia:max-batch": "bun run packages/contracts/scripts/max-batch-benchmark.ts",
+    "lock:sepolia:max-batch": "bun run packages/contracts/scripts/lock-max-batch-from-benchmark.ts",
+    "benchmark:sepolia:max-batch:lock": "bun run benchmark:sepolia:max-batch && bun run lock:sepolia:max-batch",
     "contracts:hardhat:compile": "cd packages/contracts && bun run hardhat:compile",
     "deploy:contracts:shape-sepolia": "cd packages/contracts && bun run deploy:shape-sepolia",
     "verify:contracts:shape-sepolia": "cd packages/contracts && bun run verify:shape-sepolia",
