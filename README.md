@@ -13,8 +13,15 @@ Conway Arena on Shape L2. See `PLAN.md` for full product spec, phased implementa
 - Web UI baseline:
   - shadcn/ui components live in `apps/web/components/ui`
   - Use shadcn out-of-box styles/variants until final design pass
+  - Linting baseline uses Next.js recommendations (`next/core-web-vitals` + `next/typescript`)
 
 ## Commands
+- Run web lint (Next.js ESLint baseline + TypeScript rules):
+
+```bash
+bun run lint:web
+```
+
 - Run simulation tests:
 
 ```bash
@@ -31,6 +38,12 @@ bun test apps/web/test
 
 ```bash
 bun test
+```
+
+- Build web app:
+
+```bash
+cd apps/web && bun run build
 ```
 
 - Run Solidity parity tests (requires local solc install via Foundry):

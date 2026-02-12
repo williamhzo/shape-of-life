@@ -813,6 +813,7 @@ P3:
 
 [x] Add web bootstrap tests first (`apps/web`) for health route contract and board summary accounting.
 [x] Initialize `apps/web` shadcn/ui baseline and install all registry `ui` components under `apps/web/components/ui`.
+[x] Add Next.js-recommended flat ESLint baseline (`next/core-web-vitals` + `next/typescript`) with workspace lint scripts and zero-warning lint gate.
 [x] Create failing tests first for pack/unpack, B3/S23, and Immigration majority rules.
 [x] Add TS<->Solidity golden/parity suite with random-seed fuzz harness.
 [ ] Add round transition guard matrix tests with explicit revert expectations.
@@ -848,6 +849,19 @@ Execution rules:
     - `bun test apps/web/test` passed.
     - `bun test` passed.
     - `cd apps/web && bun run build` passed.
+  - Hardened web scaffold against current Next.js/Tailwind lint/build expectations:
+    - Added flat ESLint config in `apps/web/eslint.config.mjs` extending `next/core-web-vitals` and `next/typescript`.
+    - Added lint scripts:
+      - root: `lint`, `lint:web`
+      - web: `lint`, `lint:fix`
+    - Added required ESLint plugin dependencies for Bun workspace resolution and pinned `@next/eslint-plugin-next` to match Next version.
+    - Fixed shadcn-generated lint edge cases:
+      - Replaced impure `Math.random()` usage in `apps/web/components/ui/sidebar.tsx` with stable `useId`-derived width.
+      - Simplified `apps/web/hooks/use-toast.ts` action typing and corrected effect dependency to avoid listener re-registration.
+  - Validation:
+    - `cd apps/web && bun run lint` passed.
+    - `cd apps/web && bun run build` passed.
+    - `bun test` passed.
 - 2026-02-11:
   - Added docs-first implementation standards mandate to `PLAN.md` and `AGENTS.md` with explicit OpenZeppelin, Foundry, Hardhat, Next.js, and Turborepo baselines.
   - Completed first immediate testing action item with strict TDD (`Red -> Green`):

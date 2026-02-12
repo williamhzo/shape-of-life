@@ -7,6 +7,8 @@
     "packages/*"
   ],
   "scripts": {
+    "lint": "bun run lint:web",
+    "lint:web": "cd apps/web && bun run lint",
     "test": "bun test packages/sim/test apps/web/test",
     "test:sim": "bun test packages/sim/test",
     "test:web": "bun test apps/web/test",
