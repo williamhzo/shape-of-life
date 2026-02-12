@@ -704,7 +704,7 @@ Goals:
 - Standardize deterministic fixtures shared by TS and Solidity.
 
 Tasks:
-- Add workspace-level test commands for each package and a root aggregate command (`bun test` + Vitest targets).
+- Add workspace-level test commands for each package and a root aggregate command (`bun run test` + package-specific targets).
 - Add deterministic RNG seeding utilities and fixture builders for board/slot states.
 - Add snapshot/golden fixture versioning strategy (`fixtures/v1/...`) with review workflow.
 - Add CI matrix for `packages/sim`, `packages/contracts`, `packages/indexer`, `apps/web`.
@@ -820,7 +820,7 @@ P3:
 [x] Add payout/accounting invariants including dust and keeper shortfall handling.
 [x] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
 [x] Add gas snapshot + regression threshold checks to CI and block regressions by default.
-[ ] Add aggregate/CI contract test execution (`forge test`) so Solidity regressions are caught outside package-local runs.
+[x] Add aggregate/CI contract test execution (`forge test`) so Solidity regressions are caught outside package-local runs.
 
 ## 18. Implementation Standards Mandate (Docs-First)
 
@@ -840,6 +840,11 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Added aggregate Solidity test execution in shared local/CI gates:
+    - Root `bun run test` now executes `test:sim`, `test:web`, and `test:contracts` (Foundry suite included).
+    - Updated `.github/workflows/contracts-gas.yml` to run `forge test` before gas snapshot checks.
+  - Validation:
+    - `bun run test` passed, including `forge test`.
   - Added gas regression gates for Solidity lifecycle paths:
     - Added `packages/contracts/test/ConwayArenaRoundGas.t.sol` with dedicated gas checkpoints for `commit`, `reveal`, `stepBatch`, `finalize`, and `claim`.
     - Generated baseline `packages/contracts/.gas-snapshot`.

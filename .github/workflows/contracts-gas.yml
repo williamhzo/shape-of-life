@@ -28,5 +28,8 @@ jobs:
         with:
           version: stable
 
+      - name: Run Solidity test suite
+        run: forge test
+
       - name: Verify gas snapshot
         run: forge snapshot --match-test testGas --check

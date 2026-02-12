@@ -19,7 +19,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
 - Runtime/package manager: Bun (`packageManager: bun@1.3.6`).
 - Workspaces: `apps/*`, `packages/*` (root `package.json`).
 - Core test commands:
-  - `bun test` (currently runs sim + web tests)
+  - `bun test` (aggregate sim + web + Solidity contract tests)
   - `bun test packages/sim/test`
   - `bun test apps/web/test`
   - `cd packages/contracts && forge test`
@@ -142,7 +142,7 @@ The plan defines eventual expansion to:
 Status snapshot:
 
 - Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, accounting invariants, local round E2E, and gas regression CI.
-- Pending/high impact next: aggregate contract CI (`forge test` in shared/root gate), Sepolia benchmark automation, indexer reconciliation checks.
+- Pending/high impact next: Sepolia benchmark automation, indexer reconciliation checks, full commit/reveal payload validation and payout transfer plumbing.
 
 ## 6. Architectural Invariants
 
@@ -161,7 +161,6 @@ Current gaps relative to full plan:
 
 - Round lifecycle lacks commit/reveal payload validation and slot-level ownership checks.
 - Accounting is currently a test-oriented primitive slice (no ERC20/ETH pull-payment transfers yet).
-- Root aggregate test command does not yet include `forge test` automatically.
 - No indexer/replay worker/keeper bot package in workspace yet.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.

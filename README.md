@@ -34,10 +34,10 @@ bun test packages/sim/test
 bun test apps/web/test
 ```
 
-- Run all configured tests:
+- Run all configured tests (sim + web + contracts):
 
 ```bash
-bun test
+bun run test
 ```
 
 - Build web app:
