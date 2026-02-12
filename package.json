@@ -13,6 +13,7 @@
     "test:sim": "bun test packages/sim/test",
     "test:web": "bun test apps/web/test",
     "test:indexer": "bun test packages/indexer/test",
+    "indexer:sync:round": "cd packages/indexer && bun run sync:round",
     "test:contracts:scripts": "bun test packages/contracts/scripts/*.test.ts",
     "test:contracts": "cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline",
     "test:contracts:gas": "cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge snapshot --offline --match-test testGas --check",

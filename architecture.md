@@ -9,6 +9,7 @@ Shape of Life is a Bun monorepo with three active surfaces:
 - `packages/sim`: TypeScript canonical simulation primitives and parity oracle.
 - `packages/contracts`: Solidity engine parity + round-lifecycle guard implementation (Foundry-tested).
 - `packages/indexer`: TypeScript reconciliation checks for accounting-critical round events.
+  - Includes chain-ingesting round read-model sync tooling with persisted JSON snapshots.
 - `apps/web`: Next.js App Router scaffold for spectator-facing UI and simple API routes.
 
 Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
@@ -104,10 +105,21 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - UI baseline from shadcn registry under `apps/web/components/ui`
 
 - `packages/indexer`
+  - `src/ingest-round-read-model.ts`:
+    - viem-backed chain ingestion adapter for `Stepped`, `Finalized`, and `Claimed` logs
+    - onchain state reads (`phase`, `gen`, `maxGen`, `maxBatch`, accounting counters)
+    - deterministic read-model builder with finalize-aware reconciliation status
+  - `src/round-read-model-store.ts`:
+    - Stable BigInt-safe JSON serialization/parsing for persisted read models
+    - File read/write helpers for indexer snapshot artifacts
+  - `src/sync-round-read-model.ts`:
+    - CLI entrypoint for RPC-backed sync (`--rpc`, `--round`, optional block bounds, output path)
   - `src/reconcile-round-events.ts`:
     - Deterministic event-stream reconciliation over `Stepped`, `Finalized`, and `Claimed` payloads
     - Enforces keeper-reward consistency (`sum(stepped.reward) == finalized.keeperPaid`)
     - Produces accounting invariant checks (`winnerPaid + keeperPaid + treasuryDust <= totalFunded`)
+  - `test/ingest-round-read-model.test.ts`:
+    - Read-model construction, pending-finalize behavior, reconciliation divergence failure checks
   - `test/reconcile-round-events.test.ts`:
     - Happy-path reconciliation assertions
     - Divergence and missing-event failure checks
@@ -212,6 +224,6 @@ Current gaps relative to full plan:
 
 - Accounting is currently a primitive slice (native transfers only; no ERC20 payout path).
 - Non-reveal forfeits and zero-eligible payout routing are still covered mostly by accounting-path tests rather than full slot-level adversarial flows.
-- Reconciliation checks are implemented, but a chain-ingesting indexer pipeline and keeper bot are not yet implemented.
+- Keeper bot and realtime web surfaces are not implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.

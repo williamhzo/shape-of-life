@@ -1,5 +1,11 @@
 {
   "name": "@shape-of-life/indexer",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "sync:round": "bun run src/sync-round-read-model.ts"
+  },
+  "dependencies": {
+    "viem": "^2.45.3"
+  }
 }

@@ -8,7 +8,7 @@ Conway Arena on Shape L2. See `plan.md` for full product spec, phased implementa
   - `apps/web` (Next.js App Router + shadcn/ui baseline)
   - `packages/sim` (TypeScript simulation engine primitives)
   - `packages/contracts` (Foundry Solidity parity harness)
-  - `packages/indexer` (event reconciliation checks for round accounting)
+  - `packages/indexer` (chain-ingesting round read-model sync + accounting reconciliation checks)
 - Shared cross-implementation fixtures:
   - `fixtures/engine/parity.v1.json`
 - Web UI baseline:
@@ -35,7 +35,7 @@ bun test packages/sim/test
 bun test apps/web/test
 ```
 
-- Run all configured tests (sim + web + contracts):
+- Run all configured tests (sim + web + indexer + contract scripts + contracts):
 
 ```bash
 bun run test
@@ -45,6 +45,14 @@ bun run test
 
 ```bash
 bun test packages/indexer/test
+```
+
+- Sync persisted round read model from chain events/state:
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run indexer:sync:round
 ```
 
 - Run benchmark utility tests for Sepolia maxBatch lock tooling:

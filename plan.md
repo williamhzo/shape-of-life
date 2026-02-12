@@ -847,6 +847,23 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P2.1 chain-ingesting indexer pipeline + persisted read-model slice with strict TDD (`Red -> Green`):
+    - Added failing tests first in `packages/indexer/test/ingest-round-read-model.test.ts` for:
+      - deterministic chain-state + event ingestion into a round read model
+      - pending-finalize reconciliation behavior
+      - fail-noisy reconciliation divergence (`keeper paid mismatch`)
+    - Implemented viem-backed ingestion and read-model assembly:
+      - `packages/indexer/src/ingest-round-read-model.ts`
+      - `packages/indexer/src/round-read-model-store.ts`
+      - `packages/indexer/src/sync-round-read-model.ts`
+    - Added command wiring for operator sync runs:
+      - root `indexer:sync:round`
+      - package `packages/indexer` script `sync:round`
+    - Updated docs:
+      - `README.md` indexer sync command
+      - `architecture.md` indexer ingestion/read-model architecture section
+  - Validation:
+    - `bun test packages/indexer/test` passed.
   - Completed P0.3 deterministic terminal-resolution hardening slice with strict TDD (`Red -> Green`):
     - Removed mutable `setExtinction` path from `packages/contracts/src/ConwayArenaRound.sol`.
     - `initialize()` now refreshes board status after seed materialization so extinction state is board-derived from first Sim tick.
@@ -1201,8 +1218,8 @@ Execution rules:
   - Missing: live Sepolia deploy execution, artifact capture, and smoke/release gate automation.
 - Phase E: Indexer + production UI
   - Status: PARTIAL
-  - Done: deterministic reconciliation utility + tests for accounting-critical events.
-  - Missing: chain-ingesting indexer pipeline and realtime wallet-integrated UI journey.
+  - Done: deterministic reconciliation utility + tests for accounting-critical events, plus viem-backed chain ingestion and persisted round read-model sync tooling.
+  - Missing: realtime wallet-integrated UI journey and production hardening for cursor/reorg handling.
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1215,7 +1232,7 @@ Execution rules:
   - Execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds.
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
 - P2:
-  - Replace utility-only reconciliation with chain-ingesting indexer read model.
+  - Harden chain-ingesting indexer with resumable cursors and confirmation-depth/reorg handling.
   - Implement spectator + player UI surfaces backed by indexer and contract reads.
   - Add integration tests for user-visible commit/reveal/claim failure states.
 - P3:
@@ -1230,8 +1247,9 @@ Execution rules:
 [x] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
 [ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployed `ROUND_ADDRESS`).
 [x] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
-[ ] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
+[x] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
 [ ] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.
+[ ] P2.3 Add indexer cursor resume + confirmation-depth reorg handling.
 
 ### 20.4 Validation Gates
 
