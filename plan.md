@@ -656,7 +656,7 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
   - Optional VRF tiebreaks, richer reward tuning, Stack medal integrations.
 
 ### Action Items
-[ ] Add state-machine tests covering every allowed/disallowed transition.
+[x] Add state-machine tests covering every allowed/disallowed transition.
 [ ] Add payout invariant tests: total payouts + keeper paid + dust <= funded amount.
 [ ] Add keeper reward tests for underfunded and over-requested step batches.
 [x] Add TS/Solidity parity fixtures for topology edge cases (cylinder wrap boundaries).
@@ -816,7 +816,7 @@ P3:
 [x] Add Next.js-recommended flat ESLint baseline (`next/core-web-vitals` + `next/typescript`) with workspace lint scripts and zero-warning lint gate.
 [x] Create failing tests first for pack/unpack, B3/S23, and Immigration majority rules.
 [x] Add TS<->Solidity golden/parity suite with random-seed fuzz harness.
-[ ] Add round transition guard matrix tests with explicit revert expectations.
+[x] Add round transition guard matrix tests with explicit revert expectations.
 [ ] Add payout/accounting invariants including dust and keeper shortfall handling.
 [ ] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
 [ ] Add gas snapshot + regression threshold checks to CI and block regressions by default.
@@ -840,6 +840,12 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed Phase 3 guard-matrix TDD slice for round lifecycle transitions:
+    - Added failing state-machine tests with explicit revert-selector assertions in `packages/contracts/test/ConwayArenaRoundStateMachine.t.sol`.
+    - Implemented minimal lifecycle contract in `packages/contracts/src/ConwayArenaRound.sol` with phase/time guards for `commit`, `beginReveal`, `reveal`, `initialize`, `stepBatch`, `finalize`, and `claim`.
+    - Included `stepBatch` clamp behavior (`min(requestedSteps, maxBatch, maxGen - gen)`) and terminal-only finalize guard.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test -q` passed (compile + tests).
   - Renamed `game-rules.md` -> `concept.md` and reworked it into a user-facing concept doc:
     - Added a deeper Conway’s Game of Life concept section (emergence, pattern language, strategic intuition).
     - Structured the second half as player-facing Conway Arena rules (round flow, participation, winning, fairness).

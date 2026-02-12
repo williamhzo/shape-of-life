@@ -7,7 +7,7 @@ This document describes the architecture currently implemented in this repositor
 Shape of Life is a Bun monorepo with three active surfaces:
 
 - `packages/sim`: TypeScript canonical simulation primitives and parity oracle.
-- `packages/contracts`: Solidity engine parity implementation (Foundry-tested).
+- `packages/contracts`: Solidity engine parity + round-lifecycle guard implementation (Foundry-tested).
 - `apps/web`: Next.js App Router scaffold for spectator-facing UI and simple API routes.
 
 Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
@@ -38,9 +38,15 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `src/ConwayEngine.sol`:
     - Solidity parity engine for one generation
     - Invariant checks (`InvalidDimensions`, `InvalidRowsLength`, `OverlappingCells`)
+  - `src/ConwayArenaRound.sol`:
+    - Minimal commit/reveal/sim/claim phase state machine with explicit phase and time-window guards
+    - Step clamping semantics: `actualSteps = min(requestedSteps, maxBatch, maxGen - gen)`
   - `test/ConwayEngineParity.t.sol`:
     - Fixed vectors mirroring fixture semantics
     - Deterministic seeded fuzz parity against Solidity in-test reference engine
+  - `test/ConwayArenaRoundStateMachine.t.sol`:
+    - Transition matrix tests for allowed/disallowed round calls
+    - Explicit custom-error selector assertions for guard failures
 
 - `apps/web`
   - `app/page.tsx`: spectator-first scaffold using shadcn/ui primitives
@@ -101,7 +107,7 @@ Both TS and Solidity tests encode these same semantics, making fixtures the cros
   - Fixed vectors equivalent to fixture cases
   - Deterministic seeded random corpus vs Solidity reference implementation
 
-Current architecture guarantees rule parity confidence at engine level but does **not yet** include a round manager contract.
+Current architecture guarantees rule parity confidence at engine level and now includes a minimal round manager guard contract, but not full commit/reveal accounting logic yet.
 
 ### 4.3 Web Read Model
 
@@ -123,8 +129,8 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness.
-- Pending/high impact next: state machine tests, payout/accounting invariants, end-to-end round flow, aggregate contract CI.
+- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, round transition guard matrix.
+- Pending/high impact next: payout/accounting invariants, end-to-end round flow, aggregate contract CI.
 
 ## 6. Architectural Invariants
 
@@ -133,13 +139,14 @@ The current implementation assumes and tests these invariants:
 - Determinism: same input state + steps => same output state.
 - Disjoint colors: blue/red overlap is invalid input and forbidden output.
 - Topology consistency: cylinder semantics must match in TS and Solidity.
+- Lifecycle guard correctness: round calls must be phase-valid and respect commit/reveal windows.
 - Width safety: no bits outside configured width are accepted in web summary logic.
 
 ## 7. Known Gaps and Failure Modes
 
 Current gaps relative to full plan:
 
-- No onchain round lifecycle implementation yet.
+- Round lifecycle exists only as a guard/state-machine slice; commit/reveal payload validation and payout/accounting are not implemented yet.
 - No payout/accounting code paths yet.
 - Root aggregate test command does not yet include `forge test` automatically.
 - No indexer/replay worker/keeper bot package in workspace yet.
