@@ -23,7 +23,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
 - Core test commands:
   - `bun test` (aggregate sim + web + indexer + contract-script + Solidity contract tests)
   - `bun test packages/sim/test`
-  - `bun test apps/web/test`
+  - `cd apps/web && bun run test`
   - `bun test packages/indexer/test`
   - `bun test packages/contracts/scripts/*.test.ts`
   - `cd packages/contracts && forge test --offline`

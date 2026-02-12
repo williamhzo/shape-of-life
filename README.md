@@ -32,7 +32,7 @@ bun test packages/sim/test
 - Run web tests:
 
 ```bash
-bun test apps/web/test
+cd apps/web && bun run test
 ```
 
 - Run all configured tests (sim + web + indexer + contract scripts + contracts):

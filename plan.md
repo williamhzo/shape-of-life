@@ -847,6 +847,19 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Re-scoped web test runner and browser-validation workflow per operator guidance:
+    - Removed temporary Testing Library/Happy DOM dependencies and deleted the corresponding panel interaction test.
+    - Migrated `apps/web` tests to Vitest:
+      - updated test imports in `apps/web/test/*.test.ts` from `bun:test` to `vitest`
+      - added `apps/web/vitest.config.ts` with project-root alias mapping for `@/*`
+      - updated scripts: root `test:web` now runs `cd apps/web && bun run test`, and `apps/web` `test` now runs `vitest run`
+    - Performed real-browser interaction validation by running `apps/web` locally and exercising wallet UI flows in a live browser session (connect, team/slot selection, reveal submission, rejection path).
+  - Validation:
+    - `cd apps/web && bun run test` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
   - Completed P2.6 provider-mocked wallet transition test slice with strict TDD (`Red -> Green`):
     - Added failing integration tests first in `apps/web/test/wallet-journey.test.ts` covering:
       - chain-switch + commit submission path
@@ -1289,7 +1302,7 @@ Execution rules:
 - Phase E: Indexer + production UI
   - Status: PARTIAL
   - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, and baseline wallet/realtime spectator web surfaces.
-  - Missing: keeper/replay production polish and browser-automation end-to-end harnesses.
+  - Missing: keeper/replay production polish; browser interaction coverage currently relies on live agent-driven validation instead of a dedicated automation harness.
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1302,7 +1315,7 @@ Execution rules:
   - Execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds.
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
 - P2:
-  - Completed for current web route + validation surfaces; keep expanding to provider-mocked browser end-to-end flows as follow-up.
+  - Completed for current web route + validation surfaces, including provider-mocked wallet sequencing plus live-browser interaction validation.
 - P3:
   - Operator polish (keeper observability/runbooks) and optional Shape-native features (Gasback/Stack/VRF).
 
@@ -1321,7 +1334,7 @@ Execution rules:
 [x] P2.4 Expand wallet UX with slot picker, seed editor, and optimistic reservation/reveal feedback.
 [x] P2.5 Add web integration tests covering commit/reveal/claim failure states and route-driven spectator consistency.
 [x] P2.6 Add provider-mocked browser end-to-end tests for commit/reveal/claim success/failure transitions.
-[ ] P2.7 Add browser-automation wallet flow tests (UI-level action sequencing with mocked provider).
+[x] P2.7 Validate wallet UI action sequencing in a live browser session with a mocked provider (connect, slot/team selection, reveal submit, rejection path), while keeping code-level coverage in Vitest.
 
 ### 20.4 Validation Gates
 
