@@ -2,7 +2,7 @@
 
 ## Project Context
 
-- Source of truth for scope and sequencing: `PLAN.md`.
+- Source of truth for scope and sequencing: `plan.md`.
 
 ## Non-Negotiable Working Rules
 
@@ -19,7 +19,7 @@
 - Web app (Next.js): follow official Next.js docs and App Router guidance (`https://nextjs.org/docs`).
 - Monorepo/task orchestration: follow Turborepo docs (`https://turborepo.dev/docs`).
 - UI component system: use shadcn/ui components (`https://ui.shadcn.com/docs/components`) for `apps/web`.
-- If guidance conflicts, prefer official docs for the exact tool/version in use; record rationale in `PLAN.md` when deviating.
+- If guidance conflicts, prefer official docs for the exact tool/version in use; record rationale in `plan.md` when deviating.
 
 ## Web UI Baseline (Required)
 
@@ -29,14 +29,14 @@
 
 ## Progress Tracking and Documentation Sync (Required)
 
-1. Every feature/fix change must update progress tracking in `PLAN.md` in the same PR/commit series.
+1. Every feature/fix change must update progress tracking in `plan.md` in the same PR/commit series.
 2. Keep docs current as code evolves:
 
-- Update `PLAN.md` checkboxes/status when tasks start/finish.
+- Update `plan.md` checkboxes/status when tasks start/finish.
 - Update `README.md` when setup, scripts, or structure changes.
 - Add or update design/spec notes when behavior or architecture changes.
 
-3. If implementation reveals new work, append follow-ups to `PLAN.md` with impact label (`P0`/`P1`/`P2`/`P3`).
+3. If implementation reveals new work, append follow-ups to `plan.md` with impact label (`P0`/`P1`/`P2`/`P3`).
 4. Do not leave plan/docs stale after code changes.
 
 ## Repository Conventions

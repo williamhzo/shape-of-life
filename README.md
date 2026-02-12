@@ -1,6 +1,6 @@
 # Shape of Life
 
-Conway Arena on Shape L2. See `PLAN.md` for full product spec, phased implementation plan, and all progress tracking.
+Conway Arena on Shape L2. See `plan.md` for full product spec, phased implementation plan, and all progress tracking.
 
 ## Workspace
 - Runtime/package manager: Bun
