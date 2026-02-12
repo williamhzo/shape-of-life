@@ -108,6 +108,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `lib/round-live.ts`: persisted read-model parsing + normalization for API responses
   - `lib/round-tx.ts`: commit-hash + tx-calldata builders for round contract calls
   - `test/*.test.ts`: route contract + board summary tests
+    - includes wallet failure-path validation tests and route consistency checks for spectator-read-model status
   - UI baseline from shadcn registry under `apps/web/components/ui`
 
 - `packages/indexer`
@@ -234,6 +235,6 @@ Current gaps relative to full plan:
 
 - Accounting is currently a primitive slice (native transfers only; no ERC20 payout path).
 - Non-reveal forfeits and zero-eligible payout routing are still covered mostly by accounting-path tests rather than full slot-level adversarial flows.
-- Keeper bot and web-level commit/reveal/claim integration tests are not yet implemented.
+- Keeper bot and full end-to-end browser wallet interaction tests (provider-mocked UI flows) are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.

@@ -19,6 +19,7 @@ import {
   slotIndexToGrid,
   toggleSeedCell,
 } from "@/lib/wallet-ux";
+import { validateWalletSubmissionDraft } from "@/lib/wallet-submit";
 import {
   buildClaimCalldata,
   buildCommitCalldata,
@@ -55,29 +56,6 @@ function requireProvider(): EthereumProvider {
   }
 
   return window.ethereum;
-}
-
-function parseUnsignedInteger(raw: string, label: string, max: bigint): bigint {
-  const trimmed = raw.trim();
-  if (!/^\d+$/.test(trimmed)) {
-    throw new Error(`${label} must be a decimal integer`);
-  }
-
-  const value = BigInt(trimmed);
-  if (value > max) {
-    throw new Error(`${label} exceeds max ${max}`);
-  }
-
-  return value;
-}
-
-function parseHex32(raw: string, label: string): Hex {
-  const trimmed = raw.trim();
-  if (!/^0x[0-9a-fA-F]{64}$/.test(trimmed)) {
-    throw new Error(`${label} must be 32-byte hex (0x + 64 hex chars)`);
-  }
-
-  return trimmed as Hex;
 }
 
 function isRoundAddressConfigured(roundAddress: string): roundAddress is Address {
@@ -183,40 +161,39 @@ export function RoundWalletPanel() {
     try {
       const provider = requireProvider();
       const chainId = await ensureShapeSepolia(provider);
-      const roundId = parseUnsignedInteger(draft.roundId, "roundId", (1n << 256n) - 1n);
-      const team = draft.team;
-      const slotIndex = draft.slotIndex;
-      const seedBits = draft.seedBits;
-      const salt = parseHex32(draft.salt, "salt");
-
-      if (liveCells > SEED_BUDGET) {
-        throw new Error(`seed budget exceeded (${liveCells}/${SEED_BUDGET})`);
-      }
+      const validated = validateWalletSubmissionDraft({
+        action: kind,
+        roundId: draft.roundId,
+        team: draft.team,
+        slotIndex: draft.slotIndex,
+        seedBits: draft.seedBits,
+        salt: draft.salt,
+        claimSlotIndex: draft.claimSlotIndex,
+      });
 
       let data: Hex;
       if (kind === "commit") {
         const commitHash = computeCommitHash({
-          roundId,
+          roundId: validated.roundId,
           chainId,
           arena: targetRoundAddress,
           player: account,
-          team,
-          slotIndex,
-          seedBits,
-          salt,
+          team: validated.team,
+          slotIndex: validated.slotIndex,
+          seedBits: validated.seedBits,
+          salt: validated.salt,
         });
-        data = buildCommitCalldata({ team, slotIndex, commitHash });
+        data = buildCommitCalldata({ team: validated.team, slotIndex: validated.slotIndex, commitHash });
       } else if (kind === "reveal") {
         data = buildRevealCalldata({
-          roundId,
-          team,
-          slotIndex,
-          seedBits,
-          salt,
+          roundId: validated.roundId,
+          team: validated.team,
+          slotIndex: validated.slotIndex,
+          seedBits: validated.seedBits,
+          salt: validated.salt,
         });
       } else {
-        const claimSlotIndex = Number(parseUnsignedInteger(draft.claimSlotIndex, "claimSlotIndex", BigInt(SLOT_COUNT - 1)));
-        data = buildClaimCalldata({ slotIndex: claimSlotIndex });
+        data = buildClaimCalldata({ slotIndex: validated.claimSlotIndex });
       }
 
       setPendingAction(kind);
