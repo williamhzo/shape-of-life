@@ -27,6 +27,8 @@ contract ConwayArenaRound {
     error AlreadyClaimed(uint8 slotIndex);
     error CommitHashMismatch();
     error SeedBudgetExceeded(uint8 liveCells, uint8 seedBudget);
+    error NoKeeperCredit(address keeper);
+    error TransferFailed();
     error ZeroSteps();
     error RoundNotTerminal();
     error AccountingAlreadyConfigured();
@@ -44,6 +46,7 @@ contract ConwayArenaRound {
     event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward);
     event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust);
     event Claimed(uint256 distributed, uint256 cumulativeWinnerPaid, uint256 treasuryDust, uint256 remainingWinnerPool);
+    event KeeperCreditWithdrawn(address keeper, uint256 amount);
 
     struct SlotData {
         address player;
@@ -75,6 +78,8 @@ contract ConwayArenaRound {
     mapping(address keeper => uint256 credit) public keeperCredits;
     mapping(uint8 slotIndex => SlotData slot) public slots;
     mapping(address player => bool reserved) public hasReservedSlot;
+
+    receive() external payable {}
 
     constructor(uint64 commitDuration, uint64 revealDuration_, uint16 maxGen_, uint16 maxBatch_) {
         if (maxGen_ == 0 || maxBatch_ == 0 || maxBatch_ > maxGen_) {
@@ -263,6 +268,22 @@ contract ConwayArenaRound {
         accountingConfigured = true;
         totalFunded = totalFunded_;
         rewardPerGen = rewardPerGen_;
+    }
+
+    function withdrawKeeperCredit() external returns (uint256 amount) {
+        amount = keeperCredits[msg.sender];
+        if (amount == 0) {
+            revert NoKeeperCredit(msg.sender);
+        }
+
+        keeperCredits[msg.sender] = 0;
+
+        (bool success,) = payable(msg.sender).call{value: amount}("");
+        if (!success) {
+            revert TransferFailed();
+        }
+
+        emit KeeperCreditWithdrawn(msg.sender, amount);
     }
 
     function hashCommit(
