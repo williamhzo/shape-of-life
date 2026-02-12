@@ -847,6 +847,23 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P2.2 web wallet journey + realtime spectator state slice with strict TDD (`Red -> Green`):
+    - Added failing tests first:
+      - `apps/web/test/round-tx.test.ts` (commit preimage/domain-separation hash + calldata encoding for commit/reveal/claim)
+      - `apps/web/test/round-live-route.test.ts` (normalized persisted read-model API contract + unavailable-model failure path)
+    - Implemented wallet + live-state surfaces:
+      - `apps/web/components/round-wallet-panel.tsx` (browser-wallet connect + commit/reveal/claim tx submission)
+      - `apps/web/components/round-live-panel.tsx` (polling spectator view backed by persisted read model)
+      - `apps/web/app/api/round/live/route.ts` + `apps/web/lib/round-live.ts`
+      - `apps/web/lib/round-tx.ts` (hash/calldata builders)
+      - `apps/web/app/page.tsx` integration
+    - Added web dependency wiring for `viem` in `apps/web/package.json`.
+  - Validation:
+    - `bun test apps/web/test` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
   - Completed P2.1 chain-ingesting indexer pipeline + persisted read-model slice with strict TDD (`Red -> Green`):
     - Added failing tests first in `packages/indexer/test/ingest-round-read-model.test.ts` for:
       - deterministic chain-state + event ingestion into a round read model
@@ -1218,8 +1235,8 @@ Execution rules:
   - Missing: live Sepolia deploy execution, artifact capture, and smoke/release gate automation.
 - Phase E: Indexer + production UI
   - Status: PARTIAL
-  - Done: deterministic reconciliation utility + tests for accounting-critical events, plus viem-backed chain ingestion and persisted round read-model sync tooling.
-  - Missing: realtime wallet-integrated UI journey and production hardening for cursor/reorg handling.
+  - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, and baseline wallet/realtime spectator web surfaces.
+  - Missing: production hardening for indexer cursor/reorg handling and advanced commit/reveal UX (slot picker + seed editor + optimistic conflict handling).
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1233,8 +1250,8 @@ Execution rules:
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
 - P2:
   - Harden chain-ingesting indexer with resumable cursors and confirmation-depth/reorg handling.
-  - Implement spectator + player UI surfaces backed by indexer and contract reads.
   - Add integration tests for user-visible commit/reveal/claim failure states.
+  - Expand wallet flow with slot-picker/seed-editor UX and optimistic reservation feedback.
 - P3:
   - Operator polish (keeper observability/runbooks) and optional Shape-native features (Gasback/Stack/VRF).
 
@@ -1248,8 +1265,9 @@ Execution rules:
 [ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployed `ROUND_ADDRESS`).
 [x] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
 [x] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
-[ ] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.
+[x] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.
 [ ] P2.3 Add indexer cursor resume + confirmation-depth reorg handling.
+[ ] P2.4 Expand wallet UX with slot picker, seed editor, and optimistic reservation/reveal feedback.
 
 ### 20.4 Validation Gates
 

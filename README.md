@@ -55,6 +55,13 @@ ROUND_ADDRESS=<deployed-round-address> \
 bun run indexer:sync:round
 ```
 
+- Run web app with wallet + live round panels enabled:
+
+```bash
+NEXT_PUBLIC_ROUND_ADDRESS=<deployed-round-address> \
+cd apps/web && bun run dev
+```
+
 - Run benchmark utility tests for Sepolia maxBatch lock tooling:
 
 ```bash
