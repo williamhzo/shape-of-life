@@ -126,24 +126,7 @@ contract ConwayEngineParityTest {
 
         for (uint8 y = 0; y < height; y++) {
             for (uint8 x = 0; x < width; x++) {
-                uint8 blueNeighbors;
-                uint8 redNeighbors;
-
-                for (int8 dy = -1; dy <= 1; dy++) {
-                    for (int8 dx = -1; dx <= 1; dx++) {
-                        if (dx == 0 && dy == 0) continue;
-                        int16 nxI = int16(uint16(x)) + dx;
-                        if (nxI < 0 || nxI >= int16(uint16(width))) continue;
-                        uint8 ny = wrapY(y, dy, height);
-                        uint256 nIdx = uint256(ny) * uint256(width) + uint256(uint16(int16(nxI)));
-                        uint8 neighbor = grid[nIdx];
-                        if (neighbor == 1) {
-                            blueNeighbors++;
-                        } else if (neighbor == 2) {
-                            redNeighbors++;
-                        }
-                    }
-                }
+                (uint8 blueNeighbors, uint8 redNeighbors) = referenceCountNeighbors(grid, width, height, x, y);
 
                 uint8 liveNeighbors = blueNeighbors + redNeighbors;
                 uint256 idx = uint256(y) * uint256(width) + uint256(x);
@@ -175,6 +158,32 @@ contract ConwayEngineParityTest {
                     nextBlueRows[y] |= uint64(1) << x;
                 } else if (nextGrid[idx] == 2) {
                     nextRedRows[y] |= uint64(1) << x;
+                }
+            }
+        }
+    }
+
+    function referenceCountNeighbors(
+        uint8[] memory grid,
+        uint8 width,
+        uint8 height,
+        uint8 x,
+        uint8 y
+    ) internal pure returns (uint8 blueNeighbors, uint8 redNeighbors) {
+        for (int8 dy = -1; dy <= 1; dy++) {
+            for (int8 dx = -1; dx <= 1; dx++) {
+                if (dx == 0 && dy == 0) continue;
+
+                int16 nxI = int16(uint16(x)) + dx;
+                if (nxI < 0 || nxI >= int16(uint16(width))) continue;
+
+                uint8 ny = wrapY(y, dy, height);
+                uint256 nIdx = uint256(ny) * uint256(width) + uint256(uint16(int16(nxI)));
+                uint8 neighbor = grid[nIdx];
+                if (neighbor == 1) {
+                    blueNeighbors++;
+                } else if (neighbor == 2) {
+                    redNeighbors++;
                 }
             }
         }
