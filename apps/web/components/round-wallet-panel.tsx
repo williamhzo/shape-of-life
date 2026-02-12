@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { type Address, isAddress, type Hex } from "viem";
+import { type Address, isAddress } from "viem";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,21 +20,7 @@ import {
   toggleSeedCell,
 } from "@/lib/wallet-ux";
 import { validateWalletSubmissionDraft } from "@/lib/wallet-submit";
-import {
-  buildClaimCalldata,
-  buildCommitCalldata,
-  buildRevealCalldata,
-  computeCommitHash,
-} from "@/lib/round-tx";
-
-type EthereumRequest = {
-  method: string;
-  params?: unknown[];
-};
-
-type EthereumProvider = {
-  request(request: EthereumRequest): Promise<unknown>;
-};
+import { submitWalletAction, type WalletProvider } from "@/lib/wallet-journey";
 
 type TxKind = "commit" | "reveal" | "claim";
 
@@ -47,10 +33,7 @@ type WalletDraft = {
   claimSlotIndex: string;
 };
 
-const SHAPE_SEPOLIA_CHAIN_ID = 11011n;
-const SHAPE_SEPOLIA_CHAIN_HEX = "0x2b03";
-
-function requireProvider(): EthereumProvider {
+function requireProvider(): WalletProvider {
   if (typeof window === "undefined" || !window.ethereum) {
     throw new Error("wallet provider not found");
   }
@@ -60,25 +43,6 @@ function requireProvider(): EthereumProvider {
 
 function isRoundAddressConfigured(roundAddress: string): roundAddress is Address {
   return isAddress(roundAddress);
-}
-
-async function ensureShapeSepolia(provider: EthereumProvider): Promise<bigint> {
-  const rawChainId = await provider.request({ method: "eth_chainId" });
-  if (typeof rawChainId !== "string" || !rawChainId.startsWith("0x")) {
-    throw new Error("wallet returned invalid chain id");
-  }
-
-  const chainId = BigInt(rawChainId);
-  if (chainId === SHAPE_SEPOLIA_CHAIN_ID) {
-    return chainId;
-  }
-
-  await provider.request({
-    method: "wallet_switchEthereumChain",
-    params: [{ chainId: SHAPE_SEPOLIA_CHAIN_HEX }],
-  });
-
-  return SHAPE_SEPOLIA_CHAIN_ID;
 }
 
 export function RoundWalletPanel() {
@@ -160,8 +124,7 @@ export function RoundWalletPanel() {
 
     try {
       const provider = requireProvider();
-      const chainId = await ensureShapeSepolia(provider);
-      const validated = validateWalletSubmissionDraft({
+      validateWalletSubmissionDraft({
         action: kind,
         roundId: draft.roundId,
         team: draft.team,
@@ -171,49 +134,24 @@ export function RoundWalletPanel() {
         claimSlotIndex: draft.claimSlotIndex,
       });
 
-      let data: Hex;
-      if (kind === "commit") {
-        const commitHash = computeCommitHash({
-          roundId: validated.roundId,
-          chainId,
-          arena: targetRoundAddress,
-          player: account,
-          team: validated.team,
-          slotIndex: validated.slotIndex,
-          seedBits: validated.seedBits,
-          salt: validated.salt,
-        });
-        data = buildCommitCalldata({ team: validated.team, slotIndex: validated.slotIndex, commitHash });
-      } else if (kind === "reveal") {
-        data = buildRevealCalldata({
-          roundId: validated.roundId,
-          team: validated.team,
-          slotIndex: validated.slotIndex,
-          seedBits: validated.seedBits,
-          salt: validated.salt,
-        });
-      } else {
-        data = buildClaimCalldata({ slotIndex: validated.claimSlotIndex });
-      }
-
       setPendingAction(kind);
       setStatus(`${kind} pending...`);
-      const txHash = await provider.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: account,
-            to: targetRoundAddress,
-            data,
-          },
-        ],
+      const result = await submitWalletAction({
+        provider,
+        action: kind,
+        account,
+        roundAddress: targetRoundAddress,
+        draft: {
+          action: kind,
+          roundId: draft.roundId,
+          team: draft.team,
+          slotIndex: draft.slotIndex,
+          seedBits: draft.seedBits,
+          salt: draft.salt,
+          claimSlotIndex: draft.claimSlotIndex,
+        },
       });
-
-      if (typeof txHash !== "string") {
-        throw new Error("wallet returned invalid tx hash");
-      }
-
-      setLastTxHash(txHash);
+      setLastTxHash(result.txHash);
       setStatus(`${kind} transaction submitted`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "failed to send transaction");
@@ -343,6 +281,6 @@ export function RoundWalletPanel() {
 
 declare global {
   interface Window {
-    ethereum?: EthereumProvider;
+    ethereum?: WalletProvider;
   }
 }

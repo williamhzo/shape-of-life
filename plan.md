@@ -847,6 +847,19 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P2.6 provider-mocked wallet transition test slice with strict TDD (`Red -> Green`):
+    - Added failing integration tests first in `apps/web/test/wallet-journey.test.ts` covering:
+      - chain-switch + commit submission path
+      - reveal submission when already on Shape Sepolia
+      - provider failure propagation for optimistic UI error handling
+    - Implemented reusable submission orchestrator in `apps/web/lib/wallet-journey.ts`.
+    - Refactored `apps/web/components/round-wallet-panel.tsx` to delegate transaction orchestration to the tested module.
+  - Validation:
+    - `bun test apps/web/test` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
   - Completed P2.5 web integration-test coverage slice with strict TDD (`Red -> Green`):
     - Added failing tests first:
       - `apps/web/test/wallet-submit.test.ts` for commit/reveal/claim failure-path validation (territory, budget, salt shape)
@@ -1276,7 +1289,7 @@ Execution rules:
 - Phase E: Indexer + production UI
   - Status: PARTIAL
   - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, and baseline wallet/realtime spectator web surfaces.
-  - Missing: keeper/replay production polish and full browser-wallet end-to-end harnesses.
+  - Missing: keeper/replay production polish and browser-automation end-to-end harnesses.
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1307,7 +1320,8 @@ Execution rules:
 [x] P2.3 Add indexer cursor resume + confirmation-depth reorg handling.
 [x] P2.4 Expand wallet UX with slot picker, seed editor, and optimistic reservation/reveal feedback.
 [x] P2.5 Add web integration tests covering commit/reveal/claim failure states and route-driven spectator consistency.
-[ ] P2.6 Add provider-mocked browser end-to-end tests for commit/reveal/claim success/failure transitions.
+[x] P2.6 Add provider-mocked browser end-to-end tests for commit/reveal/claim success/failure transitions.
+[ ] P2.7 Add browser-automation wallet flow tests (UI-level action sequencing with mocked provider).
 
 ### 20.4 Validation Gates
 
