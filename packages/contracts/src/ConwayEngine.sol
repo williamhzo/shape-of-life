@@ -24,25 +24,7 @@ library ConwayEngine {
             if ((blueRows[y] & redRows[y]) != 0) revert OverlappingCells();
 
             for (uint8 x = 0; x < width; x++) {
-                uint8 blueNeighbors;
-                uint8 redNeighbors;
-
-                for (int8 dy = -1; dy <= 1; dy++) {
-                    for (int8 dx = -1; dx <= 1; dx++) {
-                        if (dx == 0 && dy == 0) continue;
-                        int16 nxI = int16(uint16(x)) + dx;
-                        if (nxI < 0 || nxI >= int16(uint16(width))) continue;
-
-                        uint8 ny = wrapY(y, dy, height);
-                        uint64 bit = uint64(1) << uint16(nxI);
-
-                        if ((blueRows[ny] & bit) != 0) {
-                            blueNeighbors++;
-                        } else if ((redRows[ny] & bit) != 0) {
-                            redNeighbors++;
-                        }
-                    }
-                }
+                (uint8 blueNeighbors, uint8 redNeighbors) = countNeighbors(width, height, blueRows, redRows, x, y);
 
                 uint8 liveNeighbors = blueNeighbors + redNeighbors;
                 uint64 cellBit = uint64(1) << x;
@@ -72,6 +54,33 @@ library ConwayEngine {
             nextBlueRows[y] &= widthMask;
             nextRedRows[y] &= widthMask;
             if ((nextBlueRows[y] & nextRedRows[y]) != 0) revert OverlappingCells();
+        }
+    }
+
+    function countNeighbors(
+        uint8 width,
+        uint8 height,
+        uint64[] memory blueRows,
+        uint64[] memory redRows,
+        uint8 x,
+        uint8 y
+    ) private pure returns (uint8 blueNeighbors, uint8 redNeighbors) {
+        for (int8 dy = -1; dy <= 1; dy++) {
+            for (int8 dx = -1; dx <= 1; dx++) {
+                if (dx == 0 && dy == 0) continue;
+
+                int16 nxI = int16(uint16(x)) + dx;
+                if (nxI < 0 || nxI >= int16(uint16(width))) continue;
+
+                uint8 ny = wrapY(y, dy, height);
+                uint64 bit = uint64(1) << uint16(nxI);
+
+                if ((blueRows[ny] & bit) != 0) {
+                    blueNeighbors++;
+                } else if ((redRows[ny] & bit) != 0) {
+                    redNeighbors++;
+                }
+            }
         }
     }
 
