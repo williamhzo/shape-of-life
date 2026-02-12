@@ -819,7 +819,7 @@ P3:
 [x] Add round transition guard matrix tests with explicit revert expectations.
 [x] Add payout/accounting invariants including dust and keeper shortfall handling.
 [x] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
-[ ] Add gas snapshot + regression threshold checks to CI and block regressions by default.
+[x] Add gas snapshot + regression threshold checks to CI and block regressions by default.
 [ ] Add aggregate/CI contract test execution (`forge test`) so Solidity regressions are caught outside package-local runs.
 
 ## 18. Implementation Standards Mandate (Docs-First)
@@ -840,6 +840,13 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Added gas regression gates for Solidity lifecycle paths:
+    - Added `packages/contracts/test/ConwayArenaRoundGas.t.sol` with dedicated gas checkpoints for `commit`, `reveal`, `stepBatch`, `finalize`, and `claim`.
+    - Generated baseline `packages/contracts/.gas-snapshot`.
+    - Added CI workflow `.github/workflows/contracts-gas.yml` to run `forge snapshot --match-test testGas --check` on PRs/pushes.
+    - Added root script `test:contracts:gas` and documented usage in `README.md`.
+  - Validation:
+    - `bun run test:contracts:gas` passed.
   - Added local end-to-end round lifecycle integration test:
     - `packages/contracts/test/ConwayArenaRoundE2E.t.sol` now covers `commit -> reveal -> step -> finalize -> claim` with accounting reconciliation assertion.
   - Validation:

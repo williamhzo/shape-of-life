@@ -1,0 +1,5 @@
+ConwayArenaRoundGasTest:testGasClaim() (gas: 714413)
+ConwayArenaRoundGasTest:testGasCommit() (gas: 699121)
+ConwayArenaRoundGasTest:testGasFinalize() (gas: 713542)
+ConwayArenaRoundGasTest:testGasReveal() (gas: 701044)
+ConwayArenaRoundGasTest:testGasStepBatch() (gas: 841813)

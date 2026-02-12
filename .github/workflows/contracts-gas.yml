@@ -1,0 +1,32 @@
+name: contracts-gas
+
+on:
+  pull_request:
+    paths:
+      - "packages/contracts/**"
+      - ".github/workflows/contracts-gas.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/contracts/**"
+      - ".github/workflows/contracts-gas.yml"
+
+jobs:
+  gas-regression:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/contracts
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Verify gas snapshot
+        run: forge snapshot --match-test testGas --check

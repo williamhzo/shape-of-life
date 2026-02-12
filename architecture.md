@@ -23,6 +23,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `bun test packages/sim/test`
   - `bun test apps/web/test`
   - `cd packages/contracts && forge test`
+  - `bun run test:contracts:gas` (`forge snapshot --match-test testGas --check`)
 
 ### 2.2 Package Responsibilities
 
@@ -56,6 +57,8 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Accounting invariant and dust-routing tests
   - `test/ConwayArenaRoundE2E.t.sol`:
     - Local lifecycle integration test from commit through claim with end-state accounting reconciliation
+  - `test/ConwayArenaRoundGas.t.sol`:
+    - Stable gas checkpoints for `commit`, `reveal`, `stepBatch`, `finalize`, and `claim`
 
 - `apps/web`
   - `app/page.tsx`: spectator-first scaffold using shadcn/ui primitives
@@ -138,8 +141,8 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, round transition guard matrix.
-- Pending/high impact next: payout/accounting invariants, end-to-end round flow, aggregate contract CI.
+- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, accounting invariants, local round E2E, and gas regression CI.
+- Pending/high impact next: aggregate contract CI (`forge test` in shared/root gate), Sepolia benchmark automation, indexer reconciliation checks.
 
 ## 6. Architectural Invariants
 

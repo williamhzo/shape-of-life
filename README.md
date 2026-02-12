@@ -51,3 +51,9 @@ cd apps/web && bun run build
 ```bash
 cd packages/contracts && forge test
 ```
+
+- Run Solidity gas regression check against committed snapshot:
+
+```bash
+bun run test:contracts:gas
+```
