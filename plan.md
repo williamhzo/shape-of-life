@@ -874,6 +874,28 @@ Execution rules:
     - `bun run test:contracts:gas` passed.
     - `bun run lint:web` passed.
     - `cd apps/web && bun run build` passed.
+  - Completed P1.1 deployment/verification scaffold slice:
+    - Added Hardhat workspace scaffold in `packages/contracts`:
+      - `hardhat.config.ts` with Shape Sepolia/Mainnet network wiring via `SHAPE_SEPOLIA_RPC_URL`, `SHAPE_MAINNET_RPC_URL`, and `DEPLOYER_PRIVATE_KEY`.
+      - `ignition/modules/ConwayArenaRound.ts` and deterministic parameters at `ignition/parameters/shape-sepolia.json`.
+      - verification/address tooling:
+        - `packages/contracts/scripts/verify-shape-sepolia.ts`
+        - `packages/contracts/scripts/show-shape-sepolia-round.ts`
+    - Added deployment-address utility + tests:
+      - `packages/contracts/scripts/ignition-address.ts`
+      - `packages/contracts/scripts/ignition-address.test.ts`
+    - Added root command wiring:
+      - `contracts:hardhat:compile`
+      - `deploy:contracts:shape-sepolia`
+      - `verify:contracts:shape-sepolia`
+      - `show:contracts:shape-sepolia:round`
+    - Updated `README.md` with deploy/verify/address extraction commands and required env variables.
+  - Validation:
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
+    - `bun run contracts:hardhat:compile` currently fails in this sandbox with Hardhat `HHE905` (compiler list download requires internet access).
   - Performed docs + implementation audit and aligned closeout tracking with a new readiness checklist + impact-ordered Sepolia plan in section 20.
   - Latest local validation in this workspace:
     - `bun run test` passed.
@@ -1143,8 +1165,9 @@ Execution rules:
     - implement spec-complete finalize scoring (final population + invasion weighting), not winner-side resolution only
     - keep gas envelope acceptable after simulation integration and lock Sepolia-proven batch thresholds
 - Phase D: Deployments and scripts (Hardhat + viem)
-  - Status: NOT STARTED
-  - Missing: deployment modules, verification flow, environment wiring, release scripts.
+  - Status: PARTIAL
+  - Done: Hardhat + viem + Ignition scaffold with Shape Sepolia/Mainnet network wiring, deterministic module parameters, and deployment-address/verification utility scripts.
+  - Missing: live Sepolia deploy execution, artifact capture, and smoke/release gate automation.
 - Phase E: Indexer + production UI
   - Status: PARTIAL
   - Done: deterministic reconciliation utility + tests for accounting-critical events.
@@ -1158,7 +1181,6 @@ Execution rules:
   - Extend finalize to spec-complete scoring outputs (final population + invasion weights) and deterministically map score to winner.
   - Keep transfer paths explicitly reentrancy-safe after simulation integration.
 - P1:
-  - Add reproducible Shape Sepolia deployment + verification pipeline.
   - Execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds.
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
 - P2:
@@ -1174,7 +1196,7 @@ Execution rules:
 [x] P0.2 Implement board-state storage + `initialize` seed placement + `stepBatch` board progression with bounded write strategy.
 [x] P0.3 Replace mutable terminal-resolution helpers with deterministic board-derived terminal checks in production flow.
 [x] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
-[ ] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
+[x] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
 [ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `ROUND_ADDRESS`).
 [ ] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
 [ ] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.

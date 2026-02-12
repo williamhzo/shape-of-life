@@ -80,6 +80,15 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Uses `cast estimate` against Shape Sepolia to measure `stepBatch(uint16)` gas across candidate step sizes
     - Selects a lock recommendation using configurable gas-limit headroom (`safetyBps`)
     - Writes reproducible benchmark artifact JSON for review/plan sync
+  - `hardhat.config.ts`:
+    - viem-first Hardhat 3 scaffold using `@nomicfoundation/hardhat-toolbox-viem`
+    - Shape Sepolia/Mainnet deterministic network wiring from env (`SHAPE_SEPOLIA_RPC_URL`, `SHAPE_MAINNET_RPC_URL`, `DEPLOYER_PRIVATE_KEY`)
+    - optional custom-chain verify endpoint wiring for Shape explorers
+  - `ignition/modules/ConwayArenaRound.ts` + `ignition/parameters/shape-sepolia.json`:
+    - deterministic constructor-parameterized deployment module for `ConwayArenaRound`
+  - `scripts/verify-shape-sepolia.ts` + `scripts/show-shape-sepolia-round.ts`:
+    - deployment-address extraction from Ignition artifacts
+    - constructor-argument-aware verification entrypoint for latest Shape Sepolia deployment
 
 - `apps/web`
   - `app/page.tsx`: spectator-first scaffold using shadcn/ui primitives
@@ -171,7 +180,7 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, simulation-backed round progression (seed materialization + board stepping), transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, winner payout transfer allocation, accounting invariants, local round E2E, and gas regression CI.
+- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, simulation-backed round progression (seed materialization + board stepping), transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, winner payout transfer allocation, accounting invariants (including mixed claim ordering), local round E2E, gas regression CI, and a Hardhat+Ignition deployment/verification scaffold for Shape Sepolia.
 - Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact.
 
 ## 6. Architectural Invariants

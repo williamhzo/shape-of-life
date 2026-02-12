@@ -71,6 +71,37 @@ cd packages/contracts && forge test --offline
 bun run test:contracts:gas
 ```
 
+- Compile contracts with Hardhat (viem toolbox + ignition scaffold):
+
+```bash
+bun run contracts:hardhat:compile
+```
+
+- Deploy `ConwayArenaRound` to Shape Sepolia via Hardhat Ignition:
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+DEPLOYER_PRIVATE_KEY=<hex-private-key> \
+bun run deploy:contracts:shape-sepolia
+```
+
+- Print latest Shape Sepolia deployed round address from Ignition artifacts:
+
+```bash
+bun run show:contracts:shape-sepolia:round
+```
+
+- Verify latest Shape Sepolia deployment (requires explorer endpoints/api key):
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+DEPLOYER_PRIVATE_KEY=<hex-private-key> \
+SHAPE_SEPOLIA_VERIFY_API_URL=<explorer-api-url> \
+SHAPE_SEPOLIA_BROWSER_URL=<explorer-browser-url> \
+SHAPE_SEPOLIA_VERIFY_API_KEY=<explorer-api-key> \
+bun run verify:contracts:shape-sepolia
+```
+
 - Benchmark `stepBatch` gas on Shape Sepolia and write a lock recommendation artifact:
 
 ```bash

@@ -1,0 +1,18 @@
+{
+  "name": "@shape-of-life/contracts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hardhat:compile": "hardhat compile",
+    "deploy:shape-sepolia": "hardhat ignition deploy ignition/modules/ConwayArenaRound.ts --network shapeSepolia --parameters ignition/parameters/shape-sepolia.json",
+    "verify:shape-sepolia": "hardhat run scripts/verify-shape-sepolia.ts --network shapeSepolia",
+    "show:shape-sepolia:round": "hardhat run scripts/show-shape-sepolia-round.ts --network shapeSepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^3.0.7",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.2",
+    "@nomicfoundation/hardhat-verify": "^3.0.10",
+    "hardhat": "^3.1.8",
+    "typescript": "^5.9.3"
+  }
+}

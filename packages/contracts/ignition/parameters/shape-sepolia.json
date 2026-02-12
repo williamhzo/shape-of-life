@@ -1,0 +1,8 @@
+{
+  "ConwayArenaRoundModule": {
+    "commitDuration": 90,
+    "revealDuration": 60,
+    "maxGen": 256,
+    "maxBatch": 16
+  }
+}
