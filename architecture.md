@@ -49,7 +49,12 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Commit-domain separation primitive `hashCommit(roundId, chainId, arena, player, team, slotIndex, seedBits, salt)`
     - Accounting primitives for v0.1 payout safety:
       - keeper reward shortfall clamp
+      - early accounting funding invariant check (`totalFunded <= address(this).balance`) at configuration time
       - keeper pull-withdraw credits (`withdrawKeeperCredit`) with no-credit guard
+      - winner payout transfer allocation for winning/draw revealed slots via `claim(uint8)`
+      - explicit non-reentrancy guard on transfer paths (`claim`, `withdrawKeeperCredit`)
+      - manual settlement disabled for accounting rounds to avoid claim-path griefing
+      - finalize-time zero-eligible winner pool routing to treasury dust
       - finalize-time keeper remainder rollover into winner pool
       - claim-settlement dust routing and invariant-traceable counters
   - `test/ConwayEngineParity.t.sol`:
@@ -162,8 +167,8 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, accounting invariants, local round E2E, and gas regression CI.
-- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact; complete winner payout transfer plumbing.
+- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, winner payout transfer allocation, accounting invariants, local round E2E, and gas regression CI.
+- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact.
 
 ## 6. Architectural Invariants
 
@@ -176,6 +181,9 @@ The current implementation assumes and tests these invariants:
 - Commit/reveal binding: slot reservations are team-territory constrained, reveal is slot-owner bound, and reveal preimage must match committed hash.
 - Claim idempotency: only revealed slot owners can execute `claim(uint8)` and each slot can be claimed at most once.
 - Keeper payout safety: keeper rewards accrue in credits and are withdrawn via pull transfer with zero-credit rejection.
+- Winner payout determinism: payouts are equal-share across eligible revealed slots (winning team or both teams on draw), with integer dust routed to treasury.
+- Settlement safety: accounting rounds reject manual `settleWinnerClaims` calls so transfer-based claim distribution cannot be griefed.
+- Funding safety: accounting configuration fails early when configured funding exceeds current contract native balance.
 - Accounting safety: `winnerPaid + keeperPaid + treasuryDust` must never exceed `totalFunded`.
 - Width safety: no bits outside configured width are accepted in web summary logic.
 
@@ -184,8 +192,7 @@ The current implementation assumes and tests these invariants:
 Current gaps relative to full plan:
 
 - Accounting is currently a test-oriented primitive slice (no ERC20/ETH pull-payment transfers yet).
-- Keeper pull-withdraw is implemented, but winner payout transfer distribution is still accounting-only (no per-slot transfer settlement).
-- Non-reveal forfeits and winner-routing edge cases are still covered only by coarse accounting tests, not full slot-level payout distribution flows.
+- Non-reveal forfeits and zero-eligible payout routing are still covered mostly by accounting-path tests rather than full slot-level adversarial flows.
 - Reconciliation checks are implemented, but a chain-ingesting indexer pipeline and keeper bot are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.

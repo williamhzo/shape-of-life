@@ -663,6 +663,10 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 [x] Add commit/reveal payload validation tests and enforce slot reservation/ownership + seed budget guards.
 [x] Add slot-claim ownership/idempotency tests and enforce one-claim-only claim path.
 [x] Add keeper pull-withdraw payout plumbing with no-credit guard and transfer tests.
+[x] Add winner payout transfer plumbing for winner-team/draw slot claims with deterministic equal-share distribution.
+[x] Disable manual settlement griefing for accounting rounds and auto-route zero-eligible winner pools at finalize.
+[x] Add explicit non-reentrancy guard on transfer paths (`claim`, `withdrawKeeperCredit`) with cross-function probe test.
+[x] Enforce round funding invariant at accounting configuration (`totalFunded <= contract balance`) to fail early.
 [ ] Add Sepolia benchmarking script and lock `maxBatch` via measured thresholds.
 [x] Add indexer reconciliation checks against `Stepped`, `Finalized`, and `Claimed` events.
 
@@ -843,6 +847,58 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P0 funding-invariant hardening for accounting configuration:
+    - Added `InsufficientRoundBalance(required, available)` guard in `configureAccounting`.
+    - Added failing test and coverage updates in `packages/contracts/test/ConwayArenaRoundAccounting.t.sol`.
+    - Updated accounting-enabled tests to fund contract balance before configuration where required:
+      - `packages/contracts/test/ConwayArenaRoundEvents.t.sol`
+      - `packages/contracts/test/ConwayArenaRoundE2E.t.sol`
+      - `packages/contracts/test/ConwayArenaRoundGas.t.sol`
+    - Refreshed Solidity gas baseline snapshot at `packages/contracts/.gas-snapshot`.
+  - Validation:
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+  - Completed P0 transfer-path reentrancy hardening slice:
+    - Added contract-level non-reentrancy guard to `claim(uint8)` and `withdrawKeeperCredit()` in `packages/contracts/src/ConwayArenaRound.sol`.
+    - Added failing probe test `packages/contracts/test/ConwayArenaRoundReentrancy.t.sol` that attempts cross-function reentrancy from claim payout fallback into keeper-withdraw path.
+    - Probe now confirms reentrant withdraw is blocked.
+    - Refreshed Solidity gas baseline snapshot at `packages/contracts/.gas-snapshot`.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --match-path test/ConwayArenaRoundReentrancy.t.sol` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+  - Completed P0 settlement-safety hardening for accounting rounds:
+    - Disabled `settleWinnerClaims` for accounting-configured rounds in `ConwayArenaRound` to prevent manual settlement grief against transfer-based claims.
+    - Added finalize-time zero-eligible auto-routing (`winnerPool -> treasuryDust`) and payout lock.
+    - Added/updated tests:
+      - `packages/contracts/test/ConwayArenaRoundAccounting.t.sol`:
+        - manual settlement disable guard
+        - winner claim accounting invariant with transfer path
+        - zero-eligible finalize routing assertion
+      - `packages/contracts/test/ConwayArenaRoundEvents.t.sol`:
+        - finalized event expectations aligned with zero-eligible routing
+        - legacy non-accounting settlement event path retained
+      - `packages/contracts/test/ConwayArenaRoundE2E.t.sol`:
+        - end-state accounting reconciles with undistributed `winnerPool` when no slot claims occur
+    - Refreshed Solidity gas baseline snapshot at `packages/contracts/.gas-snapshot`.
+  - Validation:
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+  - Completed P1 winner payout transfer plumbing slice with strict TDD (`Red -> Green`):
+    - Added failing tests in `packages/contracts/test/ConwayArenaRoundWinnerPayout.t.sol` for:
+      - equal-share winner payout transfers across winning revealed slots
+      - draw payout splitting across both teams
+      - non-winning revealed claims returning zero while preserving one-claim-only semantics
+    - Extended `packages/contracts/src/ConwayArenaRound.sol` with:
+      - finalize-time winner side resolution (`winnerTeam`)
+      - revealed team counters for eligibility accounting
+      - lazy payout lock + deterministic `payoutPerClaim` allocation (dust to treasury)
+      - transfer-capable `claim(uint8)` returning payout amount for eligible slots
+    - Refreshed Solidity gas baseline snapshot at `packages/contracts/.gas-snapshot`.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --match-path test/ConwayArenaRoundWinnerPayout.t.sol` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
   - Attempted to execute Sepolia benchmark lock step in this environment; still blocked by missing runtime inputs:
     - `SHAPE_SEPOLIA_RPC_URL`
     - `ROUND_ADDRESS` (deployed round in `Sim` phase)
