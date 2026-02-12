@@ -83,6 +83,9 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `scripts/lock-max-batch-from-benchmark.ts`:
     - Applies measured `lockedMaxBatch` from benchmark artifacts to `ignition/parameters/shape-sepolia.json`
     - Emits a lock summary artifact for release/audit traceability
+  - `scripts/sepolia-smoke-round.ts`:
+    - Cast-based Sepolia smoke checks (chain id, contract bytecode presence, key round state reads)
+    - Optional enforcement that deployed `maxBatch` matches the committed lock artifact
   - `hardhat.config.ts`:
     - viem-first Hardhat 3 scaffold using `@nomicfoundation/hardhat-toolbox-viem`
     - Shape Sepolia/Mainnet deterministic network wiring from env (`SHAPE_SEPOLIA_RPC_URL`, `SHAPE_MAINNET_RPC_URL`, `DEPLOYER_PRIVATE_KEY`)

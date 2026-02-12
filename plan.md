@@ -912,6 +912,21 @@ Execution rules:
     - `bun run test:contracts:gas` passed.
     - `bun run lint:web` passed.
     - `cd apps/web && bun run build` passed.
+  - Completed P1.3 Sepolia smoke/release gate slice:
+    - Added Sepolia smoke command + tests:
+      - `packages/contracts/scripts/sepolia-smoke-round.ts`
+      - `packages/contracts/scripts/sepolia-smoke-round.test.ts`
+    - Added root command wiring:
+      - `smoke:sepolia:round`
+      - `release:gate:sepolia`
+      - `packages/contracts` script alias `smoke:shape-sepolia:round`
+    - Updated `README.md` and section 20.4 validation gates with required env/config for smoke and release gate execution.
+  - Validation:
+    - `bun run smoke:sepolia:round` failed with `--rpc or SHAPE_SEPOLIA_RPC_URL is required` (expected in current environment without Sepolia env).
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
   - Performed docs + implementation audit and aligned closeout tracking with a new readiness checklist + impact-ordered Sepolia plan in section 20.
   - Latest local validation in this workspace:
     - `bun run test` passed.
@@ -1214,7 +1229,7 @@ Execution rules:
 [x] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
 [x] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
 [ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployed `ROUND_ADDRESS`).
-[ ] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
+[x] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
 [ ] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
 [ ] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.
 
@@ -1224,7 +1239,8 @@ Execution rules:
 - Gas regression: `bun run test:contracts:gas`
 - Web quality: `bun run lint:web` and `cd apps/web && bun run build`
 - Sepolia benchmark gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run benchmark:sepolia:max-batch`
-- Sepolia smoke gate: deploy + round lifecycle smoke command (added in P1.3)
+- Sepolia smoke gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run smoke:sepolia:round`
+- Sepolia release gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run release:gate:sepolia`
 
 ### 20.5 Risks and Mitigations
 

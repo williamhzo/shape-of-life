@@ -123,3 +123,19 @@ SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
 ROUND_ADDRESS=<deployed-round-address> \
 bun run benchmark:sepolia:max-batch:lock
 ```
+
+- Run Sepolia round smoke checks (chain ID, deployed bytecode, key round state reads, optional lockfile match):
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run smoke:sepolia:round
+```
+
+- Run full Sepolia release gate (local test/lint/build gates + Sepolia smoke):
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run release:gate:sepolia
+```
