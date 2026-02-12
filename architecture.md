@@ -1,0 +1,147 @@
+# Shape of Life Architecture
+
+This document describes the architecture currently implemented in this repository and the near-term architecture defined in `plan.md`. It is intentionally split between **implemented now** and **planned next** to avoid spec drift.
+
+## 1. System Overview
+
+Shape of Life is a Bun monorepo with three active surfaces:
+
+- `packages/sim`: TypeScript canonical simulation primitives and parity oracle.
+- `packages/contracts`: Solidity engine parity implementation (Foundry-tested).
+- `apps/web`: Next.js App Router scaffold for spectator-facing UI and simple API routes.
+
+Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
+
+## 2. Workspace Topology
+
+### 2.1 Monorepo + Tooling
+
+- Runtime/package manager: Bun (`packageManager: bun@1.3.6`).
+- Workspaces: `apps/*`, `packages/*` (root `package.json`).
+- Core test commands:
+  - `bun test` (currently runs sim + web tests)
+  - `bun test packages/sim/test`
+  - `bun test apps/web/test`
+  - `cd packages/contracts && forge test`
+
+### 2.2 Package Responsibilities
+
+- `packages/sim`
+  - `src/engine.ts`:
+    - Board validation
+    - 64-bit row packing/unpacking (`packRows`, `unpackRows`)
+    - One-generation stepping (`stepGeneration`) for cylinder topology
+  - `test/engine.test.ts`: unit tests for packing, B3/S23 behavior, immigration majority
+  - `test/parity.test.ts`: fixture vectors + deterministic seeded fuzz parity vs reference implementation
+
+- `packages/contracts`
+  - `src/ConwayEngine.sol`:
+    - Solidity parity engine for one generation
+    - Invariant checks (`InvalidDimensions`, `InvalidRowsLength`, `OverlappingCells`)
+  - `test/ConwayEngineParity.t.sol`:
+    - Fixed vectors mirroring fixture semantics
+    - Deterministic seeded fuzz parity against Solidity in-test reference engine
+
+- `apps/web`
+  - `app/page.tsx`: spectator-first scaffold using shadcn/ui primitives
+  - `app/api/health/route.ts`: health endpoint contract
+  - `lib/board-summary.ts`: board population accounting + overlap/width invariants
+  - `test/*.test.ts`: route contract + board summary tests
+  - UI baseline from shadcn registry under `apps/web/components/ui`
+
+## 3. Domain and Data Model
+
+### 3.1 Board Representation
+
+Canonical board representation used by the TS engine:
+
+- `width: number` (1..64 currently supported by engine code)
+- `height: number` (>0)
+- `blueRows: bigint[]`
+- `redRows: bigint[]`
+
+Each row is treated as 64-bit (`BigInt.asUintN(64, ...)`), with occupancy bit `1 << x`.
+
+### 3.2 Color State Model
+
+- Dead
+- Alive Blue
+- Alive Red
+
+Invariant: `blueRows[y] & redRows[y] == 0` for all rows.
+
+### 3.3 Fixture Contract
+
+`fixtures/engine/parity.v1.json` defines deterministic golden vectors:
+
+- `version: "v1"`
+- `topology: "cylinder"`
+- case list with `input`, `steps`, and expected outputs
+
+Both TS and Solidity tests encode these same semantics, making fixtures the cross-language parity contract.
+
+## 4. Execution Paths
+
+### 4.1 Simulation Execution (TS)
+
+1. Validate dimensions and row array lengths.
+2. For each cell, count neighbors with:
+   - Y wrapping (cylinder vertical wrap)
+   - X hard edges (no horizontal wrap)
+3. Apply B3/S23 and immigration majority.
+4. Mask rows to board width.
+5. Assert no overlap in output state.
+
+### 4.2 Parity Verification (TS <-> Solidity)
+
+- TS parity suite checks:
+  - Golden vectors from fixture
+  - Deterministic seeded random corpus vs TS reference implementation
+- Solidity parity suite checks:
+  - Fixed vectors equivalent to fixture cases
+  - Deterministic seeded random corpus vs Solidity reference implementation
+
+Current architecture guarantees rule parity confidence at engine level but does **not yet** include a round manager contract.
+
+### 4.3 Web Read Model
+
+- `GET /api/health` returns process liveness payload.
+- `summarizeBoard()` computes blue/red/total populations and validates board invariants for UI/accounting display.
+- Landing page renders static prototype status + board summary values.
+
+No wallet, commit/reveal, chain reads, indexer, or keeper loop are implemented in `apps/web` yet.
+
+## 5. Planned Architecture (From plan.md, Not Fully Implemented Yet)
+
+The plan defines eventual expansion to:
+
+- `ConwayArena` round-state machine contract (commit/reveal/sim/claim).
+- Optional NFT artifact contract.
+- `packages/indexer` for event-driven read models.
+- Keeper bot for permissionless stepping liveness.
+- Hardhat deployment + verification scripts.
+
+Status snapshot:
+
+- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness.
+- Pending/high impact next: state machine tests, payout/accounting invariants, end-to-end round flow, aggregate contract CI.
+
+## 6. Architectural Invariants
+
+The current implementation assumes and tests these invariants:
+
+- Determinism: same input state + steps => same output state.
+- Disjoint colors: blue/red overlap is invalid input and forbidden output.
+- Topology consistency: cylinder semantics must match in TS and Solidity.
+- Width safety: no bits outside configured width are accepted in web summary logic.
+
+## 7. Known Gaps and Failure Modes
+
+Current gaps relative to full plan:
+
+- No onchain round lifecycle implementation yet.
+- No payout/accounting code paths yet.
+- Root aggregate test command does not yet include `forge test` automatically.
+- No indexer/replay worker/keeper bot package in workspace yet.
+
+Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.
