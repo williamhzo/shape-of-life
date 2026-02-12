@@ -139,7 +139,7 @@ Both TS and Solidity tests encode these same semantics, making fixtures the cros
   - Fixed vectors equivalent to fixture cases
   - Deterministic seeded random corpus vs Solidity reference implementation
 
-Current architecture guarantees rule parity confidence at engine level and now includes a minimal round manager with guard and accounting primitives, but not full commit/reveal slot payload validation yet.
+Current architecture guarantees rule parity confidence at engine level and now includes a minimal round manager with guard, commit/reveal payload validation, slot-claim ownership/idempotency checks, and accounting primitives.
 
 ### 4.3 Web Read Model
 
@@ -161,8 +161,8 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, accounting invariants, local round E2E, and gas regression CI.
-- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact; complete commit/reveal payload validation and payout transfer plumbing.
+- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, commit/reveal slot payload guards, accounting invariants, local round E2E, and gas regression CI.
+- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact; complete payout transfer plumbing.
 
 ## 6. Architectural Invariants
 
@@ -172,6 +172,8 @@ The current implementation assumes and tests these invariants:
 - Disjoint colors: blue/red overlap is invalid input and forbidden output.
 - Topology consistency: cylinder semantics must match in TS and Solidity.
 - Lifecycle guard correctness: round calls must be phase-valid and respect commit/reveal windows.
+- Commit/reveal binding: slot reservations are team-territory constrained, reveal is slot-owner bound, and reveal preimage must match committed hash.
+- Claim idempotency: only revealed slot owners can execute `claim(uint8)` and each slot can be claimed at most once.
 - Accounting safety: `winnerPaid + keeperPaid + treasuryDust` must never exceed `totalFunded`.
 - Width safety: no bits outside configured width are accepted in web summary logic.
 
@@ -179,8 +181,8 @@ The current implementation assumes and tests these invariants:
 
 Current gaps relative to full plan:
 
-- Round lifecycle lacks commit/reveal payload validation and slot-level ownership checks.
 - Accounting is currently a test-oriented primitive slice (no ERC20/ETH pull-payment transfers yet).
+- Non-reveal forfeits and winner-routing edge cases are still covered only by coarse accounting tests, not full slot-level payout distribution flows.
 - Reconciliation checks are implemented, but a chain-ingesting indexer pipeline and keeper bot are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.

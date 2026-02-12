@@ -660,6 +660,8 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 [x] Add payout invariant tests: total payouts + keeper paid + dust <= funded amount.
 [x] Add keeper reward tests for underfunded and over-requested step batches.
 [x] Add TS/Solidity parity fixtures for topology edge cases (cylinder wrap boundaries).
+[x] Add commit/reveal payload validation tests and enforce slot reservation/ownership + seed budget guards.
+[x] Add slot-claim ownership/idempotency tests and enforce one-claim-only claim path.
 [ ] Add Sepolia benchmarking script and lock `maxBatch` via measured thresholds.
 [x] Add indexer reconciliation checks against `Stepped`, `Finalized`, and `Claimed` events.
 
@@ -840,6 +842,37 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P1 one-claim-only slot safety slice with strict TDD (`Red -> Green`):
+    - Added failing tests in `packages/contracts/test/ConwayArenaRoundClaimSafety.t.sol` covering:
+      - only revealed slot owner can claim
+      - one-claim-only idempotency per slot
+      - unrevealed slots cannot claim
+    - Extended `packages/contracts/src/ConwayArenaRound.sol` with payload-aware `claim(uint8)`:
+      - slot existence/reveal/owner guards
+      - per-slot claimed marker (`slot.claimed`) with explicit revert on replay
+    - Updated slot-structure assertions in `packages/contracts/test/ConwayArenaRoundCommitReveal.t.sol`.
+    - Refreshed Solidity gas baseline snapshot at `packages/contracts/.gas-snapshot`.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --match-path test/ConwayArenaRoundClaimSafety.t.sol` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+  - Completed P1 commit/reveal payload-validation guard slice with strict TDD (`Red -> Green`):
+    - Added failing tests in `packages/contracts/test/ConwayArenaRoundCommitReveal.t.sol` covering:
+      - slot reservation and one-reserved-slot-per-address safety
+      - team/slot territory enforcement
+      - reveal sender ownership checks
+      - reveal commit-hash preimage verification
+      - seed budget (`<= 12`) enforcement and double-reveal prevention
+    - Extended `packages/contracts/src/ConwayArenaRound.sol` with minimal slot payload state + guard logic:
+      - overloaded payload-aware `commit(uint8,uint8,bytes32)` and `reveal(uint256,uint8,uint8,uint64,bytes32)`
+      - `slots` + `hasReservedSlot` tracking
+      - territory/slot/team validation, commit-hash verification, and seed popcount budget checks
+    - Updated no-arg guard matrix tests for overload-safe call encoding in `packages/contracts/test/ConwayArenaRoundStateMachine.t.sol`.
+    - Refreshed Solidity gas baseline snapshot at `packages/contracts/.gas-snapshot`.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --match-path test/ConwayArenaRoundCommitReveal.t.sol` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
   - Completed P0 commit preimage domain-separation hardening slice:
     - Added `hashCommit(roundId, player, team, slotIndex, seedBits, salt)` to `packages/contracts/src/ConwayArenaRound.sol` binding `block.chainid` and `address(this)` in the commit preimage.
     - Added `packages/contracts/test/ConwayArenaRoundCommitHash.t.sol` covering:
