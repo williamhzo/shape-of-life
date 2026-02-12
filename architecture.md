@@ -20,12 +20,14 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
 - Runtime/package manager: Bun (`packageManager: bun@1.3.6`).
 - Workspaces: `apps/*`, `packages/*` (root `package.json`).
 - Core test commands:
-  - `bun test` (aggregate sim + web + indexer + Solidity contract tests)
+  - `bun test` (aggregate sim + web + indexer + contract-script + Solidity contract tests)
   - `bun test packages/sim/test`
   - `bun test apps/web/test`
   - `bun test packages/indexer/test`
+  - `bun test packages/contracts/scripts/*.test.ts`
   - `cd packages/contracts && forge test --offline`
   - `bun run test:contracts:gas` (`forge snapshot --offline --match-test testGas --check`)
+  - `bun run benchmark:sepolia:max-batch` (requires `SHAPE_SEPOLIA_RPC_URL` and deployed `ROUND_ADDRESS`)
 
 ### 2.2 Package Responsibilities
 
@@ -61,6 +63,10 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Local lifecycle integration test from commit through claim with end-state accounting reconciliation
   - `test/ConwayArenaRoundGas.t.sol`:
     - Stable gas checkpoints for `commit`, `reveal`, `stepBatch`, `finalize`, and `claim`
+  - `scripts/max-batch-benchmark.ts`:
+    - Uses `cast estimate` against Shape Sepolia to measure `stepBatch(uint16)` gas across candidate step sizes
+    - Selects a lock recommendation using configurable gas-limit headroom (`safetyBps`)
+    - Writes reproducible benchmark artifact JSON for review/plan sync
 
 - `apps/web`
   - `app/page.tsx`: spectator-first scaffold using shadcn/ui primitives
@@ -153,7 +159,7 @@ The plan defines eventual expansion to:
 Status snapshot:
 
 - Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, accounting invariants, local round E2E, and gas regression CI.
-- Pending/high impact next: Sepolia benchmark automation, full commit/reveal payload validation, and payout transfer plumbing.
+- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact; complete commit/reveal payload validation and payout transfer plumbing.
 
 ## 6. Architectural Invariants
 

@@ -840,6 +840,14 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Started Sepolia `maxBatch` benchmark automation (execution pending RPC/deployed round inputs):
+    - Added `packages/contracts/scripts/max-batch-benchmark.ts` to measure `stepBatch(uint16)` via `cast estimate` and compute lock recommendation from configurable gas headroom.
+    - Added test-first utility coverage in `packages/contracts/scripts/max-batch-benchmark.test.ts` for output parsing and lock selection thresholds.
+    - Wired root scripts:
+      - `test:contracts:scripts` for benchmark utility tests.
+      - `benchmark:sepolia:max-batch` for live measurement artifact generation.
+  - Validation:
+    - `bun test packages/contracts/scripts/max-batch-benchmark.test.ts` passed.
   - Completed indexer reconciliation checks against accounting-critical lifecycle events:
     - Added `Stepped`, `Finalized`, and `Claimed` events to `packages/contracts/src/ConwayArenaRound.sol`.
     - Added event emission tests in `packages/contracts/test/ConwayArenaRoundEvents.t.sol`.

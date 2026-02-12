@@ -47,6 +47,12 @@ bun run test
 bun test packages/indexer/test
 ```
 
+- Run benchmark utility tests for Sepolia maxBatch lock tooling:
+
+```bash
+bun test packages/contracts/scripts/*.test.ts
+```
+
 - Build web app:
 
 ```bash
@@ -63,4 +69,12 @@ cd packages/contracts && forge test --offline
 
 ```bash
 bun run test:contracts:gas
+```
+
+- Benchmark `stepBatch` gas on Shape Sepolia and write a lock recommendation artifact:
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run benchmark:sepolia:max-batch
 ```
