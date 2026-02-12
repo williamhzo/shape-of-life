@@ -46,8 +46,8 @@ contract ConwayArenaRoundWinnerPayoutTest {
     }
 
     function testDrawClaimsSplitAcrossBothTeams() public {
-        commitRevealSlot(address(this), 0, 2, 0x3, bytes32("draw-blue"));
-        commitRevealSlot(RED_PLAYER, 1, 40, 0x7, bytes32("draw-red"));
+        commitRevealSlot(address(this), 0, 2, 0x303, bytes32("draw-blue"));
+        commitRevealSlot(RED_PLAYER, 1, 40, 0x303, bytes32("draw-red"));
 
         transitionToClaimByDraw();
 
@@ -116,9 +116,9 @@ contract ConwayArenaRoundWinnerPayoutTest {
         vm.warp(111);
         round.beginReveal();
 
-        round.reveal(1, 0, 2, 0x3, bytes32("draw-blue"));
+        round.reveal(1, 0, 2, 0x303, bytes32("draw-blue"));
         vm.prank(RED_PLAYER);
-        round.reveal(1, 1, 40, 0x7, bytes32("draw-red"));
+        round.reveal(1, 1, 40, 0x303, bytes32("draw-red"));
 
         vm.warp(122);
         round.initialize();

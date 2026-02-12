@@ -5,6 +5,7 @@ import {ConwayArenaRound} from "../src/ConwayArenaRound.sol";
 
 interface Vm {
     function warp(uint256) external;
+    function deal(address account, uint256 newBalance) external;
 }
 
 contract ConwayArenaRoundGasTest {
@@ -27,6 +28,7 @@ contract ConwayArenaRoundGasTest {
     function testGasStepBatch() public {
         vm.warp(100);
         ConwayArenaRound round = new ConwayArenaRound(10, 10, 4, 2);
+        vm.deal(address(round), 12);
         round.configureAccounting(12, 1);
 
         vm.warp(111);

@@ -44,7 +44,11 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Solidity parity engine for one generation
     - Invariant checks (`InvalidDimensions`, `InvalidRowsLength`, `OverlappingCells`)
   - `src/ConwayArenaRound.sol`:
-    - Minimal commit/reveal/sim/claim phase state machine with explicit phase and time-window guards
+    - Commit/reveal/sim/claim phase state machine with explicit phase and time-window guards
+    - 64x64 board-state storage (`blueRows`, `redRows`) and final population snapshots
+    - `initialize()` materializes revealed slot seed bits into deterministic board coordinates
+    - `stepBatch()` advances board state by invoking `ConwayEngine.step` across bounded batches
+    - `finalize()` derives board status and winner resolution at max generation from simulated board populations
     - Step clamping semantics: `actualSteps = min(requestedSteps, maxBatch, maxGen - gen)`
     - Commit-domain separation primitive `hashCommit(roundId, chainId, arena, player, team, slotIndex, seedBits, salt)`
     - Accounting primitives for v0.1 payout safety:
@@ -167,7 +171,7 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, winner payout transfer allocation, accounting invariants, local round E2E, and gas regression CI.
+- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, simulation-backed round progression (seed materialization + board stepping), transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, winner payout transfer allocation, accounting invariants, local round E2E, and gas regression CI.
 - Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact.
 
 ## 6. Architectural Invariants
@@ -191,8 +195,9 @@ The current implementation assumes and tests these invariants:
 
 Current gaps relative to full plan:
 
-- Accounting is currently a test-oriented primitive slice (no ERC20/ETH pull-payment transfers yet).
+- Accounting is currently a primitive slice (native transfers only; no ERC20 payout path).
 - Non-reveal forfeits and zero-eligible payout routing are still covered mostly by accounting-path tests rather than full slot-level adversarial flows.
+- Manual extinction helper (`setExtinction`) still exists for tests and should be removed or hardened as board-derived terminal logic becomes canonical.
 - Reconciliation checks are implemented, but a chain-ingesting indexer pipeline and keeper bot are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.

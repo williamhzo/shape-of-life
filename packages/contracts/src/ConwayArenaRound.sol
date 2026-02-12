@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {ConwayEngine} from "./ConwayEngine.sol";
+
 contract ConwayArenaRound {
     enum Phase {
         Commit,
@@ -45,6 +47,10 @@ contract ConwayArenaRound {
     uint8 public constant WINNER_DRAW = 2;
     uint8 public constant SLOT_COUNT = 64;
     uint8 public constant TEAM_SLOT_COUNT = 32;
+    uint8 public constant SLOT_EDGE = 8;
+    uint8 public constant SLOT_COLUMNS = 8;
+    uint8 public constant BOARD_WIDTH = 64;
+    uint8 public constant BOARD_HEIGHT = 64;
     uint8 public constant SEED_BUDGET = 12;
 
     event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward);
@@ -77,6 +83,8 @@ contract ConwayArenaRound {
     uint8 public winnerTeam;
     uint8 public revealedBlueCount;
     uint8 public revealedRedCount;
+    uint16 public finalBluePopulation;
+    uint16 public finalRedPopulation;
     uint256 public totalFunded;
     uint256 public rewardPerGen;
     uint256 public payoutPerClaim;
@@ -85,6 +93,8 @@ contract ConwayArenaRound {
     uint256 public keeperPaid;
     uint256 public winnerPaid;
     uint256 public treasuryDust;
+    uint64[BOARD_HEIGHT] public blueRows;
+    uint64[BOARD_HEIGHT] public redRows;
     mapping(address keeper => uint256 credit) public keeperCredits;
     mapping(uint8 slotIndex => SlotData slot) public slots;
     mapping(address player => bool reserved) public hasReservedSlot;
@@ -194,6 +204,7 @@ contract ConwayArenaRound {
             treasuryDust += totalFunded - baseWinnerPool - baseKeeperPool;
         }
 
+        materializeBoardFromRevealedSeeds();
         phase = Phase.Sim;
     }
 
@@ -211,6 +222,18 @@ contract ConwayArenaRound {
         }
         if (actualSteps > remaining) {
             actualSteps = remaining;
+        }
+
+        if (actualSteps > 0) {
+            (uint64[] memory nextBlueRows, uint64[] memory nextRedRows) = loadBoardRows();
+            for (uint16 stepIndex = 0; stepIndex < actualSteps;) {
+                (nextBlueRows, nextRedRows) = ConwayEngine.step(BOARD_WIDTH, BOARD_HEIGHT, nextBlueRows, nextRedRows);
+                unchecked {
+                    stepIndex += 1;
+                }
+            }
+            storeBoardRows(nextBlueRows, nextRedRows);
+            refreshBoardStatus();
         }
 
         gen += actualSteps;
@@ -239,7 +262,14 @@ contract ConwayArenaRound {
 
     function finalize() external {
         requirePhase(Phase.Sim);
-        if (gen != maxGen && !blueExtinct && !redExtinct) {
+
+        bool terminalByExtinctionFlag = blueExtinct || redExtinct;
+        if (gen == maxGen) {
+            refreshBoardStatus();
+            terminalByExtinctionFlag = blueExtinct || redExtinct;
+        }
+
+        if (gen != maxGen && !terminalByExtinctionFlag) {
             revert RoundNotTerminal();
         }
 
@@ -434,12 +464,112 @@ contract ConwayArenaRound {
         }
     }
 
+    function materializeBoardFromRevealedSeeds() internal {
+        clearBoardRows();
+
+        for (uint8 slotIndex = 0; slotIndex < SLOT_COUNT;) {
+            SlotData storage slot = slots[slotIndex];
+            if (slot.revealed && slot.seedBits != 0) {
+                placeSeed(slot.team, slotIndex, slot.seedBits);
+            }
+
+            unchecked {
+                slotIndex += 1;
+            }
+        }
+    }
+
+    function clearBoardRows() internal {
+        for (uint8 y = 0; y < BOARD_HEIGHT;) {
+            blueRows[y] = 0;
+            redRows[y] = 0;
+
+            unchecked {
+                y += 1;
+            }
+        }
+    }
+
+    function placeSeed(uint8 team, uint8 slotIndex, uint64 seedBits) internal {
+        uint8 baseX = (slotIndex % SLOT_COLUMNS) * SLOT_EDGE;
+        uint8 baseY = (slotIndex / SLOT_COLUMNS) * SLOT_EDGE;
+
+        for (uint8 localY = 0; localY < SLOT_EDGE;) {
+            uint8 bitShift = localY * SLOT_EDGE;
+            uint64 rowBits = uint64((seedBits >> bitShift) & uint64(0xFF));
+
+            if (rowBits != 0) {
+                uint8 boardY = baseY + localY;
+                uint64 shiftedRowBits = rowBits << baseX;
+                if (team == TEAM_BLUE) {
+                    blueRows[boardY] |= shiftedRowBits;
+                } else {
+                    redRows[boardY] |= shiftedRowBits;
+                }
+            }
+
+            unchecked {
+                localY += 1;
+            }
+        }
+    }
+
+    function loadBoardRows() internal view returns (uint64[] memory blueRowsMemory, uint64[] memory redRowsMemory) {
+        blueRowsMemory = new uint64[](BOARD_HEIGHT);
+        redRowsMemory = new uint64[](BOARD_HEIGHT);
+
+        for (uint8 y = 0; y < BOARD_HEIGHT;) {
+            blueRowsMemory[y] = blueRows[y];
+            redRowsMemory[y] = redRows[y];
+
+            unchecked {
+                y += 1;
+            }
+        }
+    }
+
+    function storeBoardRows(uint64[] memory blueRowsMemory, uint64[] memory redRowsMemory) internal {
+        for (uint8 y = 0; y < BOARD_HEIGHT;) {
+            blueRows[y] = blueRowsMemory[y];
+            redRows[y] = redRowsMemory[y];
+
+            unchecked {
+                y += 1;
+            }
+        }
+    }
+
+    function refreshBoardStatus() internal {
+        uint16 bluePop;
+        uint16 redPop;
+
+        for (uint8 y = 0; y < BOARD_HEIGHT;) {
+            bluePop += uint16(popcount(blueRows[y]));
+            redPop += uint16(popcount(redRows[y]));
+
+            unchecked {
+                y += 1;
+            }
+        }
+
+        finalBluePopulation = bluePop;
+        finalRedPopulation = redPop;
+        blueExtinct = bluePop == 0;
+        redExtinct = redPop == 0;
+    }
+
     function resolveWinnerTeam() internal view returns (uint8) {
         if (blueExtinct && !redExtinct) {
             return TEAM_RED;
         }
         if (redExtinct && !blueExtinct) {
             return TEAM_BLUE;
+        }
+        if (finalBluePopulation > finalRedPopulation) {
+            return TEAM_BLUE;
+        }
+        if (finalRedPopulation > finalBluePopulation) {
+            return TEAM_RED;
         }
         return WINNER_DRAW;
     }
