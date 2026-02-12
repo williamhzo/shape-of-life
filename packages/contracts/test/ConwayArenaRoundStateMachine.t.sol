@@ -23,7 +23,7 @@ contract ConwayArenaRoundStateMachineTest {
 
     function testCommitRevertsWhenCommitWindowClosed() public {
         vm.warp(111);
-        expectRevertSelector(ConwayArenaRound.CommitWindowClosed.selector, abi.encodeCall(ConwayArenaRound.commit, ()));
+        expectRevertSelector(ConwayArenaRound.CommitWindowClosed.selector, abi.encodeWithSignature("commit()"));
     }
 
     function testBeginRevealRevertsBeforeCommitWindowClosed() public {
@@ -39,7 +39,7 @@ contract ConwayArenaRoundStateMachineTest {
     function testRevealRevertsOutsideRevealPhase() public {
         expectRevertSelector(
             ConwayArenaRound.InvalidPhase.selector,
-            abi.encodeCall(ConwayArenaRound.reveal, ())
+            abi.encodeWithSignature("reveal()")
         );
     }
 
@@ -53,7 +53,7 @@ contract ConwayArenaRoundStateMachineTest {
         vm.warp(111);
         round.beginReveal();
         vm.warp(122);
-        expectRevertSelector(ConwayArenaRound.RevealWindowClosed.selector, abi.encodeCall(ConwayArenaRound.reveal, ()));
+        expectRevertSelector(ConwayArenaRound.RevealWindowClosed.selector, abi.encodeWithSignature("reveal()"));
     }
 
     function testInitializeRevertsBeforeRevealWindowClosed() public {
@@ -128,7 +128,7 @@ contract ConwayArenaRoundStateMachineTest {
     function testClaimRevertsOutsideClaimPhase() public {
         expectRevertSelector(
             ConwayArenaRound.InvalidPhase.selector,
-            abi.encodeCall(ConwayArenaRound.claim, ())
+            abi.encodeWithSignature("claim()")
         );
     }
 

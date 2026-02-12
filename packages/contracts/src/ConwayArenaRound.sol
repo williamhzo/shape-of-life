@@ -15,6 +15,18 @@ contract ConwayArenaRound {
     error CommitWindowClosed();
     error RevealWindowOpen();
     error RevealWindowClosed();
+    error InvalidTeam(uint8 team);
+    error InvalidSlotIndex(uint8 slotIndex);
+    error SlotOutOfTerritory(uint8 team, uint8 slotIndex);
+    error SlotAlreadyReserved(uint8 slotIndex);
+    error SlotNotReserved(uint8 slotIndex);
+    error SlotNotRevealed(uint8 slotIndex);
+    error AddressAlreadyCommitted(address player);
+    error NotSlotOwner(address expected, address caller);
+    error AlreadyRevealed(uint8 slotIndex);
+    error AlreadyClaimed(uint8 slotIndex);
+    error CommitHashMismatch();
+    error SeedBudgetExceeded(uint8 liveCells, uint8 seedBudget);
     error ZeroSteps();
     error RoundNotTerminal();
     error AccountingAlreadyConfigured();
@@ -23,10 +35,24 @@ contract ConwayArenaRound {
     uint16 public constant WINNER_BPS = 8000;
     uint16 public constant KEEPER_BPS = 2000;
     uint16 public constant BPS_DENOMINATOR = 10000;
+    uint8 public constant TEAM_BLUE = 0;
+    uint8 public constant TEAM_RED = 1;
+    uint8 public constant SLOT_COUNT = 64;
+    uint8 public constant TEAM_SLOT_COUNT = 32;
+    uint8 public constant SEED_BUDGET = 12;
 
     event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward);
     event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust);
     event Claimed(uint256 distributed, uint256 cumulativeWinnerPaid, uint256 treasuryDust, uint256 remainingWinnerPool);
+
+    struct SlotData {
+        address player;
+        uint8 team;
+        bytes32 commitHash;
+        uint64 seedBits;
+        bool revealed;
+        bool claimed;
+    }
 
     Phase public phase;
     uint64 public commitEnd;
@@ -47,6 +73,8 @@ contract ConwayArenaRound {
     uint256 public winnerPaid;
     uint256 public treasuryDust;
     mapping(address keeper => uint256 credit) public keeperCredits;
+    mapping(uint8 slotIndex => SlotData slot) public slots;
+    mapping(address player => bool reserved) public hasReservedSlot;
 
     constructor(uint64 commitDuration, uint64 revealDuration_, uint16 maxGen_, uint16 maxBatch_) {
         if (maxGen_ == 0 || maxBatch_ == 0 || maxBatch_ > maxGen_) {
@@ -61,10 +89,26 @@ contract ConwayArenaRound {
     }
 
     function commit() external view {
-        requirePhase(Phase.Commit);
-        if (block.timestamp > commitEnd) {
-            revert CommitWindowClosed();
+        requireCommitOpen();
+    }
+
+    function commit(uint8 team, uint8 slotIndex, bytes32 commitHash) external {
+        requireCommitOpen();
+        validateTeam(team);
+        validateSlotForTeam(team, slotIndex);
+
+        SlotData storage slot = slots[slotIndex];
+        if (slot.player != address(0)) {
+            revert SlotAlreadyReserved(slotIndex);
         }
+        if (hasReservedSlot[msg.sender]) {
+            revert AddressAlreadyCommitted(msg.sender);
+        }
+
+        slot.player = msg.sender;
+        slot.team = team;
+        slot.commitHash = commitHash;
+        hasReservedSlot[msg.sender] = true;
     }
 
     function beginReveal() external {
@@ -78,10 +122,37 @@ contract ConwayArenaRound {
     }
 
     function reveal() external view {
-        requirePhase(Phase.Reveal);
-        if (block.timestamp > revealEnd) {
-            revert RevealWindowClosed();
+        requireRevealOpen();
+    }
+
+    function reveal(uint256 roundId, uint8 team, uint8 slotIndex, uint64 seedBits, bytes32 salt) external {
+        requireRevealOpen();
+        validateTeam(team);
+        validateSlotForTeam(team, slotIndex);
+
+        SlotData storage slot = slots[slotIndex];
+        if (slot.player == address(0)) {
+            revert SlotNotReserved(slotIndex);
         }
+        if (slot.player != msg.sender) {
+            revert NotSlotOwner(slot.player, msg.sender);
+        }
+        if (slot.revealed) {
+            revert AlreadyRevealed(slotIndex);
+        }
+
+        uint8 liveCells = popcount(seedBits);
+        if (liveCells > SEED_BUDGET) {
+            revert SeedBudgetExceeded(liveCells, SEED_BUDGET);
+        }
+
+        bytes32 expectedCommit = computeCommitHash(roundId, msg.sender, team, slotIndex, seedBits, salt);
+        if (slot.commitHash != expectedCommit) {
+            revert CommitHashMismatch();
+        }
+
+        slot.seedBits = seedBits;
+        slot.revealed = true;
     }
 
     function initialize() external {
@@ -159,6 +230,30 @@ contract ConwayArenaRound {
         requirePhase(Phase.Claim);
     }
 
+    function claim(uint8 slotIndex) external {
+        requirePhase(Phase.Claim);
+
+        if (slotIndex >= SLOT_COUNT) {
+            revert InvalidSlotIndex(slotIndex);
+        }
+
+        SlotData storage slot = slots[slotIndex];
+        if (slot.player == address(0)) {
+            revert SlotNotReserved(slotIndex);
+        }
+        if (!slot.revealed) {
+            revert SlotNotRevealed(slotIndex);
+        }
+        if (slot.player != msg.sender) {
+            revert NotSlotOwner(slot.player, msg.sender);
+        }
+        if (slot.claimed) {
+            revert AlreadyClaimed(slotIndex);
+        }
+
+        slot.claimed = true;
+    }
+
     function configureAccounting(uint256 totalFunded_, uint256 rewardPerGen_) external {
         requirePhase(Phase.Commit);
         if (accountingConfigured) {
@@ -178,7 +273,7 @@ contract ConwayArenaRound {
         uint64 seedBits,
         bytes32 salt
     ) external view returns (bytes32) {
-        return keccak256(abi.encode(roundId, block.chainid, address(this), player, team, slotIndex, seedBits, salt));
+        return computeCommitHash(roundId, player, team, slotIndex, seedBits, salt);
     }
 
     function settleWinnerClaims(uint256 eligibleWinners) external {
@@ -209,6 +304,60 @@ contract ConwayArenaRound {
     function requirePhase(Phase expected) internal view {
         if (phase != expected) {
             revert InvalidPhase(expected, phase);
+        }
+    }
+
+    function requireCommitOpen() internal view {
+        requirePhase(Phase.Commit);
+        if (block.timestamp > commitEnd) {
+            revert CommitWindowClosed();
+        }
+    }
+
+    function requireRevealOpen() internal view {
+        requirePhase(Phase.Reveal);
+        if (block.timestamp > revealEnd) {
+            revert RevealWindowClosed();
+        }
+    }
+
+    function validateTeam(uint8 team) internal pure {
+        if (team != TEAM_BLUE && team != TEAM_RED) {
+            revert InvalidTeam(team);
+        }
+    }
+
+    function validateSlotForTeam(uint8 team, uint8 slotIndex) internal pure {
+        if (slotIndex >= SLOT_COUNT) {
+            revert InvalidSlotIndex(slotIndex);
+        }
+
+        if (team == TEAM_BLUE && slotIndex >= TEAM_SLOT_COUNT) {
+            revert SlotOutOfTerritory(team, slotIndex);
+        }
+        if (team == TEAM_RED && slotIndex < TEAM_SLOT_COUNT) {
+            revert SlotOutOfTerritory(team, slotIndex);
+        }
+    }
+
+    function computeCommitHash(
+        uint256 roundId,
+        address player,
+        uint8 team,
+        uint8 slotIndex,
+        uint64 seedBits,
+        bytes32 salt
+    ) internal view returns (bytes32) {
+        return keccak256(abi.encode(roundId, block.chainid, address(this), player, team, slotIndex, seedBits, salt));
+    }
+
+    function popcount(uint64 value) internal pure returns (uint8 count) {
+        uint64 bits = value;
+        while (bits != 0) {
+            bits &= bits - 1;
+            unchecked {
+                count += 1;
+            }
         }
     }
 }
