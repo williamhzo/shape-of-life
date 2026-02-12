@@ -17,6 +17,12 @@ contract ConwayArenaRound {
     error RevealWindowClosed();
     error ZeroSteps();
     error RoundNotTerminal();
+    error AccountingAlreadyConfigured();
+    error ClaimsAlreadySettled();
+
+    uint16 public constant WINNER_BPS = 8000;
+    uint16 public constant KEEPER_BPS = 2000;
+    uint16 public constant BPS_DENOMINATOR = 10000;
 
     Phase public phase;
     uint64 public commitEnd;
@@ -27,6 +33,16 @@ contract ConwayArenaRound {
     uint16 public immutable maxBatch;
     bool public blueExtinct;
     bool public redExtinct;
+    bool public accountingConfigured;
+    bool public winnerClaimsSettled;
+    uint256 public totalFunded;
+    uint256 public rewardPerGen;
+    uint256 public winnerPool;
+    uint256 public keeperPoolRemaining;
+    uint256 public keeperPaid;
+    uint256 public winnerPaid;
+    uint256 public treasuryDust;
+    mapping(address keeper => uint256 credit) public keeperCredits;
 
     constructor(uint64 commitDuration, uint64 revealDuration_, uint16 maxGen_, uint16 maxBatch_) {
         if (maxGen_ == 0 || maxBatch_ == 0 || maxBatch_ > maxGen_) {
@@ -70,6 +86,15 @@ contract ConwayArenaRound {
             revert RevealWindowOpen();
         }
 
+        if (accountingConfigured) {
+            uint256 baseWinnerPool = (totalFunded * WINNER_BPS) / BPS_DENOMINATOR;
+            uint256 baseKeeperPool = (totalFunded * KEEPER_BPS) / BPS_DENOMINATOR;
+
+            winnerPool = baseWinnerPool;
+            keeperPoolRemaining = baseKeeperPool;
+            treasuryDust += totalFunded - baseWinnerPool - baseKeeperPool;
+        }
+
         phase = Phase.Sim;
     }
 
@@ -89,6 +114,19 @@ contract ConwayArenaRound {
         }
 
         gen += actualSteps;
+
+        if (rewardPerGen > 0 && actualSteps > 0) {
+            uint256 keeperReward = uint256(actualSteps) * rewardPerGen;
+            if (keeperReward > keeperPoolRemaining) {
+                keeperReward = keeperPoolRemaining;
+            }
+
+            if (keeperReward > 0) {
+                keeperPoolRemaining -= keeperReward;
+                keeperPaid += keeperReward;
+                keeperCredits[msg.sender] += keeperReward;
+            }
+        }
     }
 
     function setExtinction(bool blueIsExtinct, bool redIsExtinct) external {
@@ -102,11 +140,45 @@ contract ConwayArenaRound {
             revert RoundNotTerminal();
         }
 
+        winnerPool += keeperPoolRemaining;
+        keeperPoolRemaining = 0;
         phase = Phase.Claim;
     }
 
     function claim() external view {
         requirePhase(Phase.Claim);
+    }
+
+    function configureAccounting(uint256 totalFunded_, uint256 rewardPerGen_) external {
+        requirePhase(Phase.Commit);
+        if (accountingConfigured) {
+            revert AccountingAlreadyConfigured();
+        }
+
+        accountingConfigured = true;
+        totalFunded = totalFunded_;
+        rewardPerGen = rewardPerGen_;
+    }
+
+    function settleWinnerClaims(uint256 eligibleWinners) external {
+        requirePhase(Phase.Claim);
+        if (winnerClaimsSettled) {
+            revert ClaimsAlreadySettled();
+        }
+
+        winnerClaimsSettled = true;
+
+        if (eligibleWinners == 0) {
+            treasuryDust += winnerPool;
+            winnerPool = 0;
+            return;
+        }
+
+        uint256 payoutPerWinner = winnerPool / eligibleWinners;
+        uint256 distributed = payoutPerWinner * eligibleWinners;
+        winnerPaid += distributed;
+        treasuryDust += winnerPool - distributed;
+        winnerPool = 0;
     }
 
     function requirePhase(Phase expected) internal view {

@@ -657,8 +657,8 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 
 ### Action Items
 [x] Add state-machine tests covering every allowed/disallowed transition.
-[ ] Add payout invariant tests: total payouts + keeper paid + dust <= funded amount.
-[ ] Add keeper reward tests for underfunded and over-requested step batches.
+[x] Add payout invariant tests: total payouts + keeper paid + dust <= funded amount.
+[x] Add keeper reward tests for underfunded and over-requested step batches.
 [x] Add TS/Solidity parity fixtures for topology edge cases (cylinder wrap boundaries).
 [ ] Add Sepolia benchmarking script and lock `maxBatch` via measured thresholds.
 [ ] Add indexer reconciliation checks against `Stepped`, `Finalized`, and `Claimed` events.
@@ -817,7 +817,7 @@ P3:
 [x] Create failing tests first for pack/unpack, B3/S23, and Immigration majority rules.
 [x] Add TS<->Solidity golden/parity suite with random-seed fuzz harness.
 [x] Add round transition guard matrix tests with explicit revert expectations.
-[ ] Add payout/accounting invariants including dust and keeper shortfall handling.
+[x] Add payout/accounting invariants including dust and keeper shortfall handling.
 [ ] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
 [ ] Add gas snapshot + regression threshold checks to CI and block regressions by default.
 [ ] Add aggregate/CI contract test execution (`forge test`) so Solidity regressions are caught outside package-local runs.
@@ -840,6 +840,18 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed payout/accounting invariant TDD slice on round contract:
+    - Added failing accounting tests in `packages/contracts/test/ConwayArenaRoundAccounting.t.sol` for:
+      - keeper shortfall clamp under over-requested `stepBatch` calls
+      - post-claim accounting invariant: `winnerPaid + keeperPaid + treasuryDust <= totalFunded`
+      - zero-eligible-winner dust routing
+    - Extended `packages/contracts/src/ConwayArenaRound.sol` with minimal accounting state and logic:
+      - funding/reward config (`configureAccounting`)
+      - keeper reward clamping and credit accounting inside `stepBatch`
+      - finalize-time keeper remainder rollover into winner pool
+      - claim settlement helper with dust routing (`settleWinnerClaims`)
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test` passed (28/28).
   - Completed Phase 3 guard-matrix TDD slice for round lifecycle transitions:
     - Added failing state-machine tests with explicit revert-selector assertions in `packages/contracts/test/ConwayArenaRoundStateMachine.t.sol`.
     - Implemented minimal lifecycle contract in `packages/contracts/src/ConwayArenaRound.sol` with phase/time guards for `commit`, `beginReveal`, `reveal`, `initialize`, `stepBatch`, `finalize`, and `claim`.

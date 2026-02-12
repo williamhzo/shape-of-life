@@ -41,12 +41,19 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `src/ConwayArenaRound.sol`:
     - Minimal commit/reveal/sim/claim phase state machine with explicit phase and time-window guards
     - Step clamping semantics: `actualSteps = min(requestedSteps, maxBatch, maxGen - gen)`
+    - Accounting primitives for v0.1 payout safety:
+      - keeper reward shortfall clamp
+      - finalize-time keeper remainder rollover into winner pool
+      - claim-settlement dust routing and invariant-traceable counters
   - `test/ConwayEngineParity.t.sol`:
     - Fixed vectors mirroring fixture semantics
     - Deterministic seeded fuzz parity against Solidity in-test reference engine
   - `test/ConwayArenaRoundStateMachine.t.sol`:
     - Transition matrix tests for allowed/disallowed round calls
     - Explicit custom-error selector assertions for guard failures
+  - `test/ConwayArenaRoundAccounting.t.sol`:
+    - Keeper shortfall + over-requested step reward clamp tests
+    - Accounting invariant and dust-routing tests
 
 - `apps/web`
   - `app/page.tsx`: spectator-first scaffold using shadcn/ui primitives
@@ -107,7 +114,7 @@ Both TS and Solidity tests encode these same semantics, making fixtures the cros
   - Fixed vectors equivalent to fixture cases
   - Deterministic seeded random corpus vs Solidity reference implementation
 
-Current architecture guarantees rule parity confidence at engine level and now includes a minimal round manager guard contract, but not full commit/reveal accounting logic yet.
+Current architecture guarantees rule parity confidence at engine level and now includes a minimal round manager with guard and accounting primitives, but not full commit/reveal slot payload validation yet.
 
 ### 4.3 Web Read Model
 
@@ -140,14 +147,15 @@ The current implementation assumes and tests these invariants:
 - Disjoint colors: blue/red overlap is invalid input and forbidden output.
 - Topology consistency: cylinder semantics must match in TS and Solidity.
 - Lifecycle guard correctness: round calls must be phase-valid and respect commit/reveal windows.
+- Accounting safety: `winnerPaid + keeperPaid + treasuryDust` must never exceed `totalFunded`.
 - Width safety: no bits outside configured width are accepted in web summary logic.
 
 ## 7. Known Gaps and Failure Modes
 
 Current gaps relative to full plan:
 
-- Round lifecycle exists only as a guard/state-machine slice; commit/reveal payload validation and payout/accounting are not implemented yet.
-- No payout/accounting code paths yet.
+- Round lifecycle lacks commit/reveal payload validation and slot-level ownership checks.
+- Accounting is currently a test-oriented primitive slice (no ERC20/ETH pull-payment transfers yet).
 - Root aggregate test command does not yet include `forge test` automatically.
 - No indexer/replay worker/keeper bot package in workspace yet.
 
