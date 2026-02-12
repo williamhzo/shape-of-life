@@ -46,6 +46,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `src/ConwayArenaRound.sol`:
     - Minimal commit/reveal/sim/claim phase state machine with explicit phase and time-window guards
     - Step clamping semantics: `actualSteps = min(requestedSteps, maxBatch, maxGen - gen)`
+    - Commit-domain separation primitive `hashCommit(roundId, chainId, arena, player, team, slotIndex, seedBits, salt)`
     - Accounting primitives for v0.1 payout safety:
       - keeper reward shortfall clamp
       - finalize-time keeper remainder rollover into winner pool
@@ -63,6 +64,8 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Local lifecycle integration test from commit through claim with end-state accounting reconciliation
   - `test/ConwayArenaRoundGas.t.sol`:
     - Stable gas checkpoints for `commit`, `reveal`, `stepBatch`, `finalize`, and `claim`
+  - `test/ConwayArenaRoundCommitHash.t.sol`:
+    - Domain-separation tests for commit preimage hashing (`chainId`, `arena`, `player`)
   - `scripts/max-batch-benchmark.ts`:
     - Uses `cast estimate` against Shape Sepolia to measure `stepBatch(uint16)` gas across candidate step sizes
     - Selects a lock recommendation using configurable gas-limit headroom (`safetyBps`)

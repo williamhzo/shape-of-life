@@ -840,6 +840,13 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P0 commit preimage domain-separation hardening slice:
+    - Added `hashCommit(roundId, player, team, slotIndex, seedBits, salt)` to `packages/contracts/src/ConwayArenaRound.sol` binding `block.chainid` and `address(this)` in the commit preimage.
+    - Added `packages/contracts/test/ConwayArenaRoundCommitHash.t.sol` covering:
+      - positive hash equivalence for `keccak256(abi.encode(roundId, chainId, arena, player, ...))`
+      - replay-safety signal that player changes alter the commit hash.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline --match-path test/ConwayArenaRoundCommitHash.t.sol` passed.
   - Started Sepolia `maxBatch` benchmark automation (execution pending RPC/deployed round inputs):
     - Added `packages/contracts/scripts/max-batch-benchmark.ts` to measure `stepBatch(uint16)` via `cast estimate` and compute lock recommendation from configurable gas headroom.
     - Added test-first utility coverage in `packages/contracts/scripts/max-batch-benchmark.test.ts` for output parsing and lock selection thresholds.

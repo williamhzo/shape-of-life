@@ -170,6 +170,17 @@ contract ConwayArenaRound {
         rewardPerGen = rewardPerGen_;
     }
 
+    function hashCommit(
+        uint256 roundId,
+        address player,
+        uint8 team,
+        uint8 slotIndex,
+        uint64 seedBits,
+        bytes32 salt
+    ) external view returns (bytes32) {
+        return keccak256(abi.encode(roundId, block.chainid, address(this), player, team, slotIndex, seedBits, salt));
+    }
+
     function settleWinnerClaims(uint256 eligibleWinners) external {
         requirePhase(Phase.Claim);
         if (winnerClaimsSettled) {
