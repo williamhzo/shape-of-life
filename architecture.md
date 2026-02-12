@@ -172,7 +172,7 @@ The plan defines eventual expansion to:
 Status snapshot:
 
 - Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, simulation-backed round progression (seed materialization + board stepping), transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, winner payout transfer allocation, accounting invariants, local round E2E, and gas regression CI.
-- Pending/high impact next: extend simulation-backed accounting invariants for mixed claim ordering, then execute Sepolia benchmark run with deployment metadata to lock `maxBatch`.
+- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact.
 
 ## 6. Architectural Invariants
 

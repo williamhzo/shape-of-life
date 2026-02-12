@@ -863,6 +863,17 @@ Execution rules:
     - `bun run test:contracts:gas` passed.
     - `bun run lint:web` passed.
     - `cd apps/web && bun run build` passed.
+  - Completed P0.4 accounting-invariant expansion slice with strict TDD (`Red -> Green`):
+    - Added full simulation-backed invariant coverage for mixed claim ordering and keeper-withdraw interplay in `packages/contracts/test/ConwayArenaRoundAccounting.t.sol`.
+    - Added partial-claim invariant coverage proving conservation while winner pool remains partially unclaimed.
+    - Added reusable accounting conservation helper assertion:
+      - `winnerPool + keeperPoolRemaining + winnerPaid + keeperPaid + treasuryDust == totalFunded`
+      - `winnerPaid + keeperPaid + treasuryDust <= totalFunded`
+  - Validation:
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
   - Performed docs + implementation audit and aligned closeout tracking with a new readiness checklist + impact-ordered Sepolia plan in section 20.
   - Latest local validation in this workspace:
     - `bun run test` passed.
@@ -1145,7 +1156,7 @@ Execution rules:
 
 - P0:
   - Extend finalize to spec-complete scoring outputs (final population + invasion weights) and deterministically map score to winner.
-  - Keep transfer paths explicitly reentrancy-safe and invariants preserved after simulation integration.
+  - Keep transfer paths explicitly reentrancy-safe after simulation integration.
 - P1:
   - Add reproducible Shape Sepolia deployment + verification pipeline.
   - Execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds.
@@ -1162,7 +1173,7 @@ Execution rules:
 [x] P0.1 Write failing Foundry tests for seed materialization, simulation stepping, and board-derived finalize scoring.
 [x] P0.2 Implement board-state storage + `initialize` seed placement + `stepBatch` board progression with bounded write strategy.
 [x] P0.3 Replace mutable terminal-resolution helpers with deterministic board-derived terminal checks in production flow.
-[ ] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
+[x] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
 [ ] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
 [ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `ROUND_ADDRESS`).
 [ ] P1.3 Add Sepolia smoke command and release gate documenting required env/config.

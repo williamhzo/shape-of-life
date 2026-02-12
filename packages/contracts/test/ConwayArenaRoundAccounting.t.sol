@@ -14,6 +14,7 @@ contract ConwayArenaRoundAccountingTest {
 
     address private constant BLUE_TWO = address(0xBEEF);
     address private constant BLUE_THREE = address(0xCAFE);
+    address private constant RED_ONE = address(0xD00D);
 
     ConwayArenaRound internal round;
 
@@ -102,6 +103,87 @@ contract ConwayArenaRoundAccountingTest {
         );
     }
 
+    function testAccountingInvariantHoldsAcrossMixedClaimOrderingAndKeeperWithdraw() public {
+        vm.deal(address(round), 13);
+        round.configureAccounting(13, 1);
+
+        commitFor(address(this), 0, 1, 0x303, bytes32("blue-one"));
+        commitFor(BLUE_TWO, 0, 2, 0x303, bytes32("blue-two"));
+        commitFor(RED_ONE, 1, 32, 0x1, bytes32("red-one"));
+
+        vm.warp(111);
+        round.beginReveal();
+
+        round.reveal(1, 0, 1, 0x303, bytes32("blue-one"));
+        vm.prank(BLUE_TWO);
+        round.reveal(1, 0, 2, 0x303, bytes32("blue-two"));
+        vm.prank(RED_ONE);
+        round.reveal(1, 1, 32, 0x1, bytes32("red-one"));
+
+        vm.warp(122);
+        round.initialize();
+        round.stepBatch(2);
+        round.stepBatch(2);
+        round.finalize();
+
+        assertAccountingInvariantEqualsTotalFunded();
+
+        vm.prank(RED_ONE);
+        uint256 losingPayout = round.claim(32);
+        require(losingPayout == 0, "losing claim should pay zero");
+        assertAccountingInvariantEqualsTotalFunded();
+
+        uint256 keeperBefore = address(this).balance;
+        uint256 keeperWithdrawn = round.withdrawKeeperCredit();
+        require(keeperWithdrawn == 2, "keeper withdraw mismatch");
+        require(address(this).balance == keeperBefore + keeperWithdrawn, "keeper balance mismatch");
+        assertAccountingInvariantEqualsTotalFunded();
+
+        vm.prank(BLUE_TWO);
+        uint256 blueTwoPayout = round.claim(2);
+        require(blueTwoPayout == 5, "blue two payout mismatch");
+        assertAccountingInvariantEqualsTotalFunded();
+
+        uint256 blueOnePayout = round.claim(1);
+        require(blueOnePayout == 5, "blue one payout mismatch");
+        assertAccountingInvariantEqualsTotalFunded();
+        require(round.winnerPool() == 0, "winner pool should be empty");
+        require(round.winnerPaid() == 10, "winner paid mismatch");
+        require(round.keeperPaid() == 2, "keeper paid mismatch");
+        require(round.treasuryDust() == 1, "dust mismatch");
+    }
+
+    function testAccountingInvariantTracksRemainingWinnerPoolWithPartialClaims() public {
+        vm.deal(address(round), 12);
+        round.configureAccounting(12, 0);
+
+        commitFor(address(this), 0, 1, 0x303, bytes32("partial-blue-one"));
+        commitFor(BLUE_TWO, 0, 2, 0x303, bytes32("partial-blue-two"));
+
+        vm.warp(111);
+        round.beginReveal();
+        round.reveal(1, 0, 1, 0x303, bytes32("partial-blue-one"));
+        vm.prank(BLUE_TWO);
+        round.reveal(1, 0, 2, 0x303, bytes32("partial-blue-two"));
+
+        vm.warp(122);
+        round.initialize();
+        round.finalize();
+
+        assertAccountingInvariantEqualsTotalFunded();
+
+        vm.prank(BLUE_TWO);
+        uint256 firstClaim = round.claim(2);
+        require(firstClaim == 5, "partial first payout mismatch");
+        assertAccountingInvariantEqualsTotalFunded();
+        require(round.winnerPool() == 5, "remaining winner pool mismatch");
+
+        uint256 secondClaim = round.claim(1);
+        require(secondClaim == 5, "partial second payout mismatch");
+        assertAccountingInvariantEqualsTotalFunded();
+        require(round.winnerPool() == 0, "winner pool should settle to zero");
+    }
+
     function transitionToSim() internal {
         vm.warp(111);
         round.beginReveal();
@@ -132,5 +214,13 @@ contract ConwayArenaRoundAccountingTest {
         }
 
         require(actualSelector == expectedSelector, "unexpected selector");
+    }
+
+    function assertAccountingInvariantEqualsTotalFunded() internal view {
+        uint256 settled = round.winnerPaid() + round.keeperPaid() + round.treasuryDust();
+        require(settled <= round.totalFunded(), "settled accounting exceeds funded");
+
+        uint256 totalAccounted = round.winnerPool() + round.keeperPoolRemaining() + settled;
+        require(totalAccounted == round.totalFunded(), "accounting conservation mismatch");
     }
 }
