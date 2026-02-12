@@ -60,6 +60,6 @@
 
 ## Git and Delivery
 
-- Use small atomic commits with conventional commit messages.
+- Use small atomic commits with concise imperative subjects (no conventional prefixes/scopes like `feat(scope):`).
 - Commit highest-impact changes first.
 - Push policy is user-instruction driven (direct `main` push is allowed).
