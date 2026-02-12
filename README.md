@@ -70,6 +70,8 @@ NEXT_PUBLIC_ROUND_ADDRESS=<deployed-round-address> \
 cd apps/web && bun run dev
 ```
 
+The wallet panel now includes a team-aware slot picker, 8x8 seed editor (seed budget guard), and optimistic transaction status feedback for commit/reveal/claim actions.
+
 - Run benchmark utility tests for Sepolia maxBatch lock tooling:
 
 ```bash

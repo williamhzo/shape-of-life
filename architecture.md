@@ -103,6 +103,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `app/api/round/live/route.ts`: server route that reads persisted indexer model and returns normalized live spectator payload
   - `components/round-live-panel.tsx`: client polling UI for live round state (`/api/round/live`)
   - `components/round-wallet-panel.tsx`: browser-wallet commit/reveal/claim journey using encoded calldata
+    - Includes team-aware slot picker, 8x8 seed editor (budget enforced), and optimistic pending-submit feedback
   - `lib/board-summary.ts`: board population accounting + overlap/width invariants
   - `lib/round-live.ts`: persisted read-model parsing + normalization for API responses
   - `lib/round-tx.ts`: commit-hash + tx-calldata builders for round contract calls
@@ -233,6 +234,6 @@ Current gaps relative to full plan:
 
 - Accounting is currently a primitive slice (native transfers only; no ERC20 payout path).
 - Non-reveal forfeits and zero-eligible payout routing are still covered mostly by accounting-path tests rather than full slot-level adversarial flows.
-- Keeper bot, advanced wallet UX (slot picker, 8x8 seed editor, optimistic reservation handling), and web-level commit/reveal/claim integration tests are not yet implemented.
+- Keeper bot and web-level commit/reveal/claim integration tests are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.

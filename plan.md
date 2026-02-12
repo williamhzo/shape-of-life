@@ -847,6 +847,21 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P2.4 wallet UX expansion slice with strict TDD (`Red -> Green`):
+    - Added failing tests first in `apps/web/test/wallet-ux.test.ts` for:
+      - seed bit toggling/inspection semantics
+      - slot-index grid mapping
+      - team-territory slot enforcement
+    - Implemented UX primitives in `apps/web/lib/wallet-ux.ts` and integrated into `apps/web/components/round-wallet-panel.tsx`:
+      - team-aware slot picker (64-slot grid with territory guardrails)
+      - 8x8 seed editor with budget enforcement (`<= 12` live cells)
+      - optimistic pending-submit feedback during commit/reveal/claim sends
+  - Validation:
+    - `bun test apps/web/test` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
   - Completed P2.3 indexer cursor resume + confirmation-depth/reorg handling slice with strict TDD (`Red -> Green`):
     - Added failing tests first:
       - `packages/indexer/test/sync-window.test.ts` (cursor window derivation + confirmation-depth clamping)
@@ -1249,7 +1264,7 @@ Execution rules:
 - Phase E: Indexer + production UI
   - Status: PARTIAL
   - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, and baseline wallet/realtime spectator web surfaces.
-  - Missing: advanced commit/reveal UX (slot picker + seed editor + optimistic conflict handling) and web-level commit/reveal/claim integration test coverage.
+  - Missing: web-level commit/reveal/claim integration test coverage and keeper/replay production polish.
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1263,7 +1278,6 @@ Execution rules:
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
 - P2:
   - Add integration tests for user-visible commit/reveal/claim failure states.
-  - Expand wallet flow with slot-picker/seed-editor UX and optimistic reservation feedback.
 - P3:
   - Operator polish (keeper observability/runbooks) and optional Shape-native features (Gasback/Stack/VRF).
 
@@ -1279,7 +1293,7 @@ Execution rules:
 [x] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
 [x] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.
 [x] P2.3 Add indexer cursor resume + confirmation-depth reorg handling.
-[ ] P2.4 Expand wallet UX with slot picker, seed editor, and optimistic reservation/reveal feedback.
+[x] P2.4 Expand wallet UX with slot picker, seed editor, and optimistic reservation/reveal feedback.
 [ ] P2.5 Add web integration tests covering commit/reveal/claim failure states and route-driven spectator consistency.
 
 ### 20.4 Validation Gates
