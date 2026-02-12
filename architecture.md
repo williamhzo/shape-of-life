@@ -54,6 +54,8 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `test/ConwayArenaRoundAccounting.t.sol`:
     - Keeper shortfall + over-requested step reward clamp tests
     - Accounting invariant and dust-routing tests
+  - `test/ConwayArenaRoundE2E.t.sol`:
+    - Local lifecycle integration test from commit through claim with end-state accounting reconciliation
 
 - `apps/web`
   - `app/page.tsx`: spectator-first scaffold using shadcn/ui primitives

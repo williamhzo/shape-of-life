@@ -818,7 +818,7 @@ P3:
 [x] Add TS<->Solidity golden/parity suite with random-seed fuzz harness.
 [x] Add round transition guard matrix tests with explicit revert expectations.
 [x] Add payout/accounting invariants including dust and keeper shortfall handling.
-[ ] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
+[x] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
 [ ] Add gas snapshot + regression threshold checks to CI and block regressions by default.
 [ ] Add aggregate/CI contract test execution (`forge test`) so Solidity regressions are caught outside package-local runs.
 
@@ -840,6 +840,10 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Added local end-to-end round lifecycle integration test:
+    - `packages/contracts/test/ConwayArenaRoundE2E.t.sol` now covers `commit -> reveal -> step -> finalize -> claim` with accounting reconciliation assertion.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test -q` passed (compile + tests).
   - Completed payout/accounting invariant TDD slice on round contract:
     - Added failing accounting tests in `packages/contracts/test/ConwayArenaRoundAccounting.t.sol` for:
       - keeper shortfall clamp under over-requested `stepBatch` calls
