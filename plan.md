@@ -820,6 +820,7 @@ P3:
 [ ] Add payout/accounting invariants including dust and keeper shortfall handling.
 [ ] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
 [ ] Add gas snapshot + regression threshold checks to CI and block regressions by default.
+[ ] Add aggregate/CI contract test execution (`forge test`) so Solidity regressions are caught outside package-local runs.
 
 ## 18. Implementation Standards Mandate (Docs-First)
 
@@ -833,13 +834,27 @@ Required baselines:
 
 Execution rules:
 - Prefer official docs for the exact version in use over blog posts or forum snippets.
-- When docs conflict or project constraints require deviation, document the decision and tradeoff in `PLAN.md` before or with implementation.
+- When docs conflict or project constraints require deviation, document the decision and tradeoff in `plan.md` before or with implementation.
 - Treat docs-alignment gaps as impact-ordered follow-ups (`P0`-`P3`) and track them in the active plan queue.
 
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Renamed `game-rules.md` -> `concept.md` and reworked it into a user-facing concept doc:
+    - Added a deeper Conway’s Game of Life concept section (emergence, pattern language, strategic intuition).
+    - Structured the second half as player-facing Conway Arena rules (round flow, participation, winning, fairness).
+    - Kept technical defaults/tuning values in `plan.md` to avoid spec duplication.
+  - Added implementation-aligned architecture and rules documentation:
+    - `architecture.md` captures current package boundaries, execution paths, invariants, and planned-but-not-yet-implemented surfaces.
+    - Initial rules doc was later superseded by `concept.md` for user-facing communication.
+  - Unblocked Foundry parity suite by removing Solidity stack-depth pressure in engine and reference test helpers.
+    - Refactored neighbor-count loops into helper functions in `packages/contracts/src/ConwayEngine.sol` and `packages/contracts/test/ConwayEngineParity.t.sol` (no rules/topology behavior changes).
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test -vv` passed (8/8).
+    - `bun test` passed (16/16).
   - Committed and pushed web bootstrap + plan-sync changes to `main` (`dcda349`).
+  - Committed and pushed shadcn/ui baseline + full UI component install to `main` (`ad0b1ce`).
+  - Committed and pushed Next.js lint baseline + scaffold hardening to `main` (`4a154fa`).
   - Initialized shadcn/ui in `apps/web` and installed all current `registry:ui` components into `apps/web/components/ui`.
     - Note: `shadcn add --all` failed due upstream registry lookup for missing `new-york/combobox.json`; used explicit `registry:ui` enumeration from `shadcn list @shadcn` as a deterministic workaround.
   - Added project-level UI policy to `AGENTS.md`:
@@ -863,7 +878,7 @@ Execution rules:
     - `cd apps/web && bun run build` passed.
     - `bun test` passed.
 - 2026-02-11:
-  - Added docs-first implementation standards mandate to `PLAN.md` and `AGENTS.md` with explicit OpenZeppelin, Foundry, Hardhat, Next.js, and Turborepo baselines.
+  - Added docs-first implementation standards mandate to `plan.md` and `AGENTS.md` with explicit OpenZeppelin, Foundry, Hardhat, Next.js, and Turborepo baselines.
   - Completed first immediate testing action item with strict TDD (`Red -> Green`):
     - Added failing tests for pack/unpack, B3/S23 oscillator behavior, and Immigration majority color births in `packages/sim/test/engine.test.ts`.
     - Implemented minimal simulation engine primitives in `packages/sim/src/engine.ts` to make those tests pass.
