@@ -661,7 +661,7 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 [x] Add keeper reward tests for underfunded and over-requested step batches.
 [x] Add TS/Solidity parity fixtures for topology edge cases (cylinder wrap boundaries).
 [ ] Add Sepolia benchmarking script and lock `maxBatch` via measured thresholds.
-[ ] Add indexer reconciliation checks against `Stepped`, `Finalized`, and `Claimed` events.
+[x] Add indexer reconciliation checks against `Stepped`, `Finalized`, and `Claimed` events.
 
 ### Validation
 - Foundry fuzz/invariant suite passes for state transitions, accounting, and claim idempotency.
@@ -840,6 +840,15 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed indexer reconciliation checks against accounting-critical lifecycle events:
+    - Added `Stepped`, `Finalized`, and `Claimed` events to `packages/contracts/src/ConwayArenaRound.sol`.
+    - Added event emission tests in `packages/contracts/test/ConwayArenaRoundEvents.t.sol`.
+    - Added `packages/indexer/src/reconcile-round-events.ts` with deterministic reconciliation logic and failure conditions.
+    - Added `packages/indexer/test/reconcile-round-events.test.ts` covering happy-path reconciliation and mismatch/missing-event failures.
+    - Added `packages/indexer/package.json` and wired root aggregate tests to include `test:indexer`.
+  - Validation:
+    - `bun test packages/indexer/test` passed.
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline --match-path test/ConwayArenaRoundEvents.t.sol` passed.
   - Added aggregate Solidity test execution in shared local/CI gates:
     - Root `bun run test` now executes `test:sim`, `test:web`, and `test:contracts` (Foundry suite included).
     - Updated `.github/workflows/contracts-gas.yml` to run `forge test` before gas snapshot checks.

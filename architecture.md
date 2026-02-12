@@ -8,6 +8,7 @@ Shape of Life is a Bun monorepo with three active surfaces:
 
 - `packages/sim`: TypeScript canonical simulation primitives and parity oracle.
 - `packages/contracts`: Solidity engine parity + round-lifecycle guard implementation (Foundry-tested).
+- `packages/indexer`: TypeScript reconciliation checks for accounting-critical round events.
 - `apps/web`: Next.js App Router scaffold for spectator-facing UI and simple API routes.
 
 Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
@@ -19,11 +20,12 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
 - Runtime/package manager: Bun (`packageManager: bun@1.3.6`).
 - Workspaces: `apps/*`, `packages/*` (root `package.json`).
 - Core test commands:
-  - `bun test` (aggregate sim + web + Solidity contract tests)
+  - `bun test` (aggregate sim + web + indexer + Solidity contract tests)
   - `bun test packages/sim/test`
   - `bun test apps/web/test`
-  - `cd packages/contracts && forge test`
-  - `bun run test:contracts:gas` (`forge snapshot --match-test testGas --check`)
+  - `bun test packages/indexer/test`
+  - `cd packages/contracts && forge test --offline`
+  - `bun run test:contracts:gas` (`forge snapshot --offline --match-test testGas --check`)
 
 ### 2.2 Package Responsibilities
 
@@ -66,6 +68,15 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `lib/board-summary.ts`: board population accounting + overlap/width invariants
   - `test/*.test.ts`: route contract + board summary tests
   - UI baseline from shadcn registry under `apps/web/components/ui`
+
+- `packages/indexer`
+  - `src/reconcile-round-events.ts`:
+    - Deterministic event-stream reconciliation over `Stepped`, `Finalized`, and `Claimed` payloads
+    - Enforces keeper-reward consistency (`sum(stepped.reward) == finalized.keeperPaid`)
+    - Produces accounting invariant checks (`winnerPaid + keeperPaid + treasuryDust <= totalFunded`)
+  - `test/reconcile-round-events.test.ts`:
+    - Happy-path reconciliation assertions
+    - Divergence and missing-event failure checks
 
 ## 3. Domain and Data Model
 
@@ -142,7 +153,7 @@ The plan defines eventual expansion to:
 Status snapshot:
 
 - Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, transition guard matrix, accounting invariants, local round E2E, and gas regression CI.
-- Pending/high impact next: Sepolia benchmark automation, indexer reconciliation checks, full commit/reveal payload validation and payout transfer plumbing.
+- Pending/high impact next: Sepolia benchmark automation, full commit/reveal payload validation, and payout transfer plumbing.
 
 ## 6. Architectural Invariants
 
@@ -161,6 +172,6 @@ Current gaps relative to full plan:
 
 - Round lifecycle lacks commit/reveal payload validation and slot-level ownership checks.
 - Accounting is currently a test-oriented primitive slice (no ERC20/ETH pull-payment transfers yet).
-- No indexer/replay worker/keeper bot package in workspace yet.
+- Reconciliation checks are implemented, but a chain-ingesting indexer pipeline and keeper bot are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.

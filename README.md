@@ -8,6 +8,7 @@ Conway Arena on Shape L2. See `plan.md` for full product spec, phased implementa
   - `apps/web` (Next.js App Router + shadcn/ui baseline)
   - `packages/sim` (TypeScript simulation engine primitives)
   - `packages/contracts` (Foundry Solidity parity harness)
+  - `packages/indexer` (event reconciliation checks for round accounting)
 - Shared cross-implementation fixtures:
   - `fixtures/engine/parity.v1.json`
 - Web UI baseline:
@@ -40,6 +41,12 @@ bun test apps/web/test
 bun run test
 ```
 
+- Run indexer reconciliation tests:
+
+```bash
+bun test packages/indexer/test
+```
+
 - Build web app:
 
 ```bash
@@ -49,7 +56,7 @@ cd apps/web && bun run build
 - Run Solidity parity tests (requires local solc install via Foundry):
 
 ```bash
-cd packages/contracts && forge test
+cd packages/contracts && forge test --offline
 ```
 
 - Run Solidity gas regression check against committed snapshot:

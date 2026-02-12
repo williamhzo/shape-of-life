@@ -24,6 +24,10 @@ contract ConwayArenaRound {
     uint16 public constant KEEPER_BPS = 2000;
     uint16 public constant BPS_DENOMINATOR = 10000;
 
+    event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward);
+    event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust);
+    event Claimed(uint256 distributed, uint256 cumulativeWinnerPaid, uint256 treasuryDust, uint256 remainingWinnerPool);
+
     Phase public phase;
     uint64 public commitEnd;
     uint64 public revealEnd;
@@ -104,6 +108,7 @@ contract ConwayArenaRound {
             revert ZeroSteps();
         }
 
+        uint16 fromGen = gen;
         uint16 remaining = maxGen - gen;
         uint16 actualSteps = requestedSteps;
         if (actualSteps > maxBatch) {
@@ -115,8 +120,9 @@ contract ConwayArenaRound {
 
         gen += actualSteps;
 
+        uint256 keeperReward;
         if (rewardPerGen > 0 && actualSteps > 0) {
-            uint256 keeperReward = uint256(actualSteps) * rewardPerGen;
+            keeperReward = uint256(actualSteps) * rewardPerGen;
             if (keeperReward > keeperPoolRemaining) {
                 keeperReward = keeperPoolRemaining;
             }
@@ -127,6 +133,8 @@ contract ConwayArenaRound {
                 keeperCredits[msg.sender] += keeperReward;
             }
         }
+
+        emit Stepped(fromGen, gen, msg.sender, keeperReward);
     }
 
     function setExtinction(bool blueIsExtinct, bool redIsExtinct) external {
@@ -143,6 +151,8 @@ contract ConwayArenaRound {
         winnerPool += keeperPoolRemaining;
         keeperPoolRemaining = 0;
         phase = Phase.Claim;
+
+        emit Finalized(gen, winnerPool, keeperPaid, treasuryDust);
     }
 
     function claim() external view {
@@ -167,18 +177,22 @@ contract ConwayArenaRound {
         }
 
         winnerClaimsSettled = true;
+        uint256 distributed;
 
         if (eligibleWinners == 0) {
             treasuryDust += winnerPool;
             winnerPool = 0;
+            emit Claimed(distributed, winnerPaid, treasuryDust, winnerPool);
             return;
         }
 
         uint256 payoutPerWinner = winnerPool / eligibleWinners;
-        uint256 distributed = payoutPerWinner * eligibleWinners;
+        distributed = payoutPerWinner * eligibleWinners;
         winnerPaid += distributed;
         treasuryDust += winnerPool - distributed;
         winnerPool = 0;
+
+        emit Claimed(distributed, winnerPaid, treasuryDust, winnerPool);
     }
 
     function requirePhase(Phase expected) internal view {
