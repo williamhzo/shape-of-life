@@ -5,6 +5,7 @@ import {ConwayArenaRound} from "../src/ConwayArenaRound.sol";
 
 interface Vm {
     function warp(uint256) external;
+    function deal(address account, uint256 newBalance) external;
 }
 
 contract ConwayArenaRoundE2ETest {
@@ -13,6 +14,7 @@ contract ConwayArenaRoundE2ETest {
     function testLocalRoundFlowCommitRevealStepFinalizeClaim() public {
         vm.warp(100);
         ConwayArenaRound round = new ConwayArenaRound(10, 10, 4, 2);
+        vm.deal(address(round), 12);
         round.configureAccounting(12, 1);
 
         round.commit();
@@ -28,10 +30,9 @@ contract ConwayArenaRoundE2ETest {
         round.stepBatch(10);
         round.finalize();
         round.claim();
-        round.settleWinnerClaims(2);
 
         require(round.phase() == ConwayArenaRound.Phase.Claim, "expected claim phase");
         require(round.gen() == 4, "expected max gen");
-        require(round.winnerPaid() + round.keeperPaid() + round.treasuryDust() == round.totalFunded(), "funds mismatch");
+        require(round.winnerPool() + round.winnerPaid() + round.keeperPaid() + round.treasuryDust() == round.totalFunded(), "funds mismatch");
     }
 }

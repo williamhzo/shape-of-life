@@ -6,6 +6,7 @@ import {ConwayArenaRound} from "../src/ConwayArenaRound.sol";
 interface Vm {
     function warp(uint256) external;
     function expectEmit(bool, bool, bool, bool) external;
+    function deal(address account, uint256 newBalance) external;
 }
 
 contract ConwayArenaRoundEventsTest {
@@ -20,6 +21,7 @@ contract ConwayArenaRoundEventsTest {
     function setUp() public {
         vm.warp(100);
         round = new ConwayArenaRound(10, 10, 4, 2);
+        vm.deal(address(round), 11);
         round.configureAccounting(11, 1);
 
         vm.warp(111);
@@ -40,17 +42,21 @@ contract ConwayArenaRoundEventsTest {
         round.stepBatch(2);
 
         vm.expectEmit(false, false, false, true);
-        emit Finalized(4, 8, 2, 1);
+        emit Finalized(4, 0, 2, 9);
         round.finalize();
     }
 
     function testSettleWinnerClaimsEmitsClaimed() public {
-        round.stepBatch(2);
-        round.stepBatch(2);
-        round.finalize();
+        ConwayArenaRound legacy = new ConwayArenaRound(10, 10, 4, 2);
+        vm.warp(133);
+        legacy.beginReveal();
+        vm.warp(144);
+        legacy.initialize();
+        legacy.setExtinction(true, false);
+        legacy.finalize();
 
         vm.expectEmit(false, false, false, true);
-        emit Claimed(6, 6, 3, 0);
-        round.settleWinnerClaims(3);
+        emit Claimed(0, 0, 0, 0);
+        legacy.settleWinnerClaims(0);
     }
 }
