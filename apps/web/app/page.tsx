@@ -1,6 +1,5 @@
 import { BoardCanvas } from "@/components/board-canvas";
-import { RoundLivePanel } from "@/components/round-live-panel";
-import { RoundWalletPanel } from "@/components/round-wallet-panel";
+import { RoundDashboard } from "@/components/round-dashboard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -21,10 +20,7 @@ export default function HomePage() {
 
       <BoardCanvas />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <RoundLivePanel />
-        <RoundWalletPanel />
-      </div>
+      <RoundDashboard />
     </main>
   );
 }

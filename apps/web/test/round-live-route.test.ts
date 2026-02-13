@@ -43,6 +43,21 @@ describe("GET /api/round/live", () => {
             finalGen: 4,
             winnerPoolFinal: { __bigint__: "8" },
           },
+          events: {
+            committed: [
+              { player: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", team: 0, slotIndex: 3 },
+            ],
+            revealed: [
+              { player: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", team: 0, slotIndex: 3 },
+            ],
+            playerClaimed: [
+              { player: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", slotIndex: 3, amount: { __bigint__: "5000" } },
+            ],
+            stepped: [
+              { keeper: "0x1111111111111111111111111111111111111111", fromGen: 0, toGen: 2, reward: { __bigint__: "100" } },
+              { keeper: "0x1111111111111111111111111111111111111111", fromGen: 2, toGen: 4, reward: { __bigint__: "100" } },
+            ],
+          },
           eventCounts: {
             stepped: 2,
             finalized: 1,
@@ -80,6 +95,20 @@ describe("GET /api/round/live", () => {
       source: {
         path: string;
       };
+      participants: Array<{
+        address: string;
+        team: number;
+        slotIndex: number;
+        committed: boolean;
+        revealed: boolean;
+        claimedAmount: string | null;
+      }>;
+      keepers: Array<{
+        address: string;
+        totalReward: string;
+        stepCount: number;
+        gensAdvanced: number;
+      }>;
     };
 
     expect(body.round.roundAddress).toBe("0x1111111111111111111111111111111111111111");
@@ -87,6 +116,17 @@ describe("GET /api/round/live", () => {
     expect(body.accounting.totalFunded).toBe("11");
     expect(body.accounting.invariantHolds).toBe(true);
     expect(body.source.path).toBe(modelPath);
+
+    expect(body.participants).toHaveLength(1);
+    expect(body.participants[0].address).toBe("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    expect(body.participants[0].revealed).toBe(true);
+    expect(body.participants[0].claimedAmount).toBe("5000");
+
+    expect(body.keepers).toHaveLength(1);
+    expect(body.keepers[0].address).toBe("0x1111111111111111111111111111111111111111");
+    expect(body.keepers[0].totalReward).toBe("200");
+    expect(body.keepers[0].stepCount).toBe(2);
+    expect(body.keepers[0].gensAdvanced).toBe(4);
   });
 
   it("returns 503 when read model file is missing", async () => {

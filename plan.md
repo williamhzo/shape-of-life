@@ -850,6 +850,33 @@ Execution rules:
 
 ## 19. Progress Log
 
+- 2026-02-13 (session 5):
+  - Completed P2.14 participant/keeper feed surfaces with strict TDD (`Red -> Green`):
+    - Added failing tests first in `apps/web/test/round-feeds.test.ts` (9 tests) for:
+      - participant roster derivation from committed/revealed/playerClaimed events (empty, commit-only, reveal marking, claim attachment, team+slot sorting)
+      - keeper leaderboard aggregation from stepped events (empty, single keeper multi-step, multi-keeper ranking by reward, gens-advanced accounting)
+    - Implemented deterministic helpers in `apps/web/lib/round-feeds.ts`:
+      - `buildParticipantRoster()`: correlates committed/revealed/playerClaimed events per player, sorted by team then slot index
+      - `buildKeeperLeaderboard()`: aggregates keeper step events, ranked by cumulative reward descending
+    - Extended `apps/web/lib/round-live.ts`:
+      - `IndexerRoundReadModel` type now includes optional `events` arrays (committed, revealed, playerClaimed, stepped)
+      - `RoundLivePayload` now includes `participants: ParticipantEntry[]` and `keepers: KeeperEntry[]` fields
+      - Feed data is built via `buildParticipantRoster` / `buildKeeperLeaderboard` at payload construction time
+    - Updated `apps/web/test/round-live-route.test.ts` to verify participant and keeper feed data in API response
+    - Built UI components (shadcn/ui):
+      - `apps/web/components/participant-list.tsx`: scrollable table with player address, team badge, slot, lifecycle status, payout
+      - `apps/web/components/keeper-feed.tsx`: ranked table with keeper address, step count, gens advanced, cumulative reward
+    - Refactored polling architecture:
+      - Extracted shared `apps/web/hooks/use-round-live.ts` hook for single-source polling
+      - `RoundLivePanel` now accepts payload/error as props (no internal polling)
+      - `apps/web/components/round-dashboard.tsx` owns polling state and distributes to live panel, participant list, and keeper feed
+    - Page layout: `apps/web/app/page.tsx` now renders `RoundDashboard` which contains all data-dependent panels
+  - Validation:
+    - `cd apps/web && bun run test` passed (42/42).
+    - `bun run lint` passed.
+    - `cd apps/web && bun run build` passed.
+    - `bun run test` passed (88/88 Solidity, 42/42 web).
+    - `bun run test:contracts:gas` passed.
 - 2026-02-13 (session 4):
   - Completed P2.16 canvas board rendering with strict TDD (`Red -> Green`):
     - Added failing tests first:
@@ -1486,7 +1513,7 @@ Execution rules:
 - Phase E: Indexer + production UI
   - Status: PARTIAL
   - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, baseline wallet/realtime spectator web surfaces, and keeper observability status command for live Sepolia rounds.
-  - Missing: participant/keeper feed, replay production polish, and dedicated browser interaction automation harness.
+  - Missing: replay production polish, end screen flow, canvas checkpoint animation from onchain snapshots, and dedicated browser interaction automation harness.
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1507,7 +1534,7 @@ Execution rules:
   - **Round factory/registry**: add minimal `ArenaRegistry` contract that stores `currentRound`, past round list, and optional season metadata hash. Eliminates hardcoded `NEXT_PUBLIC_ROUND_ADDRESS` and enables round discovery/history.
   - Completed for current web wallet UX scope: wagmi SSR onboarding + chain-gated tx signing/receipt flow + join-flow seed presets/transforms + explicit tx lifecycle UI states.
   - Follow-up: run live-browser validation pass for the updated wagmi signing flow (connect, switch chain, commit/reveal/claim, rejection path).
-  - Follow-up: close remaining frontend spec gaps (participant + keeper feed, end screen flow).
+  - ~~Follow-up: close remaining frontend spec gaps (participant + keeper feed, end screen flow).~~ Done: participant roster and keeper leaderboard now surface in spectator UI via read model feeds. Remaining: end screen flow, canvas checkpoint animation from onchain snapshots.
 - P3:
   - **Social sharing**: seed link encoding (preset + transforms + slot + team), post-round replay page with timeline scrubber, round artifact metadata.
   - **Per-player contribution tracking**: offchain-computed seed survival duration, slot-region territory contribution, MVP seed ranking.
@@ -1537,7 +1564,7 @@ Execution rules:
 [x] P2.13 Add deterministic seed presets/transforms and explicit tx lifecycle feedback states (`pending`, `sign`, `confirming`, `error`, `success`) to the wallet join/signing UI.
 [x] P2.15 Remove non-core web UX assertion tests and harden AGENTS.md so web tests are limited to core business/rule correctness.
 [ ] P2.12 Validate updated wagmi wallet UI action sequencing in a live browser session (connect, chain switch, commit/reveal/claim, rejection path), while keeping code-level coverage in Vitest.
-[ ] P2.14 Add spectator canvas board rendering + checkpoint animation and expose participant/keeper feed fields from read model to close remaining Phase E frontend spec gaps.
+[x] P2.14 Expose participant roster and keeper leaderboard feeds from indexer read model through `/api/round/live` payload and render in spectator UI (`ParticipantList`, `KeeperFeed` components).
 [x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
 [x] P3.2 Add keeper operator runbook covering transition calls, observability cadence, and failure responses.
 [x] P3.3 Extend keeper observability output with executable transition command hints.

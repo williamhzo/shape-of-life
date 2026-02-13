@@ -49,6 +49,7 @@ cd apps/web && bun run build
 ```
 
 Sepolia operations require env vars. See `plan.md` section 20.6 for the full checklist:
+
 - `SHAPE_SEPOLIA_RPC_URL` -- Alchemy endpoint for Shape Sepolia (chainId 11011)
 - `ROUND_ADDRESS` -- deployed ConwayArenaRound address
 - `DEPLOYER_PRIVATE_KEY` -- for deployment/verification
@@ -80,10 +81,16 @@ Bun monorepo (`bun@1.3.6`) with four packages:
 
 - Source of truth for scope, sequencing, and progress: `plan.md`.
 - Update `plan.md` checkboxes/status when tasks start or finish.
-- Tests before implementation for non-trivial behavior changes.
+- Tests before implementation for non-trivial rules changes.
 - One atomic, impact-ordered step at a time (P0 through P3).
 - All `apps/web` UI components must derive from `apps/web/components/ui` (shadcn/ui registry).
 - Prefer shadcn out-of-box styles/variants until final design pass.
 - Web Vitest scope: API routes and deterministic `apps/web/lib/*` logic only. Validate UI behavior in live browser sessions.
-- Contracts follow OpenZeppelin best practices. Solidity 0.8.28, optimizer on (200 runs).
+- Contracts follow OpenZeppelin best practices (https://docs.openzeppelin.com/)
 - ESLint uses flat config with `next/core-web-vitals` + `next/typescript` + `no-console` (warn/error allowed).
+
+## Git and Delivery
+
+- Use small atomic commits with concise imperative subjects (no conventional prefixes/scopes like `feat(scope):`).
+- Commit highest-impact changes first.
+- Push policy is user-instruction driven (direct `main` push is allowed).

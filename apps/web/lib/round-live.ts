@@ -1,9 +1,20 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import {
+  buildParticipantRoster,
+  buildKeeperLeaderboard,
+  type ParticipantEntry,
+  type KeeperEntry,
+} from "./round-feeds";
 
 type BigIntRecord = {
   __bigint__: string;
 };
+
+type IndexerCommittedEvent = { player: string; team: number; slotIndex: number };
+type IndexerRevealedEvent = { player: string; team: number; slotIndex: number };
+type IndexerPlayerClaimedEvent = { player: string; slotIndex: number; amount: bigint };
+type IndexerSteppedEvent = { keeper: string; fromGen: number; toGen: number; reward: bigint };
 
 type IndexerRoundReadModel = {
   version: "v1";
@@ -22,6 +33,12 @@ type IndexerRoundReadModel = {
     finalized: boolean;
     finalGen: number | null;
     winnerPoolFinal: bigint | null;
+  };
+  events?: {
+    committed?: IndexerCommittedEvent[];
+    revealed?: IndexerRevealedEvent[];
+    playerClaimed?: IndexerPlayerClaimedEvent[];
+    stepped?: IndexerSteppedEvent[];
   };
   eventCounts: {
     stepped: number;
@@ -72,6 +89,8 @@ export type RoundLivePayload = {
     invariantHolds: boolean | null;
     reconciliationStatus: "ok" | "pending-finalize";
   };
+  participants: ParticipantEntry[];
+  keepers: KeeperEntry[];
 };
 
 const DEFAULT_STALE_AGE_MS = 30_000;
@@ -154,5 +173,11 @@ export function readRoundLivePayload(path?: string): RoundLivePayload {
       invariantHolds: model.accounting.invariantHolds,
       reconciliationStatus: model.accounting.reconciliationStatus,
     },
+    participants: buildParticipantRoster({
+      committed: model.events?.committed ?? [],
+      revealed: model.events?.revealed ?? [],
+      playerClaimed: model.events?.playerClaimed ?? [],
+    }),
+    keepers: buildKeeperLeaderboard(model.events?.stepped ?? []),
   };
 }
