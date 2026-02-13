@@ -861,7 +861,13 @@ Execution rules:
     - Extended `packages/contracts/scripts/sepolia-keeper-status.ts` to emit `recommendedCommand` for actionable transition phases.
     - Added command-builder tests in `packages/contracts/scripts/sepolia-keeper-status.test.ts` to prevent command-shape regressions.
     - Updated `README.md` and `architecture.md` to document the new machine-actionable output field.
+  - Completed P1.4 Sepolia rollout automation slice:
+    - Added `packages/contracts/scripts/sepolia-max-batch-rollout.ts` to run `deploy/address-resolve -> benchmark -> lock -> smoke` as one deterministic pipeline.
+    - Added tests first in `packages/contracts/scripts/sepolia-max-batch-rollout.test.ts` for round-address normalization/selection and deploy decision guards.
+    - Wired root command `rollout:sepolia:max-batch` in `package.json` and documented usage/flags in `README.md` and `architecture.md`.
+    - Kept `P1.2` marked blocked; live execution still requires `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployable/reachable round context.
   - Validation:
+    - `bun test packages/contracts/scripts/sepolia-max-batch-rollout.test.ts` passed.
     - `bun test packages/contracts/scripts/*.test.ts` passed.
     - `bun run test` passed.
     - `bun run test:contracts:gas` passed.
@@ -1353,6 +1359,7 @@ Execution rules:
 - P1:
   - Execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds.
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
+  - Add one-command rollout path so benchmark+lock execution is deterministic once env/deploy credentials are present.
 - P2:
   - Completed for current web route + validation surfaces, including provider-mocked wallet sequencing plus live-browser interaction validation.
 - P3:
@@ -1368,6 +1375,7 @@ Execution rules:
 [x] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
 [ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployed `ROUND_ADDRESS`).
 [x] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
+[x] P1.4 Add single-command rollout pipeline (`deploy/address-resolve -> benchmark -> lock -> smoke`) to reduce operator drift.
 [x] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
 [x] P2.2 Implement web wallet journey for commit/reveal/claim + realtime spectator state.
 [x] P2.3 Add indexer cursor resume + confirmation-depth reorg handling.
@@ -1385,6 +1393,7 @@ Execution rules:
 - Gas regression: `bun run test:contracts:gas`
 - Web quality: `bun run lint:web` and `cd apps/web && bun run build`
 - Sepolia benchmark gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run benchmark:sepolia:max-batch`
+- Sepolia rollout gate: `SHAPE_SEPOLIA_RPC_URL=... DEPLOYER_PRIVATE_KEY=... bun run rollout:sepolia:max-batch`
 - Sepolia smoke gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run smoke:sepolia:round`
 - Sepolia keeper observability: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run observe:sepolia:keeper`
 - Sepolia release gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run release:gate:sepolia`

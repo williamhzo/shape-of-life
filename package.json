@@ -20,6 +20,7 @@
     "benchmark:sepolia:max-batch": "bun run packages/contracts/scripts/max-batch-benchmark.ts",
     "lock:sepolia:max-batch": "bun run packages/contracts/scripts/lock-max-batch-from-benchmark.ts",
     "benchmark:sepolia:max-batch:lock": "bun run benchmark:sepolia:max-batch && bun run lock:sepolia:max-batch",
+    "rollout:sepolia:max-batch": "bun run packages/contracts/scripts/sepolia-max-batch-rollout.ts",
     "smoke:sepolia:round": "bun run packages/contracts/scripts/sepolia-smoke-round.ts",
     "observe:sepolia:keeper": "bun run packages/contracts/scripts/sepolia-keeper-status.ts",
     "release:gate:sepolia": "bun run test && bun run test:contracts:gas && bun run lint:web && cd apps/web && bun run build && bun run smoke:sepolia:round",

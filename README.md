@@ -157,6 +157,18 @@ ROUND_ADDRESS=<deployed-round-address> \
 bun run benchmark:sepolia:max-batch:lock
 ```
 
+- Run deploy/address-resolve + benchmark + lock + smoke in one command:
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+DEPLOYER_PRIVATE_KEY=<hex-private-key> \
+bun run rollout:sepolia:max-batch
+```
+
+Optional:
+- `--round <address>` to use a specific deployed round without resolving/deploying.
+- `--skip-deploy` to fail fast instead of deploying when no round address is available.
+
 - Run Sepolia round smoke checks (chain ID, deployed bytecode, key round state reads, optional lockfile match):
 
 ```bash
