@@ -901,7 +901,7 @@ Execution rules:
     - Added `packages/contracts/scripts/sepolia-max-batch-rollout.ts` to run `deploy/address-resolve -> benchmark -> lock -> smoke` as one deterministic pipeline.
     - Added tests first in `packages/contracts/scripts/sepolia-max-batch-rollout.test.ts` for round-address normalization/selection and deploy decision guards.
     - Wired root command `rollout:sepolia:max-batch` in `package.json` and documented usage/flags in `README.md` and `architecture.md`.
-    - Kept `P1.2` marked blocked; live execution still requires `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployable/reachable round context.
+    - Kept `P1.2` marked blocked; required external inputs are centralized in section `20.6`.
   - Completed P3.4 keeper tick automation slice:
     - Added `packages/contracts/scripts/sepolia-keeper-tick.ts` to run one keeper tick from observability output, with dry-run default and optional `--execute` transaction submission.
     - Added tests first in `packages/contracts/scripts/sepolia-keeper-tick.test.ts` for command argument derivation across executable/non-executable recommendation paths.
@@ -910,6 +910,9 @@ Execution rules:
     - Added `packages/contracts/scripts/sepolia-keeper-loop.ts` to run recurring keeper ticks with configurable interval and iteration bounds.
     - Added tests first in `packages/contracts/scripts/sepolia-keeper-loop.test.ts` for argument parsing and loop stop-decision behavior.
     - Wired root command `loop:sepolia:keeper` in `package.json`, then updated `README.md`, `packages/contracts/docs/keeper-runbook.md`, and `architecture.md`.
+  - Compiled a canonical external-input checklist in section `20.6`:
+    - Consolidated required/optional env vars, deploy-choice requirements, and exact command recipes needed to complete blocked Sepolia work.
+    - Deduped repeated blocked-input references by pointing queue/gate notes at section `20.6`.
   - Validation:
     - `cd apps/web && bun run test` passed.
     - `cd apps/web && bun run lint` passed.
@@ -1424,7 +1427,7 @@ Execution rules:
 [x] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
 [x] P0.5 Extend finalize to emit/track weighted scoring outputs (final population + invasion) and resolve winner by score when no extinction occurs.
 [x] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
-[ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployed `ROUND_ADDRESS`).
+[ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked; required inputs are centralized in section 20.6).
 [x] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
 [x] P1.4 Add single-command rollout pipeline (`deploy/address-resolve -> benchmark -> lock -> smoke`) to reduce operator drift.
 [x] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
@@ -1457,9 +1460,47 @@ Execution rules:
 - Sepolia smoke gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run smoke:sepolia:round`
 - Sepolia keeper observability: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run observe:sepolia:keeper`
 - Sepolia release gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run release:gate:sepolia`
+- Input/credential checklist for all Sepolia gates: see section 20.6.
 
 ### 20.5 Risks and Mitigations
 
 - Simulation integration may exceed gas envelope at higher batch sizes; mitigate with benchmark lock + CI gas gates.
 - Contract/indexer/web semantic drift may create user-visible inconsistencies; mitigate with shared fixtures and reconciliation-driven integration tests.
 - Payout path regressions under adversarial call ordering; mitigate with transfer-path probe tests + strict accounting invariants.
+
+### 20.6 Required Operator Inputs (Canonical Checklist)
+
+This section is the single source of truth for user-supplied inputs required to unblock the remaining external-gated work (`P1.2`) and run Sepolia keeper automation safely.
+
+Required to unblock `P1.2`:
+- `SHAPE_SEPOLIA_RPC_URL`
+  - Shape Sepolia RPC endpoint (chainId `11011`).
+- One deployment path choice:
+  - Existing deployment path: provide `ROUND_ADDRESS` (deployed `ConwayArenaRound`).
+  - New deployment path: provide `DEPLOYER_PRIVATE_KEY` (funded on Shape Sepolia) so deployment can be executed and address resolved.
+- Deploy behavior decision (if both are available):
+  - Use existing `ROUND_ADDRESS`, or force a fresh deployment.
+
+Optional but recommended operator inputs:
+- `BENCHMARK_CALLER` (explicit `cast estimate --from` address for benchmark consistency).
+- `KEEPER_PRIVATE_KEY` (required only for `tick:sepolia:keeper --execute` or `loop:sepolia:keeper --execute`).
+- Verification inputs (required only when running explorer verification):
+  - `SHAPE_SEPOLIA_VERIFY_API_URL`
+  - `SHAPE_SEPOLIA_BROWSER_URL`
+  - `SHAPE_SEPOLIA_VERIFY_API_KEY`
+
+Canonical execution commands (user can run directly, or provide inputs so agent executes):
+- New deploy + benchmark lock + smoke:
+  - `SHAPE_SEPOLIA_RPC_URL=... DEPLOYER_PRIVATE_KEY=... bun run rollout:sepolia:max-batch`
+- Existing deployment + benchmark lock + smoke (no deploy):
+  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run rollout:sepolia:max-batch --skip-deploy`
+- Benchmark only:
+  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run benchmark:sepolia:max-batch`
+- Full release gate:
+  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run release:gate:sepolia`
+- Keeper automation:
+  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run observe:sepolia:keeper`
+  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run tick:sepolia:keeper`
+  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... KEEPER_PRIVATE_KEY=... bun run tick:sepolia:keeper --execute`
+  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run loop:sepolia:keeper --interval 15 --iterations 20`
+  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... KEEPER_PRIVATE_KEY=... bun run loop:sepolia:keeper --execute --interval 15`
