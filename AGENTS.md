@@ -7,7 +7,7 @@
 ## Non-Negotiable Working Rules
 
 1. Always implement one atomic, impact-ordered step at a time (`P0` to `P3`).
-2. Always write or update tests before implementation for non-trivial behavior changes.
+2. For non-trivial behavior changes, write or update tests before implementation only for core logic/rules/state transitions/accounting paths; do not add frontend component-markup tests.
 3. Keep interfaces simple, deterministic, and explicit.
 4. Preserve domain separation/security invariants in all commit/reveal/accounting logic.
 5. Follow official docs and modern best-practice guidance for the relevant stack area on most implementation work.
@@ -52,11 +52,13 @@
 ## Testing and Validation
 
 - Run focused package tests while iterating; run aggregate tests before commit/push.
+- For `apps/web`, keep Vitest coverage on API routes and `lib/*` deterministic logic only.
+- Validate UI behavior in a real browser session (manual interaction), not via component-markup/unit snapshot tests.
 - Minimum for simulation engine changes:
 - Rule tests (B3/S23 + Immigration)
 - Packing/unpacking tests
 - Topology boundary tests
-- Add regression tests for every bug fix.
+- Add regression tests for every core-logic bug fix.
 
 ## Git and Delivery
 

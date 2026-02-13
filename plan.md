@@ -684,12 +684,12 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 
 ## 17. Testing-First Delivery Mandate (TDD)
 
-This section is additive and overrides execution style across all phases: every feature is delivered using strict TDD (Red -> Green -> Refactor), with tests written before implementation code and merged only when all gates pass.
+This section is additive and overrides execution style across all phases: core logic/rules/state/accounting features are delivered using strict TDD (Red -> Green -> Refactor), with tests written before implementation code and merged only when all gates pass. Frontend UI presentation is validated in a live browser session instead of component-markup tests.
 
 ### 17.1 Global TDD Rules (non-optional)
 
 1) Red first
-- For each behavior change, write at least one failing test first (unit/integration/invariant as appropriate).
+- For each core logic/rule/state/accounting behavior change, write at least one failing test first (unit/integration/invariant as appropriate).
 - Commit history should show test-first progression for non-trivial features.
 
 2) Green with minimal code
@@ -701,8 +701,9 @@ This section is additive and overrides execution style across all phases: every 
 - Add regression tests for every discovered bug before fixing.
 
 4) No-test-no-merge policy
-- Any new logic path without tests blocks merge.
-- Any production bug fix without a reproducer test blocks merge.
+- Any new core logic path without tests blocks merge.
+- Any production core-logic bug fix without a reproducer test blocks merge.
+- Frontend UI behavior changes require live browser validation notes in progress logs, not component-markup tests.
 
 ### 17.2 Phase 1: Test Harness Foundation (before feature expansion)
 
@@ -753,17 +754,17 @@ Required tests:
 Exit criteria:
 - Full lifecycle simulation tests pass for casual and ranked rounds.
 
-### 17.5 Phase 4: Integration + E2E TDD (UI, indexer, scripts)
+### 17.5 Phase 4: Integration + E2E Validation (indexer, scripts, browser UI checks)
 
 Goals:
 - Validate user-visible behavior and event reconciliation end-to-end.
 
-Required tests:
-- UI integration tests for commit/reveal/claim flows and failure messaging.
+Required checks:
+- Browser UI validation checklist for commit/reveal/claim flows and failure messaging in a live session.
 - Indexer tests validating reconstruction from `RoundCreated`, `Stepped`, `Finalized`, `Claimed`.
 - Deployment script tests (dry-run/fork) verifying expected addresses/config wiring.
 - Replay artifact generation tests ensuring deterministic outputs from same inputs.
-- Wallet interaction tests for minimal-prompt flow and slot reservation conflicts.
+- Wallet transaction orchestration tests in deterministic `apps/web/lib/*` modules (provider mocked, no component-markup tests).
 
 Exit criteria:
 - Local end-to-end round from create -> claim is reproducible with deterministic checks.
@@ -847,6 +848,26 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-12:
+  - Completed P2.8 web test-scope simplification + docs-alignment slice:
+    - Removed `apps/web/test/ui-baseline.test.ts` (component-markup policy test).
+    - Updated project policy/docs to keep Vitest focused on deterministic core logic/rules and validate UI behavior via live browser sessions.
+  - Validation:
+    - `cd apps/web && bun run test` passed.
+    - `cd apps/web && bun run lint` passed.
+    - `cd apps/web && bun run build` passed.
+  - Completed P0.5 spec-complete finalize scoring slice with strict TDD (`Red -> Green`):
+    - Added failing Foundry tests first in `packages/contracts/test/ConwayArenaRoundSimulation.t.sol` for weighted winner resolution and deterministic draw resolution under `3*population + 2*invasion`.
+    - Implemented board-derived scoring outputs in `packages/contracts/src/ConwayArenaRound.sol`:
+      - `finalBlueInvasion`, `finalRedInvasion`
+      - `scoreBlue`, `scoreRed`
+      - winner resolution now compares weighted scores when neither team is extinct.
+    - Updated `packages/contracts/test/ConwayArenaRoundWinnerPayout.t.sol` draw fixture vectors so draw payout behavior remains deterministic under weighted scoring.
+    - Refreshed the contract gas snapshot baseline after scoring-field additions.
+  - Validation:
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline --match-path test/ConwayArenaRoundSimulation.t.sol` passed.
+    - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline` passed.
+    - `bun run test:contracts:gas` passed.
+    - `bun run test` passed.
   - Re-scoped web test runner and browser-validation workflow per operator guidance:
     - Removed temporary Testing Library/Happy DOM dependencies and deleted the corresponding panel interaction test.
     - Migrated `apps/web` tests to Vitest:
@@ -1289,11 +1310,10 @@ Execution rules:
   - Status: PARTIAL
   - Done: one-generation immigration engine with deterministic vector/fuzz parity coverage.
   - Missing to fully match plan intent: explicit Solidity pack/unpack utilities as first-class tested helpers.
-  - Phase C: Round manager contract
+- Phase C: Round manager contract
   - Status: PARTIAL
-  - Done: phase guards, commit/reveal payload checks, slot ownership/idempotency, 64x64 board seed materialization, engine-backed `stepBatch`, board-derived max-gen winner resolution, accounting clamps, transfer-capable keeper/winner claim paths, event and gas regression tests.
+  - Done: phase guards, commit/reveal payload checks, slot ownership/idempotency, 64x64 board seed materialization, engine-backed `stepBatch`, weighted board-derived max-gen winner resolution (`3*population + 2*invasion`), accounting clamps, transfer-capable keeper/winner claim paths, event and gas regression tests.
   - Missing to satisfy "playable on local + Shape Sepolia":
-    - implement spec-complete finalize scoring (final population + invasion weighting), not winner-side resolution only
     - keep gas envelope acceptable after simulation integration and lock Sepolia-proven batch thresholds
 - Phase D: Deployments and scripts (Hardhat + viem)
   - Status: PARTIAL
@@ -1309,7 +1329,6 @@ Execution rules:
 ### 20.2 Impact-Ordered Priorities
 
 - P0:
-  - Extend finalize to spec-complete scoring outputs (final population + invasion weights) and deterministically map score to winner.
   - Keep transfer paths explicitly reentrancy-safe after simulation integration.
 - P1:
   - Execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds.
@@ -1325,6 +1344,7 @@ Execution rules:
 [x] P0.2 Implement board-state storage + `initialize` seed placement + `stepBatch` board progression with bounded write strategy.
 [x] P0.3 Replace mutable terminal-resolution helpers with deterministic board-derived terminal checks in production flow.
 [x] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
+[x] P0.5 Extend finalize to emit/track weighted scoring outputs (final population + invasion) and resolve winner by score when no extinction occurs.
 [x] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
 [ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked pending `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployed `ROUND_ADDRESS`).
 [x] P1.3 Add Sepolia smoke command and release gate documenting required env/config.

@@ -35,6 +35,14 @@ bun test packages/sim/test
 cd apps/web && bun run test
 ```
 
+Web Vitest scope is intentionally limited to API routes and deterministic `apps/web/lib/*` logic (no component-markup UI tests).
+
+- Validate web UI behavior in a browser session:
+
+```bash
+cd apps/web && bun run dev
+```
+
 - Run all configured tests (sim + web + indexer + contract scripts + contracts):
 
 ```bash
