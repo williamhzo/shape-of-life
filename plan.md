@@ -850,6 +850,18 @@ Execution rules:
 
 ## 19. Progress Log
 
+- 2026-02-13 (session 3):
+  - Completed P2.17 methuselah seed presets with strict TDD (`Red -> Green`):
+    - Added failing test first in `apps/web/test/wallet-ux.test.ts` asserting existence and cell-count correctness for R-pentomino, Acorn, Diehard, and LWSS presets.
+    - Added four new presets to `SEED_PRESETS` in `apps/web/lib/wallet-ux.ts`:
+      - R-pentomino (5 cells): classic methuselah, 1103 generations to stabilize.
+      - Acorn (7 cells): evolves for 5206 generations before stabilizing.
+      - Diehard (7 cells): all cells die by generation 130.
+      - LWSS (9 cells): lightweight spaceship, translating pattern.
+    - All fit within 8x8 grid and budget 12.
+  - Validation:
+    - `bun run test` passed (26/26 web, 69/69 Solidity).
+    - `bun run lint` passed.
 - 2026-02-13 (audit):
   - Performed full codebase audit against external review feedback. Findings:
     - **P0 bug: territory axis mismatch.** Contract `validateSlotForTeam` and web `isSlotIndexInTeamTerritory` enforce top/bottom territory (by raw slot index < 32), but spec section 4.2 defines left/right territory (by tileX), and invasion scoring uses x-based masks (`RIGHT_HALF_MASK`/`LEFT_HALF_MASK`). With cylinder Y-wrap, top/bottom teams are adjacent across the seam immediately, making lanes meaningless and invasion scoring incoherent with spawn zones.
@@ -1505,7 +1517,7 @@ Execution rules:
 [x] P0.7 Fix claim event emission: add `PlayerClaimed(address,uint8,uint256)` event to `claim(uint8)` for all claim paths (payout and zero-payout). Update event tests, indexer types, and reconciliation to derive `winnerPaid` from per-claim events when no bulk `Claimed` exists.
 [x] P1.5 Add social lifecycle events: emit `Committed(player, team, slotIndex)` in `commit()`, `Revealed(player, team, slotIndex)` in `reveal()`, and `Initialized()` in `initialize()`. Indexer ingests all three event types with block/log ordering.
 [ ] P2.16 Add canvas board rendering with `<canvas>` + `ImageData` for 64x64 board and local TS forward-simulation between onchain checkpoint snapshots for smooth animation.
-[ ] P2.17 Add methuselah seed presets: R-pentomino, Acorn, Diehard, Lightweight spaceship. All fit budget 12 and produce dramatic multi-generation evolution for better game feel.
+[x] P2.17 Add methuselah seed presets: R-pentomino, Acorn, Diehard, Lightweight spaceship. All fit budget 12 and produce dramatic multi-generation evolution for better game feel.
 [ ] P2.18 Add minimal `ArenaRegistry` contract (or factory) that stores `currentRound` address, past round list, and optional season metadata hash for round discovery without hardcoded env vars.
 [ ] P3.6 Add social sharing primitives: seed link encoding (preset + transforms + slot + team suggestion), post-round replay page with timeline scrubber and signature-moment detection.
 [ ] P3.7 Add offchain per-player contribution tracking: seed survival duration, slot-region territory contribution at final gen, MVP seed ranking.

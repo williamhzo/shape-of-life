@@ -66,4 +66,26 @@ describe("wallet UX helpers", () => {
       expect(getSeedPresetById(preset.id)?.id).toBe(preset.id);
     }
   });
+
+  it("includes methuselah presets that fit within 8x8 and budget 12", () => {
+    const rpentomino = getSeedPresetById("r-pentomino");
+    expect(rpentomino).not.toBeNull();
+    expect(rpentomino!.liveCells).toBe(5);
+    expect(countLiveSeedCells(rpentomino!.seedBits)).toBe(5);
+
+    const acorn = getSeedPresetById("acorn");
+    expect(acorn).not.toBeNull();
+    expect(acorn!.liveCells).toBe(7);
+    expect(countLiveSeedCells(acorn!.seedBits)).toBe(7);
+
+    const diehard = getSeedPresetById("diehard");
+    expect(diehard).not.toBeNull();
+    expect(diehard!.liveCells).toBe(7);
+    expect(countLiveSeedCells(diehard!.seedBits)).toBe(7);
+
+    const lwss = getSeedPresetById("lwss");
+    expect(lwss).not.toBeNull();
+    expect(lwss!.liveCells).toBe(9);
+    expect(countLiveSeedCells(lwss!.seedBits)).toBe(9);
+  });
 });
