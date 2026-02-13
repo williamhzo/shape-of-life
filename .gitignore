@@ -5,3 +5,5 @@ dist/
 coverage/
 *.tsbuildinfo
 packages/contracts/cache/
+.env
+**/.env
