@@ -880,6 +880,10 @@ Execution rules:
       - added seed preset/transform controls and budget progress meter.
       - added explicit tx status panel with staged visual states and tx-hash carry-through.
     - Updated `README.md` and `architecture.md` to document new join-flow + tx-feedback behavior.
+  - Completed P2.15 web test-scope policy hardening + cleanup:
+    - Removed non-core wallet UX unit coverage in `apps/web/test/wallet-tx-feedback.test.ts`.
+    - Tightened `AGENTS.md` testing guidance to require web tests only for business/domain correctness (rules, transitions, invariants, deterministic encodings) and explicitly reject UI-copy/status-label tests.
+    - Synced `architecture.md` test-scope notes to avoid stale references.
   - Completed P3.1 keeper observability/operator-polish slice:
     - Added `packages/contracts/scripts/sepolia-keeper-status.ts` to read live Sepolia round state and emit deterministic keeper next-action recommendations from phase windows and terminal conditions.
     - Added utility coverage in `packages/contracts/scripts/sepolia-keeper-status.test.ts` for cast bool parsing and action recommendation branches (`wait-commit`, `begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`).
@@ -1434,6 +1438,7 @@ Execution rules:
 [x] P2.10 Migrate web tx signing flow to wagmi/viem contract-write + receipt-confirmation primitives with deterministic status-state tests.
 [x] P2.11 Remove legacy provider-request wallet-submit shim/tests now that wagmi-native signing is canonical.
 [x] P2.13 Add deterministic seed presets/transforms and explicit tx lifecycle feedback states (`pending`, `sign`, `confirming`, `error`, `success`) to the wallet join/signing UI.
+[x] P2.15 Remove non-core web UX assertion tests and harden AGENTS.md so web tests are limited to core business/rule correctness.
 [ ] P2.12 Validate updated wagmi wallet UI action sequencing in a live browser session (connect, chain switch, commit/reveal/claim, rejection path), while keeping code-level coverage in Vitest.
 [ ] P2.14 Add spectator canvas board rendering + checkpoint animation and expose participant/keeper feed fields from read model to close remaining Phase E frontend spec gaps.
 [x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
