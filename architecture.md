@@ -120,15 +120,19 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `app/api/round/live/route.ts`: server route that reads persisted indexer model and returns normalized live spectator payload
   - `components/round-live-panel.tsx`: client polling UI for live round state (`/api/round/live`)
   - `components/round-wallet-panel.tsx`: wagmi-based signup flow + browser-wallet commit/reveal/claim journey
-    - Includes connect/disconnect actions, Shape Sepolia chain-gating, team-aware slot picker, 8x8 seed editor (budget enforced), and tx simulation/signing/receipt feedback
+    - Includes connect/disconnect actions, Shape Sepolia chain-gating, team-aware slot picker, 8x8 seed editor with presets/transforms + budget meter, and explicit tx lifecycle state feedback (`pending`, `sign`, `confirming`, `error`, `success`)
   - `lib/board-summary.ts`: board population accounting + overlap/width invariants
   - `lib/wagmi-config.ts`: Shape Sepolia chain/config transport setup for wagmi
   - `lib/wallet-onboarding.ts`: deterministic signup-state gating helper for connect/switch/ready transitions
+  - `lib/wallet-ux.ts`: deterministic seed editing primitives, presets, and transforms (rotate/mirror/translate)
   - `lib/wallet-signing.ts`: deterministic tx-write request and error-normalization helpers for commit/reveal/claim
+  - `lib/wallet-tx-feedback.ts`: deterministic tx lifecycle messaging + badge-state mapping for UI status rendering
   - `lib/round-live.ts`: persisted read-model parsing + normalization for API responses
   - `lib/round-tx.ts`: commit-hash + tx-calldata builders for round contract calls
   - `test/*.test.ts`: route contract + board summary tests
     - includes wallet onboarding state-transition tests
+    - includes wallet seed transform/preset tests
+    - includes wallet tx lifecycle feedback-state tests
     - includes wallet write-request/error mapping tests
     - includes wallet failure-path validation tests and route consistency checks for spectator-read-model status
   - UI baseline from shadcn registry under `apps/web/components/ui`

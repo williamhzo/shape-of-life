@@ -9,15 +9,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Toggle } from "@/components/ui/toggle";
 import { TARGET_CHAIN } from "@/lib/wagmi-config";
 import { deriveWalletOnboardingState } from "@/lib/wallet-onboarding";
+import { createTxFeedback, txBadgeVariant, type TxFeedback, type TxStage } from "@/lib/wallet-tx-feedback";
 import {
+  SEED_PRESETS,
   SEED_BUDGET,
   SLOT_COUNT,
   TEAM_BLUE,
   TEAM_RED,
+  applySeedTransform,
   countLiveSeedCells,
+  getSeedPresetById,
   isSeedCellAlive,
   isSlotIndexInTeamTerritory,
   slotIndexToGrid,
@@ -82,6 +87,25 @@ function shortenAddress(address: Address): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+function txStageLabel(stage: TxStage): string {
+  if (stage === "idle") {
+    return "Idle";
+  }
+  if (stage === "sign") {
+    return "Sign";
+  }
+  if (stage === "pending") {
+    return "Pending";
+  }
+  if (stage === "confirming") {
+    return "Confirming";
+  }
+  if (stage === "success") {
+    return "Success";
+  }
+  return "Error";
+}
+
 export function RoundWalletPanel() {
   const roundAddress = process.env.NEXT_PUBLIC_ROUND_ADDRESS ?? "";
   const { address: account, chainId, isConnected } = useAccount();
@@ -101,7 +125,7 @@ export function RoundWalletPanel() {
     claimSlotIndex: "0",
   });
   const [status, setStatus] = useState<string | null>(null);
-  const [lastTxHash, setLastTxHash] = useState<string | null>(null);
+  const [txFeedback, setTxFeedback] = useState<TxFeedback>(() => createTxFeedback({ action: null, stage: "idle" }));
   const [pendingAction, setPendingAction] = useState<TxKind | null>(null);
 
   const ready = useMemo(() => isRoundAddressConfigured(roundAddress), [roundAddress]);
@@ -118,6 +142,7 @@ export function RoundWalletPanel() {
   );
   const onboardingMessage = useMemo(() => getOnboardingMessage(onboarding.stage), [onboarding.stage]);
   const displayedStatus = status ?? onboardingMessage.status;
+  const budgetProgress = Math.min(100, Math.round((liveCells / SEED_BUDGET) * 100));
 
   function updateDraft<K extends keyof WalletDraft>(key: K, value: WalletDraft[K]): void {
     setDraft((previous) => ({ ...previous, [key]: value }));
@@ -150,6 +175,32 @@ export function RoundWalletPanel() {
     updateDraft("seedBits", next);
   }
 
+  function applySeedMutation(mutate: (seedBits: bigint) => bigint, successMessage: string): void {
+    setDraft((previous) => ({
+      ...previous,
+      seedBits: mutate(previous.seedBits),
+    }));
+    setStatus(successMessage);
+  }
+
+  function applyPreset(presetId: string): void {
+    const preset = getSeedPresetById(presetId);
+    if (!preset) {
+      return;
+    }
+
+    updateDraft("seedBits", preset.seedBits);
+    setStatus(`Applied preset ${preset.name}`);
+  }
+
+  function transformSeed(kind: "rotate-90" | "rotate-180" | "rotate-270" | "mirror-x" | "mirror-y"): void {
+    applySeedMutation((seedBits) => applySeedTransform(seedBits, kind), `Applied transform ${kind}`);
+  }
+
+  function translateSeed(dx: number, dy: number): void {
+    applySeedMutation((seedBits) => applySeedTransform(seedBits, "translate", { dx, dy }), `Translated seed (${dx}, ${dy})`);
+  }
+
   async function connectWallet(connector: (typeof connectors)[number]): Promise<void> {
     try {
       setStatus(`Connecting ${connector.name}...`);
@@ -173,10 +224,12 @@ export function RoundWalletPanel() {
   async function sendTransaction(kind: TxKind): Promise<void> {
     if (!onboarding.canSubmitTx) {
       setStatus(onboardingMessage.status);
+      setTxFeedback(createTxFeedback({ action: kind, stage: "error", error: onboardingMessage.status }));
       return;
     }
     if (!account) {
       setStatus("Connect wallet first");
+      setTxFeedback(createTxFeedback({ action: kind, stage: "error", error: "Connect wallet first" }));
       return;
     }
 
@@ -184,7 +237,7 @@ export function RoundWalletPanel() {
 
     try {
       setPendingAction(kind);
-      setStatus(`${kind} simulation pending...`);
+      setTxFeedback(createTxFeedback({ action: kind, stage: "pending" }));
 
       const request = buildWalletWriteRequest({
         action: kind,
@@ -209,11 +262,10 @@ export function RoundWalletPanel() {
       const simulation = await publicClient.simulateContract(
         request as Parameters<typeof publicClient.simulateContract>[0],
       );
-      setStatus(`${kind} signature requested in wallet...`);
+      setTxFeedback(createTxFeedback({ action: kind, stage: "sign" }));
 
       const txHash = await writeContractAsync(simulation.request);
-      setLastTxHash(txHash);
-      setStatus(`${kind} submitted (${txHash.slice(0, 10)}...), awaiting confirmation...`);
+      setTxFeedback(createTxFeedback({ action: kind, stage: "confirming", txHash }));
 
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
@@ -222,15 +274,19 @@ export function RoundWalletPanel() {
         throw new Error(`${kind} transaction reverted onchain`);
       }
 
-      setStatus(`${kind} confirmed in block ${receipt.blockNumber.toString()}`);
+      setTxFeedback(createTxFeedback({ action: kind, stage: "success", txHash, blockNumber: receipt.blockNumber }));
+      setStatus(`${kind} confirmed`);
     } catch (error) {
-      setStatus(normalizeWalletWriteError(error));
+      const message = normalizeWalletWriteError(error);
+      setTxFeedback(createTxFeedback({ action: kind, stage: "error", error: message }));
+      setStatus(message);
     } finally {
       setPendingAction(null);
     }
   }
 
   const txControlsDisabled = !onboarding.canSubmitTx || pendingAction !== null || isWritePending;
+  const editorDisabled = pendingAction !== null || isWritePending;
 
   return (
     <Card>
@@ -286,21 +342,31 @@ export function RoundWalletPanel() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
             <Label htmlFor="roundId">Round ID</Label>
-            <Input id="roundId" value={draft.roundId} onChange={(event) => updateDraft("roundId", event.target.value)} />
+            <Input id="roundId" value={draft.roundId} disabled={editorDisabled} onChange={(event) => updateDraft("roundId", event.target.value)} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="salt">Salt (bytes32 hex)</Label>
-            <Input id="salt" value={draft.salt} onChange={(event) => updateDraft("salt", event.target.value)} />
+            <Input id="salt" value={draft.salt} disabled={editorDisabled} onChange={(event) => updateDraft("salt", event.target.value)} />
           </div>
         </div>
 
         <div className="space-y-2">
           <Label>Team</Label>
           <div className="flex gap-2">
-            <Button type="button" variant={draft.team === TEAM_BLUE ? "default" : "outline"} onClick={() => handleTeamSelect(TEAM_BLUE)}>
+            <Button
+              type="button"
+              variant={draft.team === TEAM_BLUE ? "default" : "outline"}
+              disabled={editorDisabled}
+              onClick={() => handleTeamSelect(TEAM_BLUE)}
+            >
               Blue
             </Button>
-            <Button type="button" variant={draft.team === TEAM_RED ? "default" : "outline"} onClick={() => handleTeamSelect(TEAM_RED)}>
+            <Button
+              type="button"
+              variant={draft.team === TEAM_RED ? "default" : "outline"}
+              disabled={editorDisabled}
+              onClick={() => handleTeamSelect(TEAM_RED)}
+            >
               Red
             </Button>
           </div>
@@ -318,7 +384,7 @@ export function RoundWalletPanel() {
                   key={slotIndex}
                   type="button"
                   variant={selected ? "default" : "outline"}
-                  disabled={!allowed}
+                  disabled={!allowed || editorDisabled}
                   className="h-8 px-0 text-xs"
                   onClick={() => updateDraft("slotIndex", slotIndex)}
                 >
@@ -334,6 +400,45 @@ export function RoundWalletPanel() {
 
         <div className="space-y-2">
           <Label>Seed Editor (8x8, max {SEED_BUDGET} live cells)</Label>
+          <div className="flex flex-wrap gap-2">
+            {SEED_PRESETS.map((preset) => (
+              <Button key={preset.id} type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => applyPreset(preset.id)}>
+                {preset.name}
+              </Button>
+            ))}
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => updateDraft("seedBits", 0n)}>
+              Clear
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => transformSeed("rotate-90")}>
+              Rotate 90
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => transformSeed("rotate-180")}>
+              Rotate 180
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => transformSeed("rotate-270")}>
+              Rotate 270
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => transformSeed("mirror-x")}>
+              Mirror X
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => transformSeed("mirror-y")}>
+              Mirror Y
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => translateSeed(0, -1)}>
+              Up
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => translateSeed(0, 1)}>
+              Down
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => translateSeed(-1, 0)}>
+              Left
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={editorDisabled} onClick={() => translateSeed(1, 0)}>
+              Right
+            </Button>
+          </div>
           <div className="grid grid-cols-8 gap-1">
             {Array.from({ length: 64 }, (_, index) => {
               const x = index % 8;
@@ -345,6 +450,7 @@ export function RoundWalletPanel() {
                   key={`${x}-${y}`}
                   variant="outline"
                   size="sm"
+                  disabled={editorDisabled}
                   pressed={alive}
                   aria-label={`seed-${x}-${y}`}
                   onPressedChange={() => handleSeedCellToggle(x, y)}
@@ -355,6 +461,7 @@ export function RoundWalletPanel() {
               );
             })}
           </div>
+          <Progress value={budgetProgress} aria-label="seed-budget" />
           <p className="text-muted-foreground">
             Live cells: {liveCells}/{SEED_BUDGET} | seedBits(dec): {draft.seedBits.toString()}
           </p>
@@ -377,13 +484,23 @@ export function RoundWalletPanel() {
           <Input
             id="claimSlotIndex"
             value={draft.claimSlotIndex}
+            disabled={editorDisabled}
             onChange={(event) => updateDraft("claimSlotIndex", event.target.value)}
           />
         </div>
 
-        <p>Status: {displayedStatus}</p>
-        {pendingAction ? <p className="text-muted-foreground">Optimistic status: {pendingAction} pending confirmation...</p> : null}
-        {lastTxHash ? <p className="break-all text-muted-foreground">Last tx: {lastTxHash}</p> : null}
+        <div className="space-y-1 rounded-md border p-3">
+          <p>Wallet status: {displayedStatus}</p>
+          {pendingAction ? <p className="text-muted-foreground">Current action: {pendingAction}</p> : null}
+        </div>
+        <div className="space-y-2 rounded-md border p-3">
+          <div className="flex items-center justify-between">
+            <Label>Transaction Status</Label>
+            <Badge variant={txBadgeVariant(txFeedback.stage)}>{txStageLabel(txFeedback.stage)}</Badge>
+          </div>
+          <p>{txFeedback.message}</p>
+          {txFeedback.txHash ? <p className="break-all text-muted-foreground">Tx hash: {txFeedback.txHash}</p> : null}
+        </div>
       </CardContent>
     </Card>
   );

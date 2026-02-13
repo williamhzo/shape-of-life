@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  SEED_PRESETS,
+  applySeedTransform,
   countLiveSeedCells,
+  getSeedPresetById,
   isSeedCellAlive,
   isSlotIndexInTeamTerritory,
   slotIndexToGrid,
@@ -38,5 +41,27 @@ describe("wallet UX helpers", () => {
     expect(isSlotIndexInTeamTerritory(1, 31)).toBe(false);
     expect(isSlotIndexInTeamTerritory(1, 32)).toBe(true);
     expect(isSlotIndexInTeamTerritory(1, 63)).toBe(true);
+  });
+
+  it("applies seed transforms (rotate, mirror, translate) within the 8x8 grid", () => {
+    let seedBits = 0n;
+    seedBits = toggleSeedCell(seedBits, 1, 0);
+    seedBits = applySeedTransform(seedBits, "rotate-90");
+    expect(isSeedCellAlive(seedBits, 7, 1)).toBe(true);
+
+    seedBits = applySeedTransform(seedBits, "mirror-x");
+    expect(isSeedCellAlive(seedBits, 0, 1)).toBe(true);
+
+    seedBits = applySeedTransform(seedBits, "translate", { dx: 2, dy: 1 });
+    expect(isSeedCellAlive(seedBits, 2, 2)).toBe(true);
+  });
+
+  it("ships preset seed patterns within budget", () => {
+    expect(SEED_PRESETS.length).toBeGreaterThan(0);
+    for (const preset of SEED_PRESETS) {
+      expect(preset.liveCells).toBeLessThanOrEqual(12);
+      expect(countLiveSeedCells(preset.seedBits)).toBe(preset.liveCells);
+      expect(getSeedPresetById(preset.id)?.id).toBe(preset.id);
+    }
   });
 });

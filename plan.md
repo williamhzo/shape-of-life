@@ -869,6 +869,17 @@ Execution rules:
     - Removed `apps/web/lib/wallet-journey.ts` provider-request shim now that wagmi-native signing is canonical.
     - Removed `apps/web/test/wallet-journey.test.ts` and kept deterministic signing coverage in `apps/web/test/wallet-signing.test.ts`.
     - Updated `architecture.md` test-coverage notes to match the current web test surface.
+  - Completed P2.13 web join-flow + tx-feedback spec-gap slice with strict TDD (`Red -> Green`):
+    - Added failing tests first:
+      - `apps/web/test/wallet-ux.test.ts` for seed transform coverage (rotate/mirror/translate) and preset budget guarantees.
+      - `apps/web/test/wallet-tx-feedback.test.ts` for explicit tx lifecycle feedback (`pending`, `sign`, `confirming`, `error`, `success`).
+    - Implemented deterministic helpers:
+      - `apps/web/lib/wallet-ux.ts` now includes seed presets + transform primitives.
+      - `apps/web/lib/wallet-tx-feedback.ts` centralizes tx-stage messages and badge mapping.
+    - Refactored `apps/web/components/round-wallet-panel.tsx`:
+      - added seed preset/transform controls and budget progress meter.
+      - added explicit tx status panel with staged visual states and tx-hash carry-through.
+    - Updated `README.md` and `architecture.md` to document new join-flow + tx-feedback behavior.
   - Completed P3.1 keeper observability/operator-polish slice:
     - Added `packages/contracts/scripts/sepolia-keeper-status.ts` to read live Sepolia round state and emit deterministic keeper next-action recommendations from phase windows and terminal conditions.
     - Added utility coverage in `packages/contracts/scripts/sepolia-keeper-status.test.ts` for cast bool parsing and action recommendation branches (`wait-commit`, `begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`).
@@ -1395,8 +1406,9 @@ Execution rules:
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
   - Add one-command rollout path so benchmark+lock execution is deterministic once env/deploy credentials are present.
 - P2:
-  - Completed for current web wallet UX scope: wagmi SSR onboarding + chain-gated tx signing/receipt flow.
+  - Completed for current web wallet UX scope: wagmi SSR onboarding + chain-gated tx signing/receipt flow + join-flow seed presets/transforms + explicit tx lifecycle UI states.
   - Follow-up: run live-browser validation pass for the updated wagmi signing flow (connect, switch chain, commit/reveal/claim, rejection path).
+  - Follow-up: close remaining frontend spec gaps (canvas live board/animation, participant + keeper feed, end screen flow).
 - P3:
   - Operator polish is in progress (keeper observability + runbook + command hints + keeper tick + keeper loop); remaining work is optional Shape-native features (Gasback/Stack/VRF).
 
@@ -1421,7 +1433,9 @@ Execution rules:
 [x] P2.9 Migrate web wallet signup flow to wagmi SSR providers with deterministic onboarding-state gating and explicit Shape Sepolia chain switch UX.
 [x] P2.10 Migrate web tx signing flow to wagmi/viem contract-write + receipt-confirmation primitives with deterministic status-state tests.
 [x] P2.11 Remove legacy provider-request wallet-submit shim/tests now that wagmi-native signing is canonical.
+[x] P2.13 Add deterministic seed presets/transforms and explicit tx lifecycle feedback states (`pending`, `sign`, `confirming`, `error`, `success`) to the wallet join/signing UI.
 [ ] P2.12 Validate updated wagmi wallet UI action sequencing in a live browser session (connect, chain switch, commit/reveal/claim, rejection path), while keeping code-level coverage in Vitest.
+[ ] P2.14 Add spectator canvas board rendering + checkpoint animation and expose participant/keeper feed fields from read model to close remaining Phase E frontend spec gaps.
 [x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
 [x] P3.2 Add keeper operator runbook covering transition calls, observability cadence, and failure responses.
 [x] P3.3 Extend keeper observability output with executable transition command hints.
