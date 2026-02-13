@@ -68,13 +68,13 @@ contract ConwayArenaRoundSimulationTest {
         bytes32 redSalt = bytes32("red-single");
 
         commitFor(round, address(this), 0, 0, blueSeed, blueSalt);
-        commitFor(round, RED_PLAYER, 1, 32, redSeed, redSalt);
+        commitFor(round, RED_PLAYER, 1, 4, redSeed, redSalt);
 
         vm.warp(111);
         round.beginReveal();
         round.reveal(1, 0, 0, blueSeed, blueSalt);
         vm.prank(RED_PLAYER);
-        round.reveal(1, 1, 32, redSeed, redSalt);
+        round.reveal(1, 1, 4, redSeed, redSalt);
 
         vm.warp(122);
         round.initialize();
@@ -96,12 +96,12 @@ contract ConwayArenaRoundSimulationTest {
         bytes32 blueSalt = bytes32("blue-score");
         bytes32 redSalt = bytes32("red-score");
 
-        commitFor(round, address(this), 0, 4, blueSeed, blueSalt);
+        commitFor(round, address(this), 0, 0, blueSeed, blueSalt);
         commitFor(round, RED_PLAYER, 1, 36, redSeed, redSalt);
 
         vm.warp(111);
         round.beginReveal();
-        round.reveal(1, 0, 4, blueSeed, blueSalt);
+        round.reveal(1, 0, 0, blueSeed, blueSalt);
         vm.prank(RED_PLAYER);
         round.reveal(1, 1, 36, redSeed, redSalt);
 
@@ -112,9 +112,9 @@ contract ConwayArenaRoundSimulationTest {
 
         require(round.finalBluePopulation() == 8, "blue population mismatch");
         require(round.finalRedPopulation() == 9, "red population mismatch");
-        require(round.scoreBlue() == 40, "blue score mismatch");
+        require(round.scoreBlue() == 24, "blue score mismatch");
         require(round.scoreRed() == 27, "red score mismatch");
-        require(round.winnerTeam() == round.TEAM_BLUE(), "blue should win on weighted score");
+        require(round.winnerTeam() == round.TEAM_RED(), "red should win on population when no invasion");
         require(!round.blueExtinct(), "blue should survive");
         require(!round.redExtinct(), "red should survive");
     }
@@ -128,14 +128,14 @@ contract ConwayArenaRoundSimulationTest {
         bytes32 blueSalt = bytes32("blue-draw");
         bytes32 redSalt = bytes32("red-draw");
 
-        commitFor(round, address(this), 0, 4, blueSeed, blueSalt);
-        commitFor(round, RED_PLAYER, 1, 32, redSeed, redSalt);
+        commitFor(round, address(this), 0, 0, blueSeed, blueSalt);
+        commitFor(round, RED_PLAYER, 1, 4, redSeed, redSalt);
 
         vm.warp(111);
         round.beginReveal();
-        round.reveal(1, 0, 4, blueSeed, blueSalt);
+        round.reveal(1, 0, 0, blueSeed, blueSalt);
         vm.prank(RED_PLAYER);
-        round.reveal(1, 1, 32, redSeed, redSalt);
+        round.reveal(1, 1, 4, redSeed, redSalt);
 
         vm.warp(122);
         round.initialize();
@@ -144,8 +144,8 @@ contract ConwayArenaRoundSimulationTest {
 
         require(round.finalBluePopulation() == 4, "blue population mismatch");
         require(round.finalRedPopulation() == 4, "red population mismatch");
-        require(round.scoreBlue() == 20, "blue score mismatch");
-        require(round.scoreRed() == 20, "red score mismatch");
+        require(round.scoreBlue() == 12, "blue score mismatch");
+        require(round.scoreRed() == 12, "red score mismatch");
         require(round.winnerTeam() == round.WINNER_DRAW(), "expected draw winner");
         require(!round.blueExtinct(), "blue should survive");
         require(!round.redExtinct(), "red should survive");

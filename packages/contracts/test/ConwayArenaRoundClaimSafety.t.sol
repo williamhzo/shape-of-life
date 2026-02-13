@@ -21,13 +21,13 @@ contract ConwayArenaRoundClaimSafetyTest {
     function testClaimSlotAllowsRevealedOwnerAndBlocksSecondClaim() public {
         bytes32 salt = bytes32("claim-once");
         uint64 seedBits = 0x3;
-        bytes32 commitHash = round.hashCommit(1, address(this), 0, 5, seedBits, salt);
+        bytes32 commitHash = round.hashCommit(1, address(this), 0, 1, seedBits, salt);
 
-        round.commit(0, 5, commitHash);
+        round.commit(0, 1, commitHash);
 
         vm.warp(111);
         round.beginReveal();
-        round.reveal(1, 0, 5, seedBits, salt);
+        round.reveal(1, 0, 1, seedBits, salt);
 
         vm.warp(122);
         round.initialize();
@@ -35,12 +35,12 @@ contract ConwayArenaRoundClaimSafetyTest {
         round.stepBatch(2);
         round.finalize();
 
-        round.claim(5);
-        (, , , , bool revealed, bool claimed) = round.slots(5);
+        round.claim(1);
+        (, , , , bool revealed, bool claimed) = round.slots(1);
         require(revealed, "expected revealed slot");
         require(claimed, "expected claimed slot");
 
-        expectRevertSelector(ConwayArenaRound.AlreadyClaimed.selector, abi.encodeWithSignature("claim(uint8)", 5));
+        expectRevertSelector(ConwayArenaRound.AlreadyClaimed.selector, abi.encodeWithSignature("claim(uint8)", 1));
     }
 
     function testClaimSlotRevertsForNonOwner() public {

@@ -113,17 +113,17 @@ contract ConwayArenaRoundStateMachineTest {
         uint64 blueSeedBits = 0x3;
         uint64 redSeedBits = 0x3;
         bytes32 blueCommitHash = round.hashCommit(1, address(this), 0, 0, blueSeedBits, blueSalt);
-        bytes32 redCommitHash = round.hashCommit(1, RED_PLAYER, 1, 32, redSeedBits, redSalt);
+        bytes32 redCommitHash = round.hashCommit(1, RED_PLAYER, 1, 4, redSeedBits, redSalt);
 
         round.commit(0, 0, blueCommitHash);
         vm.prank(RED_PLAYER);
-        round.commit(1, 32, redCommitHash);
+        round.commit(1, 4, redCommitHash);
 
         vm.warp(111);
         round.beginReveal();
         round.reveal(1, 0, 0, blueSeedBits, blueSalt);
         vm.prank(RED_PLAYER);
-        round.reveal(1, 1, 32, redSeedBits, redSalt);
+        round.reveal(1, 1, 4, redSeedBits, redSalt);
         vm.warp(122);
         round.initialize();
         expectRevertSelector(ConwayArenaRound.RoundNotTerminal.selector, abi.encodeCall(ConwayArenaRound.finalize, ()));

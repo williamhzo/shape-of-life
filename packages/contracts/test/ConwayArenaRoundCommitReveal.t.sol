@@ -35,38 +35,38 @@ contract ConwayArenaRoundCommitRevealTest {
     }
 
     function testCommitPayloadRevertsForTeamTerritoryMismatch() public {
-        bytes32 commitHash = round.hashCommit(1, address(this), 0, 40, 0x1, bytes32("salt"));
+        bytes32 commitHash = round.hashCommit(1, address(this), 0, 4, 0x1, bytes32("salt"));
 
         expectRevertSelector(
             ConwayArenaRound.SlotOutOfTerritory.selector,
-            abi.encodeWithSignature("commit(uint8,uint8,bytes32)", 0, 40, commitHash)
+            abi.encodeWithSignature("commit(uint8,uint8,bytes32)", 0, 4, commitHash)
         );
     }
 
     function testCommitPayloadRevertsWhenAddressAlreadyReserved() public {
         bytes32 firstHash = round.hashCommit(1, address(this), 0, 2, 0x1, bytes32("first"));
-        bytes32 secondHash = round.hashCommit(1, address(this), 0, 5, 0x2, bytes32("second"));
+        bytes32 secondHash = round.hashCommit(1, address(this), 0, 11, 0x2, bytes32("second"));
 
         round.commit(0, 2, firstHash);
 
         expectRevertSelector(
             ConwayArenaRound.AddressAlreadyCommitted.selector,
-            abi.encodeWithSignature("commit(uint8,uint8,bytes32)", 0, 5, secondHash)
+            abi.encodeWithSignature("commit(uint8,uint8,bytes32)", 0, 11, secondHash)
         );
     }
 
     function testRevealPayloadRevertsForWrongPlayer() public {
         bytes32 salt = bytes32("owner-check");
         uint64 seedBits = 0x3;
-        bytes32 commitHash = round.hashCommit(1, address(this), 0, 7, seedBits, salt);
+        bytes32 commitHash = round.hashCommit(1, address(this), 0, 11, seedBits, salt);
 
-        round.commit(0, 7, commitHash);
+        round.commit(0, 11, commitHash);
         transitionToReveal();
 
         vm.prank(address(0xBEEF));
         expectRevertSelector(
             ConwayArenaRound.NotSlotOwner.selector,
-            abi.encodeWithSignature("reveal(uint256,uint8,uint8,uint64,bytes32)", 1, 0, 7, seedBits, salt)
+            abi.encodeWithSignature("reveal(uint256,uint8,uint8,uint64,bytes32)", 1, 0, 11, seedBits, salt)
         );
     }
 
@@ -74,14 +74,14 @@ contract ConwayArenaRoundCommitRevealTest {
         bytes32 salt = bytes32("hash-mismatch");
         uint64 committedSeedBits = 0x3;
         uint64 revealedSeedBits = 0x7;
-        bytes32 commitHash = round.hashCommit(1, address(this), 0, 4, committedSeedBits, salt);
+        bytes32 commitHash = round.hashCommit(1, address(this), 0, 16, committedSeedBits, salt);
 
-        round.commit(0, 4, commitHash);
+        round.commit(0, 16, commitHash);
         transitionToReveal();
 
         expectRevertSelector(
             ConwayArenaRound.CommitHashMismatch.selector,
-            abi.encodeWithSignature("reveal(uint256,uint8,uint8,uint64,bytes32)", 1, 0, 4, revealedSeedBits, salt)
+            abi.encodeWithSignature("reveal(uint256,uint8,uint8,uint64,bytes32)", 1, 0, 16, revealedSeedBits, salt)
         );
     }
 

@@ -57,9 +57,13 @@ contract ConwayArenaRound {
     uint64 private constant RIGHT_HALF_MASK = type(uint64).max << 32;
     uint64 private constant LEFT_HALF_MASK = uint64(type(uint32).max);
 
+    event Committed(address player, uint8 team, uint8 slotIndex);
+    event Revealed(address player, uint8 team, uint8 slotIndex);
+    event Initialized();
     event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward);
     event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust);
     event Claimed(uint256 distributed, uint256 cumulativeWinnerPaid, uint256 treasuryDust, uint256 remainingWinnerPool);
+    event PlayerClaimed(address player, uint8 slotIndex, uint256 amount);
     event KeeperCreditWithdrawn(address keeper, uint256 amount);
 
     struct SlotData {
@@ -142,6 +146,8 @@ contract ConwayArenaRound {
         slot.team = team;
         slot.commitHash = commitHash;
         hasReservedSlot[msg.sender] = true;
+
+        emit Committed(msg.sender, team, slotIndex);
     }
 
     function beginReveal() external {
@@ -195,6 +201,8 @@ contract ConwayArenaRound {
                 revealedRedCount += 1;
             }
         }
+
+        emit Revealed(msg.sender, team, slotIndex);
     }
 
     function initialize() external {
@@ -215,6 +223,8 @@ contract ConwayArenaRound {
         materializeBoardFromRevealedSeeds();
         refreshBoardStatus();
         phase = Phase.Sim;
+
+        emit Initialized();
     }
 
     function stepBatch(uint16 requestedSteps) external {
@@ -314,23 +324,21 @@ contract ConwayArenaRound {
 
         slot.claimed = true;
 
-        if (!accountingConfigured || winnerClaimsSettled) {
-            return 0;
+        if (accountingConfigured && !winnerClaimsSettled) {
+            lockPayoutIfNeeded();
+            if (payoutPerClaim > 0 && isPayoutEligible(slot.team)) {
+                amount = payoutPerClaim;
+                winnerPool -= amount;
+                winnerPaid += amount;
+
+                (bool success,) = payable(msg.sender).call{value: amount}("");
+                if (!success) {
+                    revert TransferFailed();
+                }
+            }
         }
 
-        lockPayoutIfNeeded();
-        if (payoutPerClaim == 0 || !isPayoutEligible(slot.team)) {
-            return 0;
-        }
-
-        amount = payoutPerClaim;
-        winnerPool -= amount;
-        winnerPaid += amount;
-
-        (bool success,) = payable(msg.sender).call{value: amount}("");
-        if (!success) {
-            revert TransferFailed();
-        }
+        emit PlayerClaimed(msg.sender, slotIndex, amount);
     }
 
     function configureAccounting(uint256 totalFunded_, uint256 rewardPerGen_) external {
@@ -433,10 +441,11 @@ contract ConwayArenaRound {
             revert InvalidSlotIndex(slotIndex);
         }
 
-        if (team == TEAM_BLUE && slotIndex >= TEAM_SLOT_COUNT) {
+        uint8 tileX = slotIndex % SLOT_COLUMNS;
+        if (team == TEAM_BLUE && tileX >= SLOT_COLUMNS / 2) {
             revert SlotOutOfTerritory(team, slotIndex);
         }
-        if (team == TEAM_RED && slotIndex < TEAM_SLOT_COUNT) {
+        if (team == TEAM_RED && tileX < SLOT_COLUMNS / 2) {
             revert SlotOutOfTerritory(team, slotIndex);
         }
     }

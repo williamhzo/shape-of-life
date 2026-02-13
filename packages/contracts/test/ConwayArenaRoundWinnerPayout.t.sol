@@ -28,7 +28,7 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
     function testWinnerTeamClaimsReceiveEqualPayout() public {
         commitRevealSlot(address(this), 0, 3, 0x3, bytes32("blue-1"));
-        commitRevealSlot(SECOND_PLAYER, 0, 4, 0x7, bytes32("blue-2"));
+        commitRevealSlot(SECOND_PLAYER, 0, 8, 0x7, bytes32("blue-2"));
 
         transitionToClaimByBlueWin();
 
@@ -37,7 +37,7 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
         uint256 firstPaid = round.claim(3);
         vm.prank(SECOND_PLAYER);
-        uint256 secondPaid = round.claim(4);
+        uint256 secondPaid = round.claim(8);
 
         require(firstPaid == 6 ether, "first payout mismatch");
         require(secondPaid == 6 ether, "second payout mismatch");
@@ -46,17 +46,17 @@ contract ConwayArenaRoundWinnerPayoutTest {
     }
 
     function testDrawClaimsSplitAcrossBothTeams() public {
-        commitRevealSlot(address(this), 0, 4, 0x0020908000078E80, bytes32("draw-blue"));
-        commitRevealSlot(RED_PLAYER, 1, 32, 0x80880041C8881100, bytes32("draw-red"));
+        commitRevealSlot(address(this), 0, 0, 0x0020908000078E80, bytes32("draw-blue"));
+        commitRevealSlot(RED_PLAYER, 1, 4, 0x80880041C8881100, bytes32("draw-red"));
 
         transitionToClaimByDraw();
 
         uint256 blueBefore = address(this).balance;
         uint256 redBefore = RED_PLAYER.balance;
 
-        uint256 bluePaid = round.claim(4);
+        uint256 bluePaid = round.claim(0);
         vm.prank(RED_PLAYER);
-        uint256 redPaid = round.claim(32);
+        uint256 redPaid = round.claim(4);
 
         require(bluePaid == 6 ether, "blue draw payout mismatch");
         require(redPaid == 6 ether, "red draw payout mismatch");
@@ -66,7 +66,7 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
     function testNonWinningSlotClaimReturnsZeroButMarksClaimed() public {
         commitRevealSlot(address(this), 0, 1, 0x1, bytes32("loser-blue"));
-        commitRevealSlot(RED_PLAYER, 1, 33, 0x303, bytes32("winner-red"));
+        commitRevealSlot(RED_PLAYER, 1, 5, 0x303, bytes32("winner-red"));
 
         transitionToClaimByRedWin();
 
@@ -75,7 +75,7 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
         uint256 loserPaid = round.claim(1);
         vm.prank(RED_PLAYER);
-        uint256 winnerPaid = round.claim(33);
+        uint256 winnerPaid = round.claim(5);
 
         (, , , , bool loserRevealed, bool loserClaimed) = round.slots(1);
         require(loserRevealed, "expected loser revealed");
@@ -104,7 +104,7 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
         round.reveal(1, 0, 3, 0x3, bytes32("blue-1"));
         vm.prank(SECOND_PLAYER);
-        round.reveal(1, 0, 4, 0x7, bytes32("blue-2"));
+        round.reveal(1, 0, 8, 0x7, bytes32("blue-2"));
 
         vm.warp(122);
         round.initialize();
@@ -115,9 +115,9 @@ contract ConwayArenaRoundWinnerPayoutTest {
         vm.warp(111);
         round.beginReveal();
 
-        round.reveal(1, 0, 4, 0x0020908000078E80, bytes32("draw-blue"));
+        round.reveal(1, 0, 0, 0x0020908000078E80, bytes32("draw-blue"));
         vm.prank(RED_PLAYER);
-        round.reveal(1, 1, 32, 0x80880041C8881100, bytes32("draw-red"));
+        round.reveal(1, 1, 4, 0x80880041C8881100, bytes32("draw-red"));
 
         vm.warp(122);
         round.initialize();
@@ -132,7 +132,7 @@ contract ConwayArenaRoundWinnerPayoutTest {
 
         round.reveal(1, 0, 1, 0x1, bytes32("loser-blue"));
         vm.prank(RED_PLAYER);
-        round.reveal(1, 1, 33, 0x303, bytes32("winner-red"));
+        round.reveal(1, 1, 5, 0x303, bytes32("winner-red"));
 
         vm.warp(122);
         round.initialize();

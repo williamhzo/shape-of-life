@@ -109,7 +109,7 @@ contract ConwayArenaRoundAccountingTest {
 
         commitFor(address(this), 0, 1, 0x303, bytes32("blue-one"));
         commitFor(BLUE_TWO, 0, 2, 0x303, bytes32("blue-two"));
-        commitFor(RED_ONE, 1, 32, 0x1, bytes32("red-one"));
+        commitFor(RED_ONE, 1, 4, 0x1, bytes32("red-one"));
 
         vm.warp(111);
         round.beginReveal();
@@ -118,7 +118,7 @@ contract ConwayArenaRoundAccountingTest {
         vm.prank(BLUE_TWO);
         round.reveal(1, 0, 2, 0x303, bytes32("blue-two"));
         vm.prank(RED_ONE);
-        round.reveal(1, 1, 32, 0x1, bytes32("red-one"));
+        round.reveal(1, 1, 4, 0x1, bytes32("red-one"));
 
         vm.warp(122);
         round.initialize();
@@ -129,7 +129,7 @@ contract ConwayArenaRoundAccountingTest {
         assertAccountingInvariantEqualsTotalFunded();
 
         vm.prank(RED_ONE);
-        uint256 losingPayout = round.claim(32);
+        uint256 losingPayout = round.claim(4);
         require(losingPayout == 0, "losing claim should pay zero");
         assertAccountingInvariantEqualsTotalFunded();
 
