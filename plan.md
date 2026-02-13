@@ -920,6 +920,16 @@ Execution rules:
     - Sim + indexer + scripts: 65/65 tests passed.
     - `bun run test:contracts:gas` snapshot updated and passes.
     - `bun run lint` passed.
+- 2026-02-13 (session 3):
+  - Completed P2.18 ArenaRegistry contract:
+    - Added `ArenaRegistry.sol`: owner-managed registry storing `currentRound`, `pastRounds[]`, and `seasonMetadataHash`.
+    - Functions: `setCurrentRound`, `setSeasonMetadataHash`, `transferOwnership`, `pastRoundCount`, `allPastRounds`.
+    - Events: `CurrentRoundUpdated`, `SeasonMetadataHashUpdated`.
+    - Added 19 Foundry tests covering ownership, round rotation, past-round tracking, metadata, events, and access control.
+    - Added Hardhat Ignition module (`ArenaRegistryModule`).
+  - Validation:
+    - Foundry: 88/88 tests passed (19 new + 69 existing).
+    - Full suite: `bun run test` passed (sim + web + indexer + scripts + contracts).
 - 2026-02-13:
   - Completed P2.9 web wallet onboarding migration slice with strict TDD (`Red -> Green`):
     - Added failing tests first in `apps/web/test/wallet-onboarding.test.ts` for deterministic signup gating transitions (missing round config, disconnected wallet, wrong chain, ready state).
@@ -1538,7 +1548,7 @@ Execution rules:
 [x] P1.5 Add social lifecycle events: emit `Committed(player, team, slotIndex)` in `commit()`, `Revealed(player, team, slotIndex)` in `reveal()`, and `Initialized()` in `initialize()`. Indexer ingests all three event types with block/log ordering.
 [x] P2.16 Add canvas board rendering with `<canvas>` + `ImageData` for 64x64 board and local TS forward-simulation between onchain checkpoint snapshots for smooth animation.
 [x] P2.17 Add methuselah seed presets: R-pentomino, Acorn, Diehard, Lightweight spaceship. All fit budget 12 and produce dramatic multi-generation evolution for better game feel.
-[ ] P2.18 Add minimal `ArenaRegistry` contract (or factory) that stores `currentRound` address, past round list, and optional season metadata hash for round discovery without hardcoded env vars.
+[x] P2.18 Add minimal `ArenaRegistry` contract (or factory) that stores `currentRound` address, past round list, and optional season metadata hash for round discovery without hardcoded env vars.
 [ ] P3.6 Add social sharing primitives: seed link encoding (preset + transforms + slot + team suggestion), post-round replay page with timeline scrubber and signature-moment detection.
 [ ] P3.7 Add offchain per-player contribution tracking: seed survival duration, slot-region territory contribution at final gen, MVP seed ranking.
 
