@@ -91,6 +91,8 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `scripts/sepolia-keeper-status.ts`:
     - Cast-based keeper observability summary for Sepolia rounds
     - Produces deterministic next-action recommendation (`begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`) from current phase/timing/terminal state
+  - `docs/keeper-runbook.md`:
+    - Operator playbook for transition calls, smoke/observe cadence, and failure-mode response on Sepolia
   - `hardhat.config.ts`:
     - viem-first Hardhat 3 scaffold using `@nomicfoundation/hardhat-toolbox-viem`
     - Shape Sepolia/Mainnet deterministic network wiring from env (`SHAPE_SEPOLIA_RPC_URL`, `SHAPE_MAINNET_RPC_URL`, `DEPLOYER_PRIVATE_KEY`)

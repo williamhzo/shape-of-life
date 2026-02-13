@@ -853,6 +853,10 @@ Execution rules:
     - Added utility coverage in `packages/contracts/scripts/sepolia-keeper-status.test.ts` for cast bool parsing and action recommendation branches (`wait-commit`, `begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`).
     - Wired root command `observe:sepolia:keeper` in `package.json`.
     - Updated `README.md` and `architecture.md` with keeper observability command/docs.
+  - Completed P3.2 keeper runbook/operator playbook slice:
+    - Added `packages/contracts/docs/keeper-runbook.md` with an explicit operator loop, transition call commands, and immediate failure-mode responses.
+    - Linked the runbook from `README.md` and documented it in `architecture.md`.
+    - Synced impact queue/status updates in Section 20 (`P3.2` complete).
   - Validation:
     - `bun test packages/contracts/scripts/*.test.ts` passed.
     - `bun run test` passed.
@@ -1348,7 +1352,7 @@ Execution rules:
 - P2:
   - Completed for current web route + validation surfaces, including provider-mocked wallet sequencing plus live-browser interaction validation.
 - P3:
-  - Operator polish is in progress (keeper observability command added); remaining work is runbooks/automation plus optional Shape-native features (Gasback/Stack/VRF).
+  - Operator polish is in progress (keeper observability command + runbook added); remaining work is automation and optional Shape-native features (Gasback/Stack/VRF).
 
 ### 20.3 Atomic Action Queue
 
@@ -1368,6 +1372,7 @@ Execution rules:
 [x] P2.6 Add provider-mocked browser end-to-end tests for commit/reveal/claim success/failure transitions.
 [x] P2.7 Validate wallet UI action sequencing in a live browser session with a mocked provider (connect, slot/team selection, reveal submit, rejection path), while keeping code-level coverage in Vitest.
 [x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
+[x] P3.2 Add keeper operator runbook covering transition calls, observability cadence, and failure responses.
 
 ### 20.4 Validation Gates
 
