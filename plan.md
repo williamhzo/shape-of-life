@@ -866,8 +866,13 @@ Execution rules:
     - Added tests first in `packages/contracts/scripts/sepolia-max-batch-rollout.test.ts` for round-address normalization/selection and deploy decision guards.
     - Wired root command `rollout:sepolia:max-batch` in `package.json` and documented usage/flags in `README.md` and `architecture.md`.
     - Kept `P1.2` marked blocked; live execution still requires `SHAPE_SEPOLIA_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and deployable/reachable round context.
+  - Completed P3.4 keeper tick automation slice:
+    - Added `packages/contracts/scripts/sepolia-keeper-tick.ts` to run one keeper tick from observability output, with dry-run default and optional `--execute` transaction submission.
+    - Added tests first in `packages/contracts/scripts/sepolia-keeper-tick.test.ts` for command argument derivation across executable/non-executable recommendation paths.
+    - Wired root command `tick:sepolia:keeper` in `package.json`, then updated `README.md`, `packages/contracts/docs/keeper-runbook.md`, and `architecture.md`.
   - Validation:
     - `bun test packages/contracts/scripts/sepolia-max-batch-rollout.test.ts` passed.
+    - `bun test packages/contracts/scripts/sepolia-keeper-tick.test.ts` passed.
     - `bun test packages/contracts/scripts/*.test.ts` passed.
     - `bun run test` passed.
     - `bun run test:contracts:gas` passed.
@@ -1363,7 +1368,7 @@ Execution rules:
 - P2:
   - Completed for current web route + validation surfaces, including provider-mocked wallet sequencing plus live-browser interaction validation.
 - P3:
-  - Operator polish is in progress (keeper observability command + runbook + actionable command hints); remaining work is recurring automation and optional Shape-native features (Gasback/Stack/VRF).
+  - Operator polish is in progress (keeper observability + runbook + command hints + one-shot keeper tick); remaining work is recurring automation and optional Shape-native features (Gasback/Stack/VRF).
 
 ### 20.3 Atomic Action Queue
 
@@ -1386,6 +1391,7 @@ Execution rules:
 [x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
 [x] P3.2 Add keeper operator runbook covering transition calls, observability cadence, and failure responses.
 [x] P3.3 Extend keeper observability output with executable transition command hints.
+[x] P3.4 Add keeper tick automation command with dry-run/execute modes driven by observability output.
 
 ### 20.4 Validation Gates
 

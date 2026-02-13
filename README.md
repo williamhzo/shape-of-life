@@ -187,6 +187,23 @@ bun run observe:sepolia:keeper
 
 Output includes `recommendedCommand` when a keeper transition call should be executed.
 
+- Run one keeper tick in dry-run mode (prints whether a transition is executable now):
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run tick:sepolia:keeper
+```
+
+- Execute the recommended keeper transition when one is ready:
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+KEEPER_PRIVATE_KEY=<hex-private-key> \
+bun run tick:sepolia:keeper --execute
+```
+
 Keeper operator runbook: `packages/contracts/docs/keeper-runbook.md`.
 
 - Run full Sepolia release gate (local test/lint/build gates + Sepolia smoke):

@@ -24,7 +24,14 @@ bun run observe:sepolia:keeper
 bun run smoke:sepolia:round
 ```
 
-3. Execute the recommended round transition when `recommendation.ready` is `true`:
+3. Optional automation tick:
+
+```bash
+bun run tick:sepolia:keeper
+bun run tick:sepolia:keeper --execute
+```
+
+4. Execute the recommended round transition manually when needed:
 
 ```bash
 # commit -> reveal
@@ -40,7 +47,7 @@ cast send "$ROUND_ADDRESS" "stepBatch(uint16)" 16 --private-key "$KEEPER_PRIVATE
 cast send "$ROUND_ADDRESS" "finalize()" --private-key "$KEEPER_PRIVATE_KEY" --rpc-url "$SHAPE_SEPOLIA_RPC_URL"
 ```
 
-4. During claim phase, do not call `stepBatch` or `finalize`; monitor claims and accounting fields through `smoke:sepolia:round` and indexer sync.
+5. During claim phase, do not call `stepBatch` or `finalize`; monitor claims and accounting fields through `smoke:sepolia:round` and indexer sync.
 
 ## Failure Modes and Immediate Actions
 

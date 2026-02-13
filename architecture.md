@@ -95,6 +95,9 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Cast-based keeper observability summary for Sepolia rounds
     - Produces deterministic next-action recommendation (`begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`) from current phase/timing/terminal state
     - Emits `recommendedCommand` for actionable keeper transitions to reduce manual operator mistakes
+  - `scripts/sepolia-keeper-tick.ts`:
+    - One-shot keeper automation command that consumes observability output and can submit the recommended transition with `--execute`
+    - Dry-run mode reports whether a transition is currently executable without sending a transaction
   - `docs/keeper-runbook.md`:
     - Operator playbook for transition calls, smoke/observe cadence, and failure-mode response on Sepolia
   - `hardhat.config.ts`:
