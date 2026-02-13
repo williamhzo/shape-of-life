@@ -48,14 +48,14 @@ describe("buildWalletWriteRequest", () => {
         action: "reveal",
         roundId: "9",
         team: 1,
-        slotIndex: 40,
+        slotIndex: 44,
         seedBits: 255n,
         salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
         claimSlotIndex: "0",
       },
     });
     expect(reveal.functionName).toBe("reveal");
-    expect(reveal.args).toEqual([9n, 1, 40, 255n, "0x0000000000000000000000000000000000000000000000000000000000000001"]);
+    expect(reveal.args).toEqual([9n, 1, 44, 255n, "0x0000000000000000000000000000000000000000000000000000000000000001"]);
 
     const claim = buildWalletWriteRequest({
       action: "claim",
@@ -66,7 +66,7 @@ describe("buildWalletWriteRequest", () => {
         action: "claim",
         roundId: "9",
         team: 1,
-        slotIndex: 40,
+        slotIndex: 44,
         seedBits: 255n,
         salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
         claimSlotIndex: "12",

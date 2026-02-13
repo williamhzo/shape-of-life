@@ -3,6 +3,7 @@ export const TEAM_RED = 1;
 export const SLOT_COUNT = 64;
 export const TEAM_SLOT_COUNT = 32;
 export const SEED_EDGE = 8;
+export const SLOT_COLUMNS = 8;
 export const SEED_BUDGET = 12;
 
 export type SeedTransform = "rotate-90" | "rotate-180" | "rotate-270" | "mirror-x" | "mirror-y" | "translate";
@@ -205,11 +206,13 @@ export function slotIndexToGrid(slotIndex: number): { tileX: number; tileY: numb
 
 export function isSlotIndexInTeamTerritory(team: number, slotIndex: number): boolean {
   assertSlotIndex(slotIndex);
+  const tileX = slotIndex % SLOT_COLUMNS;
+  const halfColumns = SLOT_COLUMNS / 2;
   if (team === TEAM_BLUE) {
-    return slotIndex < TEAM_SLOT_COUNT;
+    return tileX < halfColumns;
   }
   if (team === TEAM_RED) {
-    return slotIndex >= TEAM_SLOT_COUNT;
+    return tileX >= halfColumns;
   }
 
   throw new Error(`invalid team ${team}`);
