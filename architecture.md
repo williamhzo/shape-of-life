@@ -119,15 +119,17 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `app/api/health/route.ts`: health endpoint contract
   - `app/api/round/live/route.ts`: server route that reads persisted indexer model and returns normalized live spectator payload
   - `components/round-live-panel.tsx`: client polling UI for live round state (`/api/round/live`)
-  - `components/round-wallet-panel.tsx`: wagmi-based signup flow + browser-wallet commit/reveal/claim journey using encoded calldata
-    - Includes connect/disconnect actions, Shape Sepolia chain-gating, team-aware slot picker, 8x8 seed editor (budget enforced), and optimistic pending-submit feedback
+  - `components/round-wallet-panel.tsx`: wagmi-based signup flow + browser-wallet commit/reveal/claim journey
+    - Includes connect/disconnect actions, Shape Sepolia chain-gating, team-aware slot picker, 8x8 seed editor (budget enforced), and tx simulation/signing/receipt feedback
   - `lib/board-summary.ts`: board population accounting + overlap/width invariants
   - `lib/wagmi-config.ts`: Shape Sepolia chain/config transport setup for wagmi
   - `lib/wallet-onboarding.ts`: deterministic signup-state gating helper for connect/switch/ready transitions
+  - `lib/wallet-signing.ts`: deterministic tx-write request and error-normalization helpers for commit/reveal/claim
   - `lib/round-live.ts`: persisted read-model parsing + normalization for API responses
   - `lib/round-tx.ts`: commit-hash + tx-calldata builders for round contract calls
   - `test/*.test.ts`: route contract + board summary tests
     - includes wallet onboarding state-transition tests
+    - includes wallet write-request/error mapping tests
     - includes wallet failure-path validation tests and route consistency checks for spectator-read-model status
     - includes provider-mocked wallet journey transition tests for commit/reveal/claim submission paths
   - UI baseline from shadcn registry under `apps/web/components/ui`
@@ -215,7 +217,7 @@ Current architecture guarantees rule parity confidence at engine level and now i
 - `GET /api/round/live` reads the persisted indexer round snapshot and normalizes bigint-heavy payloads for client consumption.
 - Landing page now renders:
   - live spectator panel (polling `/api/round/live`)
-  - wagmi-backed wallet journey panel with signup gating and commit/reveal/claim submission
+  - wagmi-backed wallet journey panel with signup gating and `simulate -> sign -> receipt` tx flow
   - local preview board summary card.
 
 ## 5. Planned Architecture (From plan.md, Not Fully Implemented Yet)

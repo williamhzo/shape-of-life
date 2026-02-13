@@ -80,7 +80,7 @@ NEXT_PUBLIC_SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
 cd apps/web && bun run dev
 ```
 
-The wallet panel now includes a wagmi-based signup flow (connect + target-chain gating), a team-aware slot picker, 8x8 seed editor (seed budget guard), and optimistic transaction status feedback for commit/reveal/claim actions.
+The wallet panel now includes a wagmi-based signup flow (connect + target-chain gating), a team-aware slot picker, 8x8 seed editor (seed budget guard), and tx signing via `simulateContract -> writeContract -> waitForTransactionReceipt` for commit/reveal/claim actions.
 
 - Run benchmark utility tests for Sepolia maxBatch lock tooling:
 

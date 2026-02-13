@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
-import { useAccount, useConnect, useConnectors, useDisconnect, useSwitchChain } from "wagmi";
+import { useAccount, useConnect, useConnectors, useDisconnect, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,7 @@ import {
   slotIndexToGrid,
   toggleSeedCell,
 } from "@/lib/wallet-ux";
-import { validateWalletSubmissionDraft } from "@/lib/wallet-submit";
-import { submitWalletAction, type WalletProvider } from "@/lib/wallet-journey";
+import { buildWalletWriteRequest, normalizeWalletWriteError } from "@/lib/wallet-signing";
 
 type TxKind = "commit" | "reveal" | "claim";
 
@@ -42,14 +41,6 @@ type OnboardingMessage = {
   label: string;
   status: string;
 };
-
-function requireProvider(): WalletProvider {
-  if (typeof window === "undefined" || !window.ethereum) {
-    throw new Error("wallet provider not found");
-  }
-
-  return window.ethereum;
-}
 
 function isRoundAddressConfigured(roundAddress: string): roundAddress is Address {
   return isAddress(roundAddress);
@@ -98,6 +89,8 @@ export function RoundWalletPanel() {
   const { connectAsync, isPending: isConnectPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChainAsync, isPending: isSwitchPending } = useSwitchChain();
+  const publicClient = usePublicClient({ chainId: TARGET_CHAIN.id });
+  const { writeContractAsync, isPending: isWritePending } = useWriteContract();
 
   const [draft, setDraft] = useState<WalletDraft>({
     roundId: "1",
@@ -190,22 +183,12 @@ export function RoundWalletPanel() {
     const targetRoundAddress = roundAddress as Address;
 
     try {
-      const provider = requireProvider();
-      validateWalletSubmissionDraft({
-        action: kind,
-        roundId: draft.roundId,
-        team: draft.team,
-        slotIndex: draft.slotIndex,
-        seedBits: draft.seedBits,
-        salt: draft.salt,
-        claimSlotIndex: draft.claimSlotIndex,
-      });
-
       setPendingAction(kind);
-      setStatus(`${kind} pending...`);
-      const result = await submitWalletAction({
-        provider,
+      setStatus(`${kind} simulation pending...`);
+
+      const request = buildWalletWriteRequest({
         action: kind,
+        chainId: TARGET_CHAIN.id,
         account,
         roundAddress: targetRoundAddress,
         draft: {
@@ -218,14 +201,36 @@ export function RoundWalletPanel() {
           claimSlotIndex: draft.claimSlotIndex,
         },
       });
-      setLastTxHash(result.txHash);
-      setStatus(`${kind} transaction submitted (${result.txHash.slice(0, 10)}...)`);
+
+      if (!publicClient) {
+        throw new Error("public client unavailable for selected chain");
+      }
+
+      const simulation = await publicClient.simulateContract(
+        request as Parameters<typeof publicClient.simulateContract>[0],
+      );
+      setStatus(`${kind} signature requested in wallet...`);
+
+      const txHash = await writeContractAsync(simulation.request);
+      setLastTxHash(txHash);
+      setStatus(`${kind} submitted (${txHash.slice(0, 10)}...), awaiting confirmation...`);
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+      });
+      if (receipt.status !== "success") {
+        throw new Error(`${kind} transaction reverted onchain`);
+      }
+
+      setStatus(`${kind} confirmed in block ${receipt.blockNumber.toString()}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "failed to send transaction");
+      setStatus(normalizeWalletWriteError(error));
     } finally {
       setPendingAction(null);
     }
   }
+
+  const txControlsDisabled = !onboarding.canSubmitTx || pendingAction !== null || isWritePending;
 
   return (
     <Card>
@@ -255,6 +260,9 @@ export function RoundWalletPanel() {
                   </Button>
                 ))
               : null}
+            {!isConnected && connectors.length === 0 ? (
+              <p className="text-muted-foreground">No compatible injected wallet was discovered in this browser.</p>
+            ) : null}
             {isConnected ? (
               <>
                 <Button type="button" variant="outline" onClick={() => disconnect()}>
@@ -353,13 +361,13 @@ export function RoundWalletPanel() {
         </div>
 
         <div className="grid gap-2 sm:grid-cols-3">
-          <Button type="button" onClick={() => void sendTransaction("commit")} disabled={!onboarding.canSubmitTx || pendingAction !== null}>
+          <Button type="button" onClick={() => void sendTransaction("commit")} disabled={txControlsDisabled}>
             Send Commit
           </Button>
-          <Button type="button" onClick={() => void sendTransaction("reveal")} disabled={!onboarding.canSubmitTx || pendingAction !== null}>
+          <Button type="button" onClick={() => void sendTransaction("reveal")} disabled={txControlsDisabled}>
             Send Reveal
           </Button>
-          <Button type="button" onClick={() => void sendTransaction("claim")} disabled={!onboarding.canSubmitTx || pendingAction !== null}>
+          <Button type="button" onClick={() => void sendTransaction("claim")} disabled={txControlsDisabled}>
             Send Claim
           </Button>
         </div>
@@ -379,10 +387,4 @@ export function RoundWalletPanel() {
       </CardContent>
     </Card>
   );
-}
-
-declare global {
-  interface Window {
-    ethereum?: WalletProvider;
-  }
 }

@@ -857,6 +857,14 @@ Execution rules:
       - `apps/web/app/layout.tsx` now hydrates wagmi state from cookies via `cookieToInitialState`.
     - Refactored `apps/web/components/round-wallet-panel.tsx` signup path to wagmi hooks (`useAccount`, `useConnect`, `useSwitchChain`) with explicit chain gating before tx submission.
     - Updated `README.md` and `architecture.md` for the wagmi onboarding/runtime env expectations.
+  - Completed P2.10 web tx-signing migration slice with strict TDD (`Red -> Green`):
+    - Added failing tests first in `apps/web/test/wallet-signing.test.ts` for deterministic write-request shaping and wallet-error normalization.
+    - Added `apps/web/lib/wallet-signing.ts` to build validated commit/reveal/claim write requests and map signing failures into stable UX messages.
+    - Refactored `apps/web/components/round-wallet-panel.tsx` tx path to use wagmi/viem primitives:
+      - `simulateContract` preflight before signing
+      - `writeContract` for wallet signature submission
+      - `waitForTransactionReceipt` confirmation status reporting
+    - Added disconnected-wallet discovery hint when no injected connectors are available in-browser.
   - Completed P3.1 keeper observability/operator-polish slice:
     - Added `packages/contracts/scripts/sepolia-keeper-status.ts` to read live Sepolia round state and emit deterministic keeper next-action recommendations from phase windows and terminal conditions.
     - Added utility coverage in `packages/contracts/scripts/sepolia-keeper-status.test.ts` for cast bool parsing and action recommendation branches (`wait-commit`, `begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`).
@@ -1383,7 +1391,8 @@ Execution rules:
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
   - Add one-command rollout path so benchmark+lock execution is deterministic once env/deploy credentials are present.
 - P2:
-  - In progress for production wallet UX: wagmi SSR onboarding + chain-gating is complete; next slice is wagmi-native tx signing/receipt flow.
+  - Completed for current web wallet UX scope: wagmi SSR onboarding + chain-gated tx signing/receipt flow.
+  - Follow-up: remove legacy provider-mocked wallet-submit path now that wagmi-native signing is primary.
 - P3:
   - Operator polish is in progress (keeper observability + runbook + command hints + keeper tick + keeper loop); remaining work is optional Shape-native features (Gasback/Stack/VRF).
 
@@ -1406,7 +1415,8 @@ Execution rules:
 [x] P2.6 Add provider-mocked browser end-to-end tests for commit/reveal/claim success/failure transitions.
 [x] P2.7 Validate wallet UI action sequencing in a live browser session with a mocked provider (connect, slot/team selection, reveal submit, rejection path), while keeping code-level coverage in Vitest.
 [x] P2.9 Migrate web wallet signup flow to wagmi SSR providers with deterministic onboarding-state gating and explicit Shape Sepolia chain switch UX.
-[ ] P2.10 Migrate web tx signing flow to wagmi/viem contract-write + receipt-confirmation primitives with deterministic status-state tests.
+[x] P2.10 Migrate web tx signing flow to wagmi/viem contract-write + receipt-confirmation primitives with deterministic status-state tests.
+[ ] P2.11 Remove legacy provider-request wallet-submit shim/tests now that wagmi-native signing is canonical.
 [x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
 [x] P3.2 Add keeper operator runbook covering transition calls, observability cadence, and failure responses.
 [x] P3.3 Extend keeper observability output with executable transition command hints.
