@@ -15,6 +15,7 @@ Conway Arena on Shape L2. See `plan.md` for full product spec, phased implementa
   - shadcn/ui components live in `apps/web/components/ui`
   - Use shadcn out-of-box styles/variants until final design pass
   - Linting baseline uses Next.js recommendations (`next/core-web-vitals` + `next/typescript`)
+  - Wallet onboarding/sign-in state uses wagmi + viem with SSR cookie hydration
 
 ## Commands
 - Run web lint (Next.js ESLint baseline + TypeScript rules):
@@ -75,10 +76,11 @@ bun run indexer:sync:round --confirmations 2 --reorg-lookback 12
 
 ```bash
 NEXT_PUBLIC_ROUND_ADDRESS=<deployed-round-address> \
+NEXT_PUBLIC_SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
 cd apps/web && bun run dev
 ```
 
-The wallet panel now includes a team-aware slot picker, 8x8 seed editor (seed budget guard), and optimistic transaction status feedback for commit/reveal/claim actions.
+The wallet panel now includes a wagmi-based signup flow (connect + target-chain gating), a team-aware slot picker, 8x8 seed editor (seed budget guard), and optimistic transaction status feedback for commit/reveal/claim actions.
 
 - Run benchmark utility tests for Sepolia maxBatch lock tooling:
 

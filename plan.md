@@ -848,6 +848,15 @@ Execution rules:
 ## 19. Progress Log
 
 - 2026-02-13:
+  - Completed P2.9 web wallet onboarding migration slice with strict TDD (`Red -> Green`):
+    - Added failing tests first in `apps/web/test/wallet-onboarding.test.ts` for deterministic signup gating transitions (missing round config, disconnected wallet, wrong chain, ready state).
+    - Added `apps/web/lib/wallet-onboarding.ts` to centralize connect/switch/ready transition logic for UI gating.
+    - Added wagmi SSR provider wiring:
+      - `apps/web/lib/wagmi-config.ts` for Shape Sepolia chain/config transport setup.
+      - `apps/web/app/providers.tsx` for `WagmiProvider` + `QueryClientProvider`.
+      - `apps/web/app/layout.tsx` now hydrates wagmi state from cookies via `cookieToInitialState`.
+    - Refactored `apps/web/components/round-wallet-panel.tsx` signup path to wagmi hooks (`useAccount`, `useConnect`, `useSwitchChain`) with explicit chain gating before tx submission.
+    - Updated `README.md` and `architecture.md` for the wagmi onboarding/runtime env expectations.
   - Completed P3.1 keeper observability/operator-polish slice:
     - Added `packages/contracts/scripts/sepolia-keeper-status.ts` to read live Sepolia round state and emit deterministic keeper next-action recommendations from phase windows and terminal conditions.
     - Added utility coverage in `packages/contracts/scripts/sepolia-keeper-status.test.ts` for cast bool parsing and action recommendation branches (`wait-commit`, `begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`).
@@ -875,6 +884,9 @@ Execution rules:
     - Added tests first in `packages/contracts/scripts/sepolia-keeper-loop.test.ts` for argument parsing and loop stop-decision behavior.
     - Wired root command `loop:sepolia:keeper` in `package.json`, then updated `README.md`, `packages/contracts/docs/keeper-runbook.md`, and `architecture.md`.
   - Validation:
+    - `cd apps/web && bun run test` passed.
+    - `cd apps/web && bun run lint` passed.
+    - `cd apps/web && bun run build` passed.
     - `bun test packages/contracts/scripts/sepolia-max-batch-rollout.test.ts` passed.
     - `bun test packages/contracts/scripts/sepolia-keeper-tick.test.ts` passed.
     - `bun test packages/contracts/scripts/sepolia-keeper-loop.test.ts` passed.
@@ -1371,7 +1383,7 @@ Execution rules:
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
   - Add one-command rollout path so benchmark+lock execution is deterministic once env/deploy credentials are present.
 - P2:
-  - Completed for current web route + validation surfaces, including provider-mocked wallet sequencing plus live-browser interaction validation.
+  - In progress for production wallet UX: wagmi SSR onboarding + chain-gating is complete; next slice is wagmi-native tx signing/receipt flow.
 - P3:
   - Operator polish is in progress (keeper observability + runbook + command hints + keeper tick + keeper loop); remaining work is optional Shape-native features (Gasback/Stack/VRF).
 
@@ -1393,6 +1405,8 @@ Execution rules:
 [x] P2.5 Add web integration tests covering commit/reveal/claim failure states and route-driven spectator consistency.
 [x] P2.6 Add provider-mocked browser end-to-end tests for commit/reveal/claim success/failure transitions.
 [x] P2.7 Validate wallet UI action sequencing in a live browser session with a mocked provider (connect, slot/team selection, reveal submit, rejection path), while keeping code-level coverage in Vitest.
+[x] P2.9 Migrate web wallet signup flow to wagmi SSR providers with deterministic onboarding-state gating and explicit Shape Sepolia chain switch UX.
+[ ] P2.10 Migrate web tx signing flow to wagmi/viem contract-write + receipt-confirmation primitives with deterministic status-state tests.
 [x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
 [x] P3.2 Add keeper operator runbook covering transition calls, observability cadence, and failure responses.
 [x] P3.3 Extend keeper observability output with executable transition command hints.

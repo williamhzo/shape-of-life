@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import type { ReactNode } from "react";
+import { cookieToInitialState } from "wagmi";
+
+import { Providers } from "./providers";
+import { getWagmiConfig } from "@/lib/wagmi-config";
 
 import "./globals.css";
 
@@ -12,10 +17,14 @@ type RootLayoutProps = {
   children: ReactNode;
 };
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const initialState = cookieToInitialState(getWagmiConfig(), (await headers()).get("cookie"));
+
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Providers initialState={initialState}>{children}</Providers>
+      </body>
     </html>
   );
 }

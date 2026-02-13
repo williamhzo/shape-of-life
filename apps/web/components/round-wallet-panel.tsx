@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
+import { useAccount, useConnect, useConnectors, useDisconnect, useSwitchChain } from "wagmi";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Toggle } from "@/components/ui/toggle";
+import { TARGET_CHAIN } from "@/lib/wagmi-config";
+import { deriveWalletOnboardingState } from "@/lib/wallet-onboarding";
 import {
   SEED_BUDGET,
   SLOT_COUNT,
@@ -34,6 +37,12 @@ type WalletDraft = {
   claimSlotIndex: string;
 };
 
+type OnboardingMessage = {
+  badge: "secondary" | "outline" | "destructive";
+  label: string;
+  status: string;
+};
+
 function requireProvider(): WalletProvider {
   if (typeof window === "undefined" || !window.ethereum) {
     throw new Error("wallet provider not found");
@@ -46,10 +55,50 @@ function isRoundAddressConfigured(roundAddress: string): roundAddress is Address
   return isAddress(roundAddress);
 }
 
+function getOnboardingMessage(stage: ReturnType<typeof deriveWalletOnboardingState>["stage"]): OnboardingMessage {
+  if (stage === "missing-round") {
+    return {
+      badge: "destructive",
+      label: "Missing Round Address",
+      status: "Configure NEXT_PUBLIC_ROUND_ADDRESS to enable signup and transaction signing.",
+    };
+  }
+
+  if (stage === "connect-wallet") {
+    return {
+      badge: "outline",
+      label: "Connect Wallet",
+      status: "Connect a wallet to begin signup for this round.",
+    };
+  }
+
+  if (stage === "switch-network") {
+    return {
+      badge: "outline",
+      label: "Wrong Network",
+      status: `Switch wallet network to ${TARGET_CHAIN.name} before signing transactions.`,
+    };
+  }
+
+  return {
+    badge: "secondary",
+    label: "Ready To Sign",
+    status: "Signup complete. You can now send commit, reveal, and claim transactions.",
+  };
+}
+
+function shortenAddress(address: Address): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
 export function RoundWalletPanel() {
   const roundAddress = process.env.NEXT_PUBLIC_ROUND_ADDRESS ?? "";
+  const { address: account, chainId, isConnected } = useAccount();
+  const connectors = useConnectors();
+  const { connectAsync, isPending: isConnectPending } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { switchChainAsync, isPending: isSwitchPending } = useSwitchChain();
 
-  const [account, setAccount] = useState<Address | null>(null);
   const [draft, setDraft] = useState<WalletDraft>({
     roundId: "1",
     team: TEAM_BLUE,
@@ -58,27 +107,24 @@ export function RoundWalletPanel() {
     salt: "0x0000000000000000000000000000000000000000000000000000000000000000",
     claimSlotIndex: "0",
   });
-  const [status, setStatus] = useState<string>("Idle");
+  const [status, setStatus] = useState<string | null>(null);
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<TxKind | null>(null);
 
   const ready = useMemo(() => isRoundAddressConfigured(roundAddress), [roundAddress]);
   const liveCells = useMemo(() => countLiveSeedCells(draft.seedBits), [draft.seedBits]);
-
-  async function connectWallet(): Promise<void> {
-    try {
-      const provider = requireProvider();
-      const accounts = await provider.request({ method: "eth_requestAccounts" });
-      if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== "string" || !isAddress(accounts[0])) {
-        throw new Error("wallet returned invalid account list");
-      }
-
-      setAccount(accounts[0]);
-      setStatus("Wallet connected");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "failed to connect wallet");
-    }
-  }
+  const onboarding = useMemo(
+    () =>
+      deriveWalletOnboardingState({
+        roundConfigured: ready,
+        connected: isConnected,
+        chainId,
+        targetChainId: TARGET_CHAIN.id,
+      }),
+    [chainId, isConnected, ready],
+  );
+  const onboardingMessage = useMemo(() => getOnboardingMessage(onboarding.stage), [onboarding.stage]);
+  const displayedStatus = status ?? onboardingMessage.status;
 
   function updateDraft<K extends keyof WalletDraft>(key: K, value: WalletDraft[K]): void {
     setDraft((previous) => ({ ...previous, [key]: value }));
@@ -111,9 +157,29 @@ export function RoundWalletPanel() {
     updateDraft("seedBits", next);
   }
 
+  async function connectWallet(connector: (typeof connectors)[number]): Promise<void> {
+    try {
+      setStatus(`Connecting ${connector.name}...`);
+      await connectAsync({ connector });
+      setStatus(`Connected ${connector.name}`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "failed to connect wallet");
+    }
+  }
+
+  async function switchToTargetNetwork(): Promise<void> {
+    try {
+      setStatus(`Switching to ${TARGET_CHAIN.name}...`);
+      await switchChainAsync({ chainId: TARGET_CHAIN.id });
+      setStatus(`Connected to ${TARGET_CHAIN.name}`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "failed to switch network");
+    }
+  }
+
   async function sendTransaction(kind: TxKind): Promise<void> {
-    if (!ready) {
-      setStatus("NEXT_PUBLIC_ROUND_ADDRESS is not configured");
+    if (!onboarding.canSubmitTx) {
+      setStatus(onboardingMessage.status);
       return;
     }
     if (!account) {
@@ -153,7 +219,7 @@ export function RoundWalletPanel() {
         },
       });
       setLastTxHash(result.txHash);
-      setStatus(`${kind} transaction submitted`);
+      setStatus(`${kind} transaction submitted (${result.txHash.slice(0, 10)}...)`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "failed to send transaction");
     } finally {
@@ -166,16 +232,47 @@ export function RoundWalletPanel() {
       <CardHeader className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <CardTitle>Wallet Journey</CardTitle>
-          <Badge variant={ready ? "secondary" : "destructive"}>{ready ? "Round Configured" : "Missing Round Address"}</Badge>
+          <Badge variant={onboardingMessage.badge}>{onboardingMessage.label}</Badge>
         </div>
-        <p className="text-sm text-muted-foreground">Commit/reveal/claim transactions with slot picker, seed editor, and optimistic submit feedback.</p>
+        <p className="text-sm text-muted-foreground">
+          Signup flow + transaction signing with team-aware slot picker, seed editor, and optimistic submit feedback.
+        </p>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" onClick={() => void connectWallet()}>
-            {account ? "Reconnect" : "Connect Wallet"}
-          </Button>
-          <p className="text-muted-foreground">{account ?? "No wallet connected"}</p>
+        <div className="space-y-2">
+          <Label>Sign Up Flow</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            {!isConnected
+              ? connectors.map((connector) => (
+                  <Button
+                    key={connector.uid}
+                    type="button"
+                    variant="outline"
+                    disabled={isConnectPending}
+                    onClick={() => void connectWallet(connector)}
+                  >
+                    {isConnectPending ? `Connecting ${connector.name}...` : `Connect ${connector.name}`}
+                  </Button>
+                ))
+              : null}
+            {isConnected ? (
+              <>
+                <Button type="button" variant="outline" onClick={() => disconnect()}>
+                  Disconnect
+                </Button>
+                <p className="text-muted-foreground">
+                  {account ? shortenAddress(account) : "Connected"} on chain {chainId ?? "unknown"}
+                </p>
+              </>
+            ) : (
+              <p className="text-muted-foreground">No wallet connected</p>
+            )}
+            {onboarding.stage === "switch-network" ? (
+              <Button type="button" variant="secondary" disabled={isSwitchPending} onClick={() => void switchToTargetNetwork()}>
+                {isSwitchPending ? `Switching to ${TARGET_CHAIN.name}...` : `Switch to ${TARGET_CHAIN.name}`}
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -256,13 +353,13 @@ export function RoundWalletPanel() {
         </div>
 
         <div className="grid gap-2 sm:grid-cols-3">
-          <Button type="button" onClick={() => void sendTransaction("commit")} disabled={!ready || !account || pendingAction !== null}>
+          <Button type="button" onClick={() => void sendTransaction("commit")} disabled={!onboarding.canSubmitTx || pendingAction !== null}>
             Send Commit
           </Button>
-          <Button type="button" onClick={() => void sendTransaction("reveal")} disabled={!ready || !account || pendingAction !== null}>
+          <Button type="button" onClick={() => void sendTransaction("reveal")} disabled={!onboarding.canSubmitTx || pendingAction !== null}>
             Send Reveal
           </Button>
-          <Button type="button" onClick={() => void sendTransaction("claim")} disabled={!ready || !account || pendingAction !== null}>
+          <Button type="button" onClick={() => void sendTransaction("claim")} disabled={!onboarding.canSubmitTx || pendingAction !== null}>
             Send Claim
           </Button>
         </div>
@@ -276,7 +373,7 @@ export function RoundWalletPanel() {
           />
         </div>
 
-        <p>Status: {status}</p>
+        <p>Status: {displayedStatus}</p>
         {pendingAction ? <p className="text-muted-foreground">Optimistic status: {pendingAction} pending confirmation...</p> : null}
         {lastTxHash ? <p className="break-all text-muted-foreground">Last tx: {lastTxHash}</p> : null}
       </CardContent>
