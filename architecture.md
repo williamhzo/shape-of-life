@@ -29,6 +29,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `cd packages/contracts && forge test --offline`
   - `bun run test:contracts:gas` (`forge snapshot --offline --match-test testGas --check`)
   - `bun run benchmark:sepolia:max-batch` (requires `SHAPE_SEPOLIA_RPC_URL` and deployed `ROUND_ADDRESS`)
+  - `bun run observe:sepolia:keeper` (requires `SHAPE_SEPOLIA_RPC_URL` and deployed `ROUND_ADDRESS`)
 
 ### 2.2 Package Responsibilities
 
@@ -87,6 +88,9 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `scripts/sepolia-smoke-round.ts`:
     - Cast-based Sepolia smoke checks (chain id, contract bytecode presence, key round state reads)
     - Optional enforcement that deployed `maxBatch` matches the committed lock artifact
+  - `scripts/sepolia-keeper-status.ts`:
+    - Cast-based keeper observability summary for Sepolia rounds
+    - Produces deterministic next-action recommendation (`begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`) from current phase/timing/terminal state
   - `hardhat.config.ts`:
     - viem-first Hardhat 3 scaffold using `@nomicfoundation/hardhat-toolbox-viem`
     - Shape Sepolia/Mainnet deterministic network wiring from env (`SHAPE_SEPOLIA_RPC_URL`, `SHAPE_MAINNET_RPC_URL`, `DEPLOYER_PRIVATE_KEY`)

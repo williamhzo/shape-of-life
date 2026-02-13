@@ -847,6 +847,18 @@ Execution rules:
 
 ## 19. Progress Log
 
+- 2026-02-13:
+  - Completed P3.1 keeper observability/operator-polish slice:
+    - Added `packages/contracts/scripts/sepolia-keeper-status.ts` to read live Sepolia round state and emit deterministic keeper next-action recommendations from phase windows and terminal conditions.
+    - Added utility coverage in `packages/contracts/scripts/sepolia-keeper-status.test.ts` for cast bool parsing and action recommendation branches (`wait-commit`, `begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`).
+    - Wired root command `observe:sepolia:keeper` in `package.json`.
+    - Updated `README.md` and `architecture.md` with keeper observability command/docs.
+  - Validation:
+    - `bun test packages/contracts/scripts/*.test.ts` passed.
+    - `bun run test` passed.
+    - `bun run test:contracts:gas` passed.
+    - `bun run lint:web` passed.
+    - `cd apps/web && bun run build` passed.
 - 2026-02-12:
   - Completed P2.8 web test-scope simplification + docs-alignment slice:
     - Removed `apps/web/test/ui-baseline.test.ts` (component-markup policy test).
@@ -1318,11 +1330,11 @@ Execution rules:
 - Phase D: Deployments and scripts (Hardhat + viem)
   - Status: PARTIAL
   - Done: Hardhat + viem + Ignition scaffold with Shape Sepolia/Mainnet network wiring, deterministic module parameters, and deployment-address/verification utility scripts.
-  - Missing: live Sepolia deploy execution, artifact capture, and smoke/release gate automation.
+  - Missing: live Sepolia deploy execution, benchmark artifact capture, and measured `maxBatch` lock on deployed round.
 - Phase E: Indexer + production UI
   - Status: PARTIAL
-  - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, and baseline wallet/realtime spectator web surfaces.
-  - Missing: keeper/replay production polish; browser interaction coverage currently relies on live agent-driven validation instead of a dedicated automation harness.
+  - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, baseline wallet/realtime spectator web surfaces, and keeper observability status command for live Sepolia rounds.
+  - Missing: replay production polish and dedicated browser interaction automation harness.
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1336,7 +1348,7 @@ Execution rules:
 - P2:
   - Completed for current web route + validation surfaces, including provider-mocked wallet sequencing plus live-browser interaction validation.
 - P3:
-  - Operator polish (keeper observability/runbooks) and optional Shape-native features (Gasback/Stack/VRF).
+  - Operator polish is in progress (keeper observability command added); remaining work is runbooks/automation plus optional Shape-native features (Gasback/Stack/VRF).
 
 ### 20.3 Atomic Action Queue
 
@@ -1355,6 +1367,7 @@ Execution rules:
 [x] P2.5 Add web integration tests covering commit/reveal/claim failure states and route-driven spectator consistency.
 [x] P2.6 Add provider-mocked browser end-to-end tests for commit/reveal/claim success/failure transitions.
 [x] P2.7 Validate wallet UI action sequencing in a live browser session with a mocked provider (connect, slot/team selection, reveal submit, rejection path), while keeping code-level coverage in Vitest.
+[x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
 
 ### 20.4 Validation Gates
 
@@ -1363,6 +1376,7 @@ Execution rules:
 - Web quality: `bun run lint:web` and `cd apps/web && bun run build`
 - Sepolia benchmark gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run benchmark:sepolia:max-batch`
 - Sepolia smoke gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run smoke:sepolia:round`
+- Sepolia keeper observability: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run observe:sepolia:keeper`
 - Sepolia release gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run release:gate:sepolia`
 
 ### 20.5 Risks and Mitigations

@@ -165,6 +165,14 @@ ROUND_ADDRESS=<deployed-round-address> \
 bun run smoke:sepolia:round
 ```
 
+- Run keeper observability status on Sepolia (phase windows, terminal state, and recommended next onchain action):
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run observe:sepolia:keeper
+```
+
 - Run full Sepolia release gate (local test/lint/build gates + Sepolia smoke):
 
 ```bash
