@@ -15,6 +15,16 @@ export type RoundStateSnapshot = {
   winnerPaid: bigint;
   keeperPaid: bigint;
   treasuryDust: bigint;
+  winnerTeam: number;
+  scoreBlue: number;
+  scoreRed: number;
+  finalBluePopulation: number;
+  finalRedPopulation: number;
+  finalBlueInvasion: number;
+  finalRedInvasion: number;
+  payoutPerClaim: bigint;
+  blueExtinct: boolean;
+  redExtinct: boolean;
 };
 
 export type SteppedIndexedEvent = {
@@ -121,6 +131,18 @@ export type RoundReadModel = {
     invariantHolds: boolean | null;
     reconciliationStatus: "ok" | "pending-finalize";
   };
+  scoring: {
+    winnerTeam: number;
+    scoreBlue: number;
+    scoreRed: number;
+    finalBluePopulation: number;
+    finalRedPopulation: number;
+    finalBlueInvasion: number;
+    finalRedInvasion: number;
+    payoutPerClaim: bigint;
+    blueExtinct: boolean;
+    redExtinct: boolean;
+  } | null;
 };
 
 export type BuildRoundReadModelParams = {
@@ -141,6 +163,16 @@ const ROUND_READ_ABI = parseAbi([
   "function winnerPaid() view returns (uint256)",
   "function keeperPaid() view returns (uint256)",
   "function treasuryDust() view returns (uint256)",
+  "function winnerTeam() view returns (uint8)",
+  "function scoreBlue() view returns (uint32)",
+  "function scoreRed() view returns (uint32)",
+  "function finalBluePopulation() view returns (uint16)",
+  "function finalRedPopulation() view returns (uint16)",
+  "function finalBlueInvasion() view returns (uint16)",
+  "function finalRedInvasion() view returns (uint16)",
+  "function payoutPerClaim() view returns (uint256)",
+  "function blueExtinct() view returns (bool)",
+  "function redExtinct() view returns (bool)",
 ]);
 
 const STEPPED_EVENT = parseAbiItem("event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward)");
@@ -330,6 +362,20 @@ export async function buildRoundReadModel(params: BuildRoundReadModelParams): Pr
       invariantHolds,
       reconciliationStatus,
     },
+    scoring: finalizedEvent !== null
+      ? {
+          winnerTeam: roundState.winnerTeam,
+          scoreBlue: roundState.scoreBlue,
+          scoreRed: roundState.scoreRed,
+          finalBluePopulation: roundState.finalBluePopulation,
+          finalRedPopulation: roundState.finalRedPopulation,
+          finalBlueInvasion: roundState.finalBlueInvasion,
+          finalRedInvasion: roundState.finalRedInvasion,
+          payoutPerClaim: roundState.payoutPerClaim,
+          blueExtinct: roundState.blueExtinct,
+          redExtinct: roundState.redExtinct,
+        }
+      : null,
   };
 }
 
@@ -344,7 +390,12 @@ export function createViemRoundIndexerClient(rpcUrl: string): RoundIndexerClient
       return client.getBlockNumber();
     },
     async readRoundState(roundAddress) {
-      const [phase, gen, maxGen, maxBatch, totalFunded, winnerPaid, keeperPaid, treasuryDust] = await Promise.all([
+      const [
+        phase, gen, maxGen, maxBatch, totalFunded, winnerPaid, keeperPaid, treasuryDust,
+        winnerTeam, scoreBlue, scoreRed,
+        finalBluePopulation, finalRedPopulation, finalBlueInvasion, finalRedInvasion,
+        payoutPerClaim, blueExtinct, redExtinct,
+      ] = await Promise.all([
         client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "phase" }),
         client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "gen" }),
         client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "maxGen" }),
@@ -353,6 +404,16 @@ export function createViemRoundIndexerClient(rpcUrl: string): RoundIndexerClient
         client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "winnerPaid" }),
         client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "keeperPaid" }),
         client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "treasuryDust" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "winnerTeam" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "scoreBlue" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "scoreRed" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "finalBluePopulation" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "finalRedPopulation" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "finalBlueInvasion" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "finalRedInvasion" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "payoutPerClaim" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "blueExtinct" }),
+        client.readContract({ address: roundAddress, abi: ROUND_READ_ABI, functionName: "redExtinct" }),
       ]);
 
       return {
@@ -364,6 +425,16 @@ export function createViemRoundIndexerClient(rpcUrl: string): RoundIndexerClient
         winnerPaid,
         keeperPaid,
         treasuryDust,
+        winnerTeam: toNumber(winnerTeam),
+        scoreBlue: toNumber(scoreBlue),
+        scoreRed: toNumber(scoreRed),
+        finalBluePopulation: toNumber(finalBluePopulation),
+        finalRedPopulation: toNumber(finalRedPopulation),
+        finalBlueInvasion: toNumber(finalBlueInvasion),
+        finalRedInvasion: toNumber(finalRedInvasion),
+        payoutPerClaim,
+        blueExtinct,
+        redExtinct,
       };
     },
     async getSteppedEvents(roundAddress, range) {

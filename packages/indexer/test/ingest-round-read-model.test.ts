@@ -21,6 +21,16 @@ function completeClient(): RoundIndexerClient {
         winnerPaid: 6n,
         keeperPaid: 2n,
         treasuryDust: 3n,
+        winnerTeam: 0,
+        scoreBlue: 438,
+        scoreRed: 312,
+        finalBluePopulation: 120,
+        finalRedPopulation: 80,
+        finalBlueInvasion: 39,
+        finalRedInvasion: 36,
+        payoutPerClaim: 3n,
+        blueExtinct: false,
+        redExtinct: false,
       };
     },
     async getSteppedEvents() {
@@ -102,6 +112,18 @@ describe("buildRoundReadModel", () => {
     expect(model.accounting.accountedTotal).toBe(11n);
     expect(model.accounting.invariantHolds).toBe(true);
 
+    expect(model.scoring).not.toBeNull();
+    expect(model.scoring!.winnerTeam).toBe(0);
+    expect(model.scoring!.scoreBlue).toBe(438);
+    expect(model.scoring!.scoreRed).toBe(312);
+    expect(model.scoring!.finalBluePopulation).toBe(120);
+    expect(model.scoring!.finalRedPopulation).toBe(80);
+    expect(model.scoring!.finalBlueInvasion).toBe(39);
+    expect(model.scoring!.finalRedInvasion).toBe(36);
+    expect(model.scoring!.payoutPerClaim).toBe(3n);
+    expect(model.scoring!.blueExtinct).toBe(false);
+    expect(model.scoring!.redExtinct).toBe(false);
+
     const serialized = stringifyRoundReadModel(model);
     const parsed = parseRoundReadModel(serialized);
     expect(parsed).toEqual(model);
@@ -122,6 +144,16 @@ describe("buildRoundReadModel", () => {
           winnerPaid: 0n,
           keeperPaid: 1n,
           treasuryDust: 0n,
+          winnerTeam: 0,
+          scoreBlue: 0,
+          scoreRed: 0,
+          finalBluePopulation: 0,
+          finalRedPopulation: 0,
+          finalBlueInvasion: 0,
+          finalRedInvasion: 0,
+          payoutPerClaim: 0n,
+          blueExtinct: false,
+          redExtinct: false,
         };
       },
       async getSteppedEvents() {
@@ -155,6 +187,7 @@ describe("buildRoundReadModel", () => {
     expect(model.accounting.accountedTotal).toBe(null);
     expect(model.accounting.invariantHolds).toBe(null);
     expect(model.accounting.reconciliationStatus).toBe("pending-finalize");
+    expect(model.scoring).toBeNull();
   });
 
   it("fails noisy on reconciliation divergence", async () => {
@@ -219,4 +252,5 @@ _assertRoundModelType({
     invariantHolds: null,
     reconciliationStatus: "pending-finalize",
   },
+  scoring: null,
 });
