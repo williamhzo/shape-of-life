@@ -204,6 +204,23 @@ KEEPER_PRIVATE_KEY=<hex-private-key> \
 bun run tick:sepolia:keeper --execute
 ```
 
+- Run recurring keeper ticks (default 15s interval, dry-run):
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+bun run loop:sepolia:keeper --interval 15 --iterations 20
+```
+
+Execute mode with stop-on-first-submitted transition:
+
+```bash
+SHAPE_SEPOLIA_RPC_URL=<alchemy-or-rpc-url> \
+ROUND_ADDRESS=<deployed-round-address> \
+KEEPER_PRIVATE_KEY=<hex-private-key> \
+bun run loop:sepolia:keeper --execute --interval 15
+```
+
 Keeper operator runbook: `packages/contracts/docs/keeper-runbook.md`.
 
 - Run full Sepolia release gate (local test/lint/build gates + Sepolia smoke):

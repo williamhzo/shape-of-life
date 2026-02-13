@@ -31,7 +31,14 @@ bun run tick:sepolia:keeper
 bun run tick:sepolia:keeper --execute
 ```
 
-4. Execute the recommended round transition manually when needed:
+4. Optional recurring loop (for operator sessions):
+
+```bash
+bun run loop:sepolia:keeper --interval 15 --iterations 20
+bun run loop:sepolia:keeper --execute --interval 15
+```
+
+5. Execute the recommended round transition manually when needed:
 
 ```bash
 # commit -> reveal
@@ -47,7 +54,7 @@ cast send "$ROUND_ADDRESS" "stepBatch(uint16)" 16 --private-key "$KEEPER_PRIVATE
 cast send "$ROUND_ADDRESS" "finalize()" --private-key "$KEEPER_PRIVATE_KEY" --rpc-url "$SHAPE_SEPOLIA_RPC_URL"
 ```
 
-5. During claim phase, do not call `stepBatch` or `finalize`; monitor claims and accounting fields through `smoke:sepolia:round` and indexer sync.
+6. During claim phase, do not call `stepBatch` or `finalize`; monitor claims and accounting fields through `smoke:sepolia:round` and indexer sync.
 
 ## Failure Modes and Immediate Actions
 

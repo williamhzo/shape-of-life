@@ -870,9 +870,14 @@ Execution rules:
     - Added `packages/contracts/scripts/sepolia-keeper-tick.ts` to run one keeper tick from observability output, with dry-run default and optional `--execute` transaction submission.
     - Added tests first in `packages/contracts/scripts/sepolia-keeper-tick.test.ts` for command argument derivation across executable/non-executable recommendation paths.
     - Wired root command `tick:sepolia:keeper` in `package.json`, then updated `README.md`, `packages/contracts/docs/keeper-runbook.md`, and `architecture.md`.
+  - Completed P3.5 keeper loop automation slice:
+    - Added `packages/contracts/scripts/sepolia-keeper-loop.ts` to run recurring keeper ticks with configurable interval and iteration bounds.
+    - Added tests first in `packages/contracts/scripts/sepolia-keeper-loop.test.ts` for argument parsing and loop stop-decision behavior.
+    - Wired root command `loop:sepolia:keeper` in `package.json`, then updated `README.md`, `packages/contracts/docs/keeper-runbook.md`, and `architecture.md`.
   - Validation:
     - `bun test packages/contracts/scripts/sepolia-max-batch-rollout.test.ts` passed.
     - `bun test packages/contracts/scripts/sepolia-keeper-tick.test.ts` passed.
+    - `bun test packages/contracts/scripts/sepolia-keeper-loop.test.ts` passed.
     - `bun test packages/contracts/scripts/*.test.ts` passed.
     - `bun run test` passed.
     - `bun run test:contracts:gas` passed.
@@ -1368,7 +1373,7 @@ Execution rules:
 - P2:
   - Completed for current web route + validation surfaces, including provider-mocked wallet sequencing plus live-browser interaction validation.
 - P3:
-  - Operator polish is in progress (keeper observability + runbook + command hints + one-shot keeper tick); remaining work is recurring automation and optional Shape-native features (Gasback/Stack/VRF).
+  - Operator polish is in progress (keeper observability + runbook + command hints + keeper tick + keeper loop); remaining work is optional Shape-native features (Gasback/Stack/VRF).
 
 ### 20.3 Atomic Action Queue
 
@@ -1392,6 +1397,7 @@ Execution rules:
 [x] P3.2 Add keeper operator runbook covering transition calls, observability cadence, and failure responses.
 [x] P3.3 Extend keeper observability output with executable transition command hints.
 [x] P3.4 Add keeper tick automation command with dry-run/execute modes driven by observability output.
+[x] P3.5 Add recurring keeper loop command with interval/iteration controls for operator sessions.
 
 ### 20.4 Validation Gates
 
