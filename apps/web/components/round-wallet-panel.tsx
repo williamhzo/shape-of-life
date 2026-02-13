@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Toggle } from "@/components/ui/toggle";
 import {
   SEED_BUDGET,
   SLOT_COUNT,
@@ -235,13 +236,17 @@ export function RoundWalletPanel() {
               const alive = isSeedCellAlive(draft.seedBits, x, y);
 
               return (
-                <button
+                <Toggle
                   key={`${x}-${y}`}
-                  type="button"
+                  variant="outline"
+                  size="sm"
+                  pressed={alive}
                   aria-label={`seed-${x}-${y}`}
-                  onClick={() => handleSeedCellToggle(x, y)}
-                  className={`h-7 w-7 rounded border ${alive ? "bg-primary" : "bg-background"}`}
-                />
+                  onPressedChange={() => handleSeedCellToggle(x, y)}
+                  className="h-7 min-w-7 p-0 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  <span className="sr-only">{alive ? "alive" : "dead"}</span>
+                </Toggle>
               );
             })}
           </div>
