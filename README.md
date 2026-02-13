@@ -173,6 +173,8 @@ ROUND_ADDRESS=<deployed-round-address> \
 bun run observe:sepolia:keeper
 ```
 
+Output includes `recommendedCommand` when a keeper transition call should be executed.
+
 Keeper operator runbook: `packages/contracts/docs/keeper-runbook.md`.
 
 - Run full Sepolia release gate (local test/lint/build gates + Sepolia smoke):

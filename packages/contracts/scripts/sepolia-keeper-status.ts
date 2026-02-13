@@ -46,6 +46,7 @@ type KeeperStatusSummary = {
   terminal: boolean;
   stepsRemaining: number;
   recommendation: KeeperRecommendation;
+  recommendedCommand: string | null;
 };
 
 function parseArgs(argv: string[]): Record<string, string> {
@@ -171,6 +172,33 @@ export function recommendKeeperAction(snapshot: RoundSnapshot): KeeperRecommenda
   throw new Error(`unsupported phase ${snapshot.phase}`);
 }
 
+export function buildKeeperCommand(
+  roundAddress: string,
+  recommendation: Pick<KeeperRecommendation, "action" | "recommendedSteps">
+): string | null {
+  const prefix = `cast send "${roundAddress}"`;
+  const suffix = '--private-key "$KEEPER_PRIVATE_KEY" --rpc-url "$SHAPE_SEPOLIA_RPC_URL"';
+
+  if (recommendation.action === "begin-reveal") {
+    return `${prefix} "beginReveal()" ${suffix}`;
+  }
+
+  if (recommendation.action === "initialize") {
+    return `${prefix} "initialize()" ${suffix}`;
+  }
+
+  if (recommendation.action === "step-batch") {
+    const steps = recommendation.recommendedSteps ?? 1;
+    return `${prefix} "stepBatch(uint16)" ${steps} ${suffix}`;
+  }
+
+  if (recommendation.action === "finalize") {
+    return `${prefix} "finalize()" ${suffix}`;
+  }
+
+  return null;
+}
+
 function cast(rpcUrl: string, args: string[]): string {
   return execFileSync("cast", [...args, "--rpc-url", rpcUrl], { encoding: "utf8" });
 }
@@ -220,6 +248,7 @@ function main(): void {
   };
   const terminal = isTerminal(snapshot);
   const recommendation = recommendKeeperAction(snapshot);
+  const recommendedCommand = buildKeeperCommand(roundAddress, recommendation);
   const summary: KeeperStatusSummary = {
     network: "shape-sepolia",
     roundAddress,
@@ -237,6 +266,7 @@ function main(): void {
     terminal,
     stepsRemaining: Math.max(0, maxGen - gen),
     recommendation,
+    recommendedCommand,
   };
 
   process.stdout.write(JSON.stringify(summary, null, 2) + "\n");

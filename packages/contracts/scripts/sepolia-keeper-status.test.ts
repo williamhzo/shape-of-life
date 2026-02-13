@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseCastBool, recommendKeeperAction } from "./sepolia-keeper-status";
+import { buildKeeperCommand, parseCastBool, recommendKeeperAction } from "./sepolia-keeper-status";
 
 describe("sepolia keeper status utilities", () => {
   test("parses cast bool outputs", () => {
@@ -117,5 +117,23 @@ describe("sepolia keeper status utilities", () => {
     expect(recommendation.action).toBe("claim");
     expect(recommendation.ready).toBe(true);
     expect(recommendation.recommendedSteps).toBeNull();
+  });
+
+  test("builds stepBatch command with recommended step size", () => {
+    const command = buildKeeperCommand("0x1234", {
+      action: "step-batch",
+      recommendedSteps: 12,
+    });
+
+    expect(command).toContain(`cast send "0x1234" "stepBatch(uint16)" 12`);
+  });
+
+  test("returns null command for non-executable wait actions", () => {
+    const command = buildKeeperCommand("0x1234", {
+      action: "wait-commit",
+      recommendedSteps: null,
+    });
+
+    expect(command).toBeNull();
   });
 });
