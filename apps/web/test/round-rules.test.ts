@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { isSlotIndexInTeamTerritory } from "../lib/wallet-ux";
+import { isSlotIndexInTeamTerritory } from "../lib/round-rules";
 
-describe("wallet UX helpers", () => {
+describe("round rules", () => {
   it("enforces team slot territories by tile column (left/right)", () => {
     expect(isSlotIndexInTeamTerritory(0, 0)).toBe(true);
     expect(isSlotIndexInTeamTerritory(0, 3)).toBe(true);
