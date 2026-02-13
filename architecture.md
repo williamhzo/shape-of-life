@@ -131,7 +131,6 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - includes wallet onboarding state-transition tests
     - includes wallet write-request/error mapping tests
     - includes wallet failure-path validation tests and route consistency checks for spectator-read-model status
-    - includes provider-mocked wallet journey transition tests for commit/reveal/claim submission paths
   - UI baseline from shadcn registry under `apps/web/components/ui`
 
 - `packages/indexer`

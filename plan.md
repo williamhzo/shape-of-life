@@ -865,6 +865,10 @@ Execution rules:
       - `writeContract` for wallet signature submission
       - `waitForTransactionReceipt` confirmation status reporting
     - Added disconnected-wallet discovery hint when no injected connectors are available in-browser.
+  - Completed P2.11 legacy wallet-submit shim cleanup slice:
+    - Removed `apps/web/lib/wallet-journey.ts` provider-request shim now that wagmi-native signing is canonical.
+    - Removed `apps/web/test/wallet-journey.test.ts` and kept deterministic signing coverage in `apps/web/test/wallet-signing.test.ts`.
+    - Updated `architecture.md` test-coverage notes to match the current web test surface.
   - Completed P3.1 keeper observability/operator-polish slice:
     - Added `packages/contracts/scripts/sepolia-keeper-status.ts` to read live Sepolia round state and emit deterministic keeper next-action recommendations from phase windows and terminal conditions.
     - Added utility coverage in `packages/contracts/scripts/sepolia-keeper-status.test.ts` for cast bool parsing and action recommendation branches (`wait-commit`, `begin-reveal`, `initialize`, `step-batch`, `finalize`, `claim`).
@@ -1392,7 +1396,7 @@ Execution rules:
   - Add one-command rollout path so benchmark+lock execution is deterministic once env/deploy credentials are present.
 - P2:
   - Completed for current web wallet UX scope: wagmi SSR onboarding + chain-gated tx signing/receipt flow.
-  - Follow-up: remove legacy provider-mocked wallet-submit path now that wagmi-native signing is primary.
+  - Follow-up: run live-browser validation pass for the updated wagmi signing flow (connect, switch chain, commit/reveal/claim, rejection path).
 - P3:
   - Operator polish is in progress (keeper observability + runbook + command hints + keeper tick + keeper loop); remaining work is optional Shape-native features (Gasback/Stack/VRF).
 
@@ -1416,7 +1420,8 @@ Execution rules:
 [x] P2.7 Validate wallet UI action sequencing in a live browser session with a mocked provider (connect, slot/team selection, reveal submit, rejection path), while keeping code-level coverage in Vitest.
 [x] P2.9 Migrate web wallet signup flow to wagmi SSR providers with deterministic onboarding-state gating and explicit Shape Sepolia chain switch UX.
 [x] P2.10 Migrate web tx signing flow to wagmi/viem contract-write + receipt-confirmation primitives with deterministic status-state tests.
-[ ] P2.11 Remove legacy provider-request wallet-submit shim/tests now that wagmi-native signing is canonical.
+[x] P2.11 Remove legacy provider-request wallet-submit shim/tests now that wagmi-native signing is canonical.
+[ ] P2.12 Validate updated wagmi wallet UI action sequencing in a live browser session (connect, chain switch, commit/reveal/claim, rejection path), while keeping code-level coverage in Vitest.
 [x] P3.1 Add Sepolia keeper observability command that reports phase windows and deterministic next keeper action.
 [x] P3.2 Add keeper operator runbook covering transition calls, observability cadence, and failure responses.
 [x] P3.3 Extend keeper observability output with executable transition command hints.
