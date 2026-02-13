@@ -850,6 +850,26 @@ Execution rules:
 
 ## 19. Progress Log
 
+- 2026-02-13 (session 4):
+  - Completed P2.16 canvas board rendering with strict TDD (`Red -> Green`):
+    - Added failing tests first:
+      - `apps/web/test/board-renderer.test.ts` for pixel-level board-to-RGBA mapping (dimensions, dead/blue/red cells, scale factor, full 64x64 board).
+      - `apps/web/test/board-animation.test.ts` for forward simulation controller (init, step, maxGen stop, pause, extinction halt, blinker determinism).
+    - Implemented deterministic helpers:
+      - `apps/web/lib/board-renderer.ts`: pure `renderBoardPixels()` converting `BoardState` bigint rows to scaled `Uint8ClampedArray` RGBA pixels via bit testing.
+      - `apps/web/lib/board-animation.ts`: `createAnimationState()` and `stepAnimation()` wrapping the canonical `stepGeneration()` engine with pause/maxGen/extinction guards.
+    - Built `apps/web/components/board-canvas.tsx`:
+      - `<canvas>` with `ImageData` + `putImageData` for efficient 64x64 rendering at 8x pixel scale.
+      - Demo mode seeding R-pentomino (blue, slot 12,20) vs Acorn (red, slot 44,36) on a 64x64 board.
+      - Play/Pause, Reset, and FPS controls (1-30 fps range) using shadcn Button components.
+      - Generation counter badge showing progress toward maxGen 256.
+    - Replaced text-only "Preview Board Summary" card in `apps/web/app/page.tsx` with `BoardCanvas` component.
+  - Validation:
+    - `cd apps/web && bun run test` passed (33/33).
+    - `bun run lint` passed.
+    - `cd apps/web && bun run build` passed.
+    - `bun run test` passed (69/69 Solidity, 33/33 web).
+    - `bun run test:contracts:gas` passed.
 - 2026-02-13 (session 3):
   - Completed P2.17 methuselah seed presets with strict TDD (`Red -> Green`):
     - Added failing test first in `apps/web/test/wallet-ux.test.ts` asserting existence and cell-count correctness for R-pentomino, Acorn, Diehard, and LWSS presets.
@@ -1456,7 +1476,7 @@ Execution rules:
 - Phase E: Indexer + production UI
   - Status: PARTIAL
   - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, baseline wallet/realtime spectator web surfaces, and keeper observability status command for live Sepolia rounds.
-  - Missing: canvas board rendering + local forward-simulation animation, participant/keeper feed, replay production polish, and dedicated browser interaction automation harness.
+  - Missing: participant/keeper feed, replay production polish, and dedicated browser interaction automation harness.
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
@@ -1472,7 +1492,7 @@ Execution rules:
   - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
   - Add one-command rollout path so benchmark+lock execution is deterministic once env/deploy credentials are present.
 - P2 (spectator product + game feel):
-  - **Canvas board rendering**: add `<canvas>` live board visualization with local TS forward-simulation between onchain checkpoints. This is the core spectator-first promise.
+  - ~~**Canvas board rendering**: add `<canvas>` live board visualization with local TS forward-simulation between onchain checkpoints. This is the core spectator-first promise.~~ Done: `BoardCanvas` component renders 64x64 board with `ImageData`, local TS forward-simulation, play/pause/reset/FPS controls.
   - **Methuselah seed presets**: add R-pentomino (5 cells), Acorn (7 cells), Diehard (7 cells), and Lightweight spaceship (9 cells) to web presets. All fit budget 12 and produce dramatic multi-generation evolution.
   - **Round factory/registry**: add minimal `ArenaRegistry` contract that stores `currentRound`, past round list, and optional season metadata hash. Eliminates hardcoded `NEXT_PUBLIC_ROUND_ADDRESS` and enables round discovery/history.
   - Completed for current web wallet UX scope: wagmi SSR onboarding + chain-gated tx signing/receipt flow + join-flow seed presets/transforms + explicit tx lifecycle UI states.
@@ -1516,7 +1536,7 @@ Execution rules:
 [x] P0.6 Fix territory axis alignment: change contract `validateSlotForTeam` to use `tileX = slotIndex % SLOT_COLUMNS` (Blue: tileX < 4, Red: tileX >= 4) and update web `isSlotIndexInTeamTerritory` to match. Update all affected tests.
 [x] P0.7 Fix claim event emission: add `PlayerClaimed(address,uint8,uint256)` event to `claim(uint8)` for all claim paths (payout and zero-payout). Update event tests, indexer types, and reconciliation to derive `winnerPaid` from per-claim events when no bulk `Claimed` exists.
 [x] P1.5 Add social lifecycle events: emit `Committed(player, team, slotIndex)` in `commit()`, `Revealed(player, team, slotIndex)` in `reveal()`, and `Initialized()` in `initialize()`. Indexer ingests all three event types with block/log ordering.
-[ ] P2.16 Add canvas board rendering with `<canvas>` + `ImageData` for 64x64 board and local TS forward-simulation between onchain checkpoint snapshots for smooth animation.
+[x] P2.16 Add canvas board rendering with `<canvas>` + `ImageData` for 64x64 board and local TS forward-simulation between onchain checkpoint snapshots for smooth animation.
 [x] P2.17 Add methuselah seed presets: R-pentomino, Acorn, Diehard, Lightweight spaceship. All fit budget 12 and produce dramatic multi-generation evolution for better game feel.
 [ ] P2.18 Add minimal `ArenaRegistry` contract (or factory) that stores `currentRound` address, past round list, and optional season metadata hash for round discovery without hardcoded env vars.
 [ ] P3.6 Add social sharing primitives: seed link encoding (preset + transforms + slot + team suggestion), post-round replay page with timeline scrubber and signature-moment detection.

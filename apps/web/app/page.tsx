@@ -1,16 +1,8 @@
-import { summarizeBoard } from "../lib/board-summary";
+import { BoardCanvas } from "@/components/board-canvas";
 import { RoundLivePanel } from "@/components/round-live-panel";
 import { RoundWalletPanel } from "@/components/round-wallet-panel";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-
-const previewSummary = summarizeBoard({
-  width: 8,
-  height: 8,
-  blueRows: [0b00110000n, 0b00110000n, 0n, 0n, 0n, 0n, 0n, 0n],
-  redRows: [0n, 0n, 0n, 0n, 0n, 0n, 0b00001100n, 0b00001100n],
-});
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function HomePage() {
   return (
@@ -27,23 +19,12 @@ export default function HomePage() {
         </CardHeader>
       </Card>
 
+      <BoardCanvas />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <RoundLivePanel />
         <RoundWalletPanel />
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Preview Board Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p>Blue cells: {previewSummary.blue}</p>
-          <p>Red cells: {previewSummary.red}</p>
-          <p>Total live cells: {previewSummary.total}</p>
-          <Separator />
-          <p className="text-muted-foreground">Local visual scaffold while full in-browser simulation playback is built.</p>
-        </CardContent>
-      </Card>
     </main>
   );
 }
