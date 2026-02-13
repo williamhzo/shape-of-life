@@ -73,6 +73,18 @@ describe("GET /api/round/live", () => {
             invariantHolds: true,
             reconciliationStatus: "ok",
           },
+          scoring: {
+            winnerTeam: 0,
+            scoreBlue: 438,
+            scoreRed: 312,
+            finalBluePopulation: 120,
+            finalRedPopulation: 80,
+            finalBlueInvasion: 39,
+            finalRedInvasion: 36,
+            payoutPerClaim: { __bigint__: "3" },
+            blueExtinct: false,
+            redExtinct: false,
+          },
         },
         null,
         2,
@@ -95,6 +107,18 @@ describe("GET /api/round/live", () => {
       source: {
         path: string;
       };
+      scoring: {
+        winnerTeam: number;
+        scoreBlue: number;
+        scoreRed: number;
+        finalBluePopulation: number;
+        finalRedPopulation: number;
+        finalBlueInvasion: number;
+        finalRedInvasion: number;
+        payoutPerClaim: string;
+        blueExtinct: boolean;
+        redExtinct: boolean;
+      } | null;
       participants: Array<{
         address: string;
         team: number;
@@ -127,6 +151,13 @@ describe("GET /api/round/live", () => {
     expect(body.keepers[0].totalReward).toBe("200");
     expect(body.keepers[0].stepCount).toBe(2);
     expect(body.keepers[0].gensAdvanced).toBe(4);
+
+    expect(body.scoring).not.toBeNull();
+    expect(body.scoring!.winnerTeam).toBe(0);
+    expect(body.scoring!.scoreBlue).toBe(438);
+    expect(body.scoring!.scoreRed).toBe(312);
+    expect(body.scoring!.payoutPerClaim).toBe("3");
+    expect(body.scoring!.blueExtinct).toBe(false);
   });
 
   it("returns 503 when read model file is missing", async () => {

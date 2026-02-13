@@ -16,6 +16,19 @@ type IndexerRevealedEvent = { player: string; team: number; slotIndex: number };
 type IndexerPlayerClaimedEvent = { player: string; slotIndex: number; amount: bigint };
 type IndexerSteppedEvent = { keeper: string; fromGen: number; toGen: number; reward: bigint };
 
+type IndexerScoring = {
+  winnerTeam: number;
+  scoreBlue: number;
+  scoreRed: number;
+  finalBluePopulation: number;
+  finalRedPopulation: number;
+  finalBlueInvasion: number;
+  finalRedInvasion: number;
+  payoutPerClaim: bigint;
+  blueExtinct: boolean;
+  redExtinct: boolean;
+};
+
 type IndexerRoundReadModel = {
   version: "v1";
   chainId: number;
@@ -55,6 +68,7 @@ type IndexerRoundReadModel = {
     invariantHolds: boolean | null;
     reconciliationStatus: "ok" | "pending-finalize";
   };
+  scoring?: IndexerScoring | null;
 };
 
 export type RoundLivePayload = {
@@ -89,6 +103,18 @@ export type RoundLivePayload = {
     invariantHolds: boolean | null;
     reconciliationStatus: "ok" | "pending-finalize";
   };
+  scoring: {
+    winnerTeam: number;
+    scoreBlue: number;
+    scoreRed: number;
+    finalBluePopulation: number;
+    finalRedPopulation: number;
+    finalBlueInvasion: number;
+    finalRedInvasion: number;
+    payoutPerClaim: string;
+    blueExtinct: boolean;
+    redExtinct: boolean;
+  } | null;
   participants: ParticipantEntry[];
   keepers: KeeperEntry[];
 };
@@ -173,6 +199,20 @@ export function readRoundLivePayload(path?: string): RoundLivePayload {
       invariantHolds: model.accounting.invariantHolds,
       reconciliationStatus: model.accounting.reconciliationStatus,
     },
+    scoring: model.scoring
+      ? {
+          winnerTeam: model.scoring.winnerTeam,
+          scoreBlue: model.scoring.scoreBlue,
+          scoreRed: model.scoring.scoreRed,
+          finalBluePopulation: model.scoring.finalBluePopulation,
+          finalRedPopulation: model.scoring.finalRedPopulation,
+          finalBlueInvasion: model.scoring.finalBlueInvasion,
+          finalRedInvasion: model.scoring.finalRedInvasion,
+          payoutPerClaim: model.scoring.payoutPerClaim.toString(),
+          blueExtinct: model.scoring.blueExtinct,
+          redExtinct: model.scoring.redExtinct,
+        }
+      : null,
     participants: buildParticipantRoster({
       committed: model.events?.committed ?? [],
       revealed: model.events?.revealed ?? [],
