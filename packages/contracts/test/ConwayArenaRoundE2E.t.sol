@@ -35,4 +35,29 @@ contract ConwayArenaRoundE2ETest {
         require(round.gen() == 4, "expected max gen");
         require(round.winnerPool() + round.winnerPaid() + round.keeperPaid() + round.treasuryDust() == round.totalFunded(), "funds mismatch");
     }
+
+    function testGetBoardStateMatchesIndividualReads() public {
+        vm.warp(100);
+        ConwayArenaRound round = new ConwayArenaRound(10, 10, 4, 2);
+
+        vm.warp(111);
+        round.beginReveal();
+
+        vm.warp(122);
+        round.initialize();
+
+        (uint64[64] memory blue, uint64[64] memory red) = round.getBoardState();
+        for (uint8 y = 0; y < 64; y++) {
+            require(blue[y] == round.blueRows(y), "blue mismatch after init");
+            require(red[y] == round.redRows(y), "red mismatch after init");
+        }
+
+        round.stepBatch(2);
+
+        (uint64[64] memory blueAfter, uint64[64] memory redAfter) = round.getBoardState();
+        for (uint8 y = 0; y < 64; y++) {
+            require(blueAfter[y] == round.blueRows(y), "blue mismatch after step");
+            require(redAfter[y] == round.redRows(y), "red mismatch after step");
+        }
+    }
 }

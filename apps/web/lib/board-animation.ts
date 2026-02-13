@@ -5,17 +5,33 @@ export type AnimationState = {
   generation: number;
   maxGeneration: number;
   paused: boolean;
+  checkpointGen: number;
 };
 
 export function createAnimationState(
   board: BoardState,
-  options: { maxGen: number },
+  options: { maxGen: number; checkpointGen?: number },
 ): AnimationState {
+  const checkpointGen = options.checkpointGen ?? 0;
   return {
     board,
-    generation: 0,
+    generation: checkpointGen,
     maxGeneration: options.maxGen,
     paused: false,
+    checkpointGen,
+  };
+}
+
+export function syncToCheckpoint(
+  current: AnimationState,
+  board: BoardState,
+  checkpointGen: number,
+): AnimationState {
+  return {
+    ...current,
+    board,
+    generation: checkpointGen,
+    checkpointGen,
   };
 }
 

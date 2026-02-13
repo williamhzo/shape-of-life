@@ -1,4 +1,3 @@
-import { BoardCanvas } from "@/components/board-canvas";
 import { RoundDashboard } from "@/components/round-dashboard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +16,6 @@ export default function HomePage() {
           </p>
         </CardHeader>
       </Card>
-
-      <BoardCanvas />
 
       <RoundDashboard />
     </main>

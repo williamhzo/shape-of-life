@@ -6,6 +6,10 @@ export const ROUND_ABI = parseAbi([
   "function claim(uint8 slotIndex)",
 ]);
 
+export const ROUND_READ_ABI = parseAbi([
+  "function getBoardState() view returns (uint64[64], uint64[64])",
+]);
+
 const COMMIT_HASH_PREIMAGE = [
   { name: "roundId", type: "uint256" },
   { name: "chainId", type: "uint256" },

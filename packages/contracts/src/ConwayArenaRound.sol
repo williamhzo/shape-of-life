@@ -521,6 +521,18 @@ contract ConwayArenaRound {
         }
     }
 
+    function getBoardState()
+        external
+        view
+        returns (uint64[BOARD_HEIGHT] memory blue, uint64[BOARD_HEIGHT] memory red)
+    {
+        for (uint8 y = 0; y < BOARD_HEIGHT;) {
+            blue[y] = blueRows[y];
+            red[y] = redRows[y];
+            unchecked { y += 1; }
+        }
+    }
+
     function loadBoardRows() internal view returns (uint64[] memory blueRowsMemory, uint64[] memory redRowsMemory) {
         blueRowsMemory = new uint64[](BOARD_HEIGHT);
         redRowsMemory = new uint64[](BOARD_HEIGHT);
