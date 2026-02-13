@@ -44,6 +44,30 @@ export type ClaimedIndexedEvent = {
   remainingWinnerPool: bigint;
 };
 
+export type PlayerClaimedIndexedEvent = {
+  blockNumber: bigint;
+  logIndex: number;
+  player: Address;
+  slotIndex: number;
+  amount: bigint;
+};
+
+export type CommittedIndexedEvent = {
+  blockNumber: bigint;
+  logIndex: number;
+  player: Address;
+  team: number;
+  slotIndex: number;
+};
+
+export type RevealedIndexedEvent = {
+  blockNumber: bigint;
+  logIndex: number;
+  player: Address;
+  team: number;
+  slotIndex: number;
+};
+
 export type RoundIndexerClient = {
   getChainId(): Promise<number>;
   getLatestBlockNumber?(): Promise<bigint>;
@@ -51,6 +75,9 @@ export type RoundIndexerClient = {
   getSteppedEvents(roundAddress: Address, range: BlockRange): Promise<SteppedIndexedEvent[]>;
   getFinalizedEvents(roundAddress: Address, range: BlockRange): Promise<FinalizedIndexedEvent[]>;
   getClaimedEvents(roundAddress: Address, range: BlockRange): Promise<ClaimedIndexedEvent[]>;
+  getPlayerClaimedEvents(roundAddress: Address, range: BlockRange): Promise<PlayerClaimedIndexedEvent[]>;
+  getCommittedEvents(roundAddress: Address, range: BlockRange): Promise<CommittedIndexedEvent[]>;
+  getRevealedEvents(roundAddress: Address, range: BlockRange): Promise<RevealedIndexedEvent[]>;
 };
 
 export type RoundReadModel = {
@@ -72,11 +99,17 @@ export type RoundReadModel = {
     stepped: SteppedIndexedEvent[];
     finalized: FinalizedIndexedEvent[];
     claimed: ClaimedIndexedEvent[];
+    playerClaimed: PlayerClaimedIndexedEvent[];
+    committed: CommittedIndexedEvent[];
+    revealed: RevealedIndexedEvent[];
   };
   eventCounts: {
     stepped: number;
     finalized: number;
     claimed: number;
+    playerClaimed: number;
+    committed: number;
+    revealed: number;
   };
   accounting: {
     totalFunded: bigint;
@@ -115,6 +148,9 @@ const FINALIZED_EVENT = parseAbiItem("event Finalized(uint16 finalGen, uint256 w
 const CLAIMED_EVENT = parseAbiItem(
   "event Claimed(uint256 distributed, uint256 cumulativeWinnerPaid, uint256 treasuryDust, uint256 remainingWinnerPool)",
 );
+const PLAYER_CLAIMED_EVENT = parseAbiItem("event PlayerClaimed(address player, uint8 slotIndex, uint256 amount)");
+const COMMITTED_EVENT = parseAbiItem("event Committed(address player, uint8 team, uint8 slotIndex)");
+const REVEALED_EVENT = parseAbiItem("event Revealed(address player, uint8 team, uint8 slotIndex)");
 
 function compareLogOrder(a: { blockNumber: bigint; logIndex: number }, b: { blockNumber: bigint; logIndex: number }): number {
   if (a.blockNumber === b.blockNumber) {
@@ -169,12 +205,15 @@ export async function buildRoundReadModel(params: BuildRoundReadModelParams): Pr
 
   const range: BlockRange = { fromBlock, toBlock };
 
-  const [chainId, roundState, steppedUnsorted, finalizedUnsorted, claimedUnsorted] = await Promise.all([
+  const [chainId, roundState, steppedUnsorted, finalizedUnsorted, claimedUnsorted, playerClaimedUnsorted, committedUnsorted, revealedUnsorted] = await Promise.all([
     params.client.getChainId(),
     params.client.readRoundState(params.roundAddress),
     params.client.getSteppedEvents(params.roundAddress, range),
     params.client.getFinalizedEvents(params.roundAddress, range),
     params.client.getClaimedEvents(params.roundAddress, range),
+    params.client.getPlayerClaimedEvents(params.roundAddress, range),
+    params.client.getCommittedEvents(params.roundAddress, range),
+    params.client.getRevealedEvents(params.roundAddress, range),
   ]);
 
   if (params.previousModel && params.previousModel.roundAddress.toLowerCase() !== params.roundAddress.toLowerCase()) {
@@ -193,10 +232,22 @@ export async function buildRoundReadModel(params: BuildRoundReadModelParams): Pr
   const previousClaimed = params.previousModel
     ? params.previousModel.events.claimed.filter((event) => event.blockNumber < fromBlock)
     : [];
+  const previousPlayerClaimed = params.previousModel
+    ? params.previousModel.events.playerClaimed.filter((event) => event.blockNumber < fromBlock)
+    : [];
+  const previousCommitted = params.previousModel
+    ? params.previousModel.events.committed.filter((event) => event.blockNumber < fromBlock)
+    : [];
+  const previousRevealed = params.previousModel
+    ? params.previousModel.events.revealed.filter((event) => event.blockNumber < fromBlock)
+    : [];
 
   const stepped = [...previousStepped, ...steppedUnsorted].sort(compareLogOrder);
   const finalized = [...previousFinalized, ...finalizedUnsorted].sort(compareLogOrder);
   const claimed = [...previousClaimed, ...claimedUnsorted].sort(compareLogOrder);
+  const playerClaimed = [...previousPlayerClaimed, ...playerClaimedUnsorted].sort(compareLogOrder);
+  const committed = [...previousCommitted, ...committedUnsorted].sort(compareLogOrder);
+  const revealed = [...previousRevealed, ...revealedUnsorted].sort(compareLogOrder);
 
   const finalizedEvent = finalized.length > 0 ? finalized[finalized.length - 1] : null;
 
@@ -225,6 +276,11 @@ export async function buildRoundReadModel(params: BuildRoundReadModelParams): Pr
         treasuryDust: event.treasuryDust,
         remainingWinnerPool: event.remainingWinnerPool,
       })),
+      playerClaimed: playerClaimed.map((event) => ({
+        player: event.player,
+        slotIndex: event.slotIndex,
+        amount: event.amount,
+      })),
     });
 
     derivedKeeperPaid = reconciliation.derivedKeeperPaid;
@@ -252,11 +308,17 @@ export async function buildRoundReadModel(params: BuildRoundReadModelParams): Pr
       stepped,
       finalized,
       claimed,
+      playerClaimed,
+      committed,
+      revealed,
     },
     eventCounts: {
       stepped: stepped.length,
       finalized: finalized.length,
       claimed: claimed.length,
+      playerClaimed: playerClaimed.length,
+      committed: committed.length,
+      revealed: revealed.length,
     },
     accounting: {
       totalFunded: roundState.totalFunded,
@@ -379,6 +441,66 @@ export function createViemRoundIndexerClient(rpcUrl: string): RoundIndexerClient
           cumulativeWinnerPaid: args.cumulativeWinnerPaid,
           treasuryDust: args.treasuryDust,
           remainingWinnerPool: args.remainingWinnerPool,
+        };
+      });
+    },
+    async getPlayerClaimedEvents(roundAddress, range) {
+      const logs = await client.getLogs({
+        address: roundAddress,
+        event: PLAYER_CLAIMED_EVENT,
+        fromBlock: range.fromBlock,
+        toBlock: range.toBlock,
+      });
+
+      return logs.map((log) => {
+        const location = requireIndexedLog("PlayerClaimed", log);
+        const args = log.args as { player: Address; slotIndex: bigint; amount: bigint };
+
+        return {
+          ...location,
+          player: args.player,
+          slotIndex: toNumber(args.slotIndex),
+          amount: args.amount,
+        };
+      });
+    },
+    async getCommittedEvents(roundAddress, range) {
+      const logs = await client.getLogs({
+        address: roundAddress,
+        event: COMMITTED_EVENT,
+        fromBlock: range.fromBlock,
+        toBlock: range.toBlock,
+      });
+
+      return logs.map((log) => {
+        const location = requireIndexedLog("Committed", log);
+        const args = log.args as { player: Address; team: bigint; slotIndex: bigint };
+
+        return {
+          ...location,
+          player: args.player,
+          team: toNumber(args.team),
+          slotIndex: toNumber(args.slotIndex),
+        };
+      });
+    },
+    async getRevealedEvents(roundAddress, range) {
+      const logs = await client.getLogs({
+        address: roundAddress,
+        event: REVEALED_EVENT,
+        fromBlock: range.fromBlock,
+        toBlock: range.toBlock,
+      });
+
+      return logs.map((log) => {
+        const location = requireIndexedLog("Revealed", log);
+        const args = log.args as { player: Address; team: bigint; slotIndex: bigint };
+
+        return {
+          ...location,
+          player: args.player,
+          team: toNumber(args.team),
+          slotIndex: toNumber(args.slotIndex),
         };
       });
     },

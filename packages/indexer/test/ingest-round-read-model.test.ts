@@ -67,6 +67,15 @@ function completeClient(): RoundIndexerClient {
         },
       ];
     },
+    async getPlayerClaimedEvents() {
+      return [];
+    },
+    async getCommittedEvents() {
+      return [];
+    },
+    async getRevealedEvents() {
+      return [];
+    },
   };
 }
 
@@ -122,6 +131,15 @@ describe("buildRoundReadModel", () => {
         return [];
       },
       async getClaimedEvents() {
+        return [];
+      },
+      async getPlayerClaimedEvents() {
+        return [];
+      },
+      async getCommittedEvents() {
+        return [];
+      },
+      async getRevealedEvents() {
         return [];
       },
     };
@@ -186,8 +204,11 @@ _assertRoundModelType({
     stepped: [],
     finalized: [],
     claimed: [],
+    playerClaimed: [],
+    committed: [],
+    revealed: [],
   },
-  eventCounts: { stepped: 0, finalized: 0, claimed: 0 },
+  eventCounts: { stepped: 0, finalized: 0, claimed: 0, playerClaimed: 0, committed: 0, revealed: 0 },
   accounting: {
     totalFunded: 0n,
     winnerPaid: 0n,

@@ -23,6 +23,7 @@ describe("reconcileRoundEvents", () => {
           remainingWinnerPool: 0n,
         },
       ],
+      playerClaimed: [],
     });
 
     expect(result.derivedKeeperPaid).toBe(2n);
@@ -42,6 +43,7 @@ describe("reconcileRoundEvents", () => {
           treasuryDust: 0n,
         },
         claimed: [],
+        playerClaimed: [],
       }),
     ).toThrow("keeper paid mismatch");
   });
@@ -53,7 +55,31 @@ describe("reconcileRoundEvents", () => {
         stepped: [],
         finalized: null,
         claimed: [],
+        playerClaimed: [],
       }),
     ).toThrow("missing finalized event");
+  });
+
+  it("derives winnerPaid from playerClaimed when no bulk Claimed events exist", () => {
+    const result = reconcileRoundEvents({
+      totalFunded: 10n,
+      stepped: [{ fromGen: 0, toGen: 4, reward: 1n }],
+      finalized: {
+        finalGen: 4,
+        winnerPoolFinal: 9n,
+        keeperPaid: 1n,
+        treasuryDust: 0n,
+      },
+      claimed: [],
+      playerClaimed: [
+        { player: "0xaaa", slotIndex: 0, amount: 3n },
+        { player: "0xbbb", slotIndex: 1, amount: 3n },
+        { player: "0xccc", slotIndex: 2, amount: 3n },
+      ],
+    });
+
+    expect(result.derivedKeeperPaid).toBe(1n);
+    expect(result.accountedTotal).toBe(10n);
+    expect(result.invariantHolds).toBe(true);
   });
 });

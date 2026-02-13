@@ -18,11 +18,18 @@ export type ClaimedEvent = {
   remainingWinnerPool: bigint;
 };
 
+export type PlayerClaimedEvent = {
+  player: string;
+  slotIndex: number;
+  amount: bigint;
+};
+
 export type RoundEventStream = {
   totalFunded: bigint;
   stepped: SteppedEvent[];
   finalized: FinalizedEvent | null;
   claimed: ClaimedEvent[];
+  playerClaimed: PlayerClaimedEvent[];
 };
 
 export type ReconciliationResult = {
@@ -42,7 +49,10 @@ export function reconcileRoundEvents(stream: RoundEventStream): ReconciliationRe
   }
 
   const lastClaim = stream.claimed.length === 0 ? null : stream.claimed[stream.claimed.length - 1];
-  const winnerPaid = lastClaim?.cumulativeWinnerPaid ?? 0n;
+  const winnerPaid =
+    lastClaim !== null
+      ? lastClaim.cumulativeWinnerPaid
+      : stream.playerClaimed.reduce((acc, e) => acc + e.amount, 0n);
   const treasuryDust = lastClaim?.treasuryDust ?? stream.finalized.treasuryDust;
   const accountedTotal = winnerPaid + stream.finalized.keeperPaid + treasuryDust;
 
