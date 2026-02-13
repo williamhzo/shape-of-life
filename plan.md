@@ -1577,7 +1577,7 @@ Execution rules:
 [x] P2.17 Add methuselah seed presets: R-pentomino, Acorn, Diehard, Lightweight spaceship. All fit budget 12 and produce dramatic multi-generation evolution for better game feel.
 [x] P2.18 Add minimal `ArenaRegistry` contract (or factory) that stores `currentRound` address, past round list, and optional season metadata hash for round discovery without hardcoded env vars.
 [ ] P3.6 Add social sharing primitives: seed link encoding (preset + transforms + slot + team suggestion), post-round replay page with timeline scrubber and signature-moment detection.
-[ ] P3.7 Add offchain per-player contribution tracking: seed survival duration, slot-region territory contribution at final gen, MVP seed ranking.
+[x] P3.7 Add offchain per-player contribution tracking: seed survival duration, slot-region territory contribution at final gen, MVP seed ranking.
 
 ### 20.4 Validation Gates
 
