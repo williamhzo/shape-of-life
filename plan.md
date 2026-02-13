@@ -850,6 +850,19 @@ Execution rules:
 
 ## 19. Progress Log
 
+- 2026-02-13 (session 6):
+  - Completed P3.6 social sharing primitives:
+    - Added `apps/web/lib/seed-link.ts`: URL-based seed link encoding/decoding with preset ID, transforms (shorthand notation: r90/r180/r270/mx/my), slot index, and team suggestion. `resolveSeedBits()` applies transforms to preset or raw seed.
+    - Added `apps/web/lib/replay.ts`: pre-computes full replay timeline from initial board state. Detects signature moments: peak-population, lead-change (team dominance swap), mass-extinction (>30% drop), board-empty (extinction).
+    - Added `apps/web/components/replay-canvas.tsx`: replay viewer with canvas rendering, timeline scrubber (shadcn Slider), signature-moment jump buttons with color-coded badges, play/pause/reset/fps controls.
+    - Added `apps/web/app/replay/page.tsx`: replay route that accepts seed-link query params (`?preset=acorn&t=r90,mx&slot=5&team=blue`) or falls back to demo board. Includes quick-replay preset links.
+    - Added Replay link button to `apps/web/components/board-canvas.tsx` header.
+    - Added `apps/web/test/seed-link.test.ts` (17 tests): encode/decode round-trips, raw hex seeds, transform shorthands, validation of invalid inputs.
+    - Added `apps/web/test/replay.test.ts` (8 tests): frame generation, early termination, summary correctness, signature moment detection for each kind.
+  - Validation:
+    - `cd apps/web && bun run test` passed (77/77).
+    - `bun run lint` passed.
+    - `cd apps/web && bun run build` passed.
 - 2026-02-13 (session 5):
   - Completed P2.14 participant/keeper feed surfaces with strict TDD (`Red -> Green`):
     - Added failing tests first in `apps/web/test/round-feeds.test.ts` (9 tests) for:
@@ -1576,7 +1589,7 @@ Execution rules:
 [x] P2.16 Add canvas board rendering with `<canvas>` + `ImageData` for 64x64 board and local TS forward-simulation between onchain checkpoint snapshots for smooth animation.
 [x] P2.17 Add methuselah seed presets: R-pentomino, Acorn, Diehard, Lightweight spaceship. All fit budget 12 and produce dramatic multi-generation evolution for better game feel.
 [x] P2.18 Add minimal `ArenaRegistry` contract (or factory) that stores `currentRound` address, past round list, and optional season metadata hash for round discovery without hardcoded env vars.
-[ ] P3.6 Add social sharing primitives: seed link encoding (preset + transforms + slot + team suggestion), post-round replay page with timeline scrubber and signature-moment detection.
+[x] P3.6 Add social sharing primitives: seed link encoding (preset + transforms + slot + team suggestion), post-round replay page with timeline scrubber and signature-moment detection.
 [x] P3.7 Add offchain per-player contribution tracking: seed survival duration, slot-region territory contribution at final gen, MVP seed ranking.
 
 ### 20.4 Validation Gates

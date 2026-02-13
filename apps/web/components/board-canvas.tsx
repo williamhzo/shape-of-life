@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 import type { BoardState } from "@shape-of-life/sim";
 import { SEED_PRESETS } from "@/lib/wallet-ux";
@@ -112,6 +113,11 @@ export function BoardCanvas() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/replay">
+            <Button variant="outline" size="sm">
+              Replay
+            </Button>
+          </Link>
           <Badge variant={atEnd ? "default" : "secondary"}>
             Gen {gen}/{MAX_GEN}
           </Badge>
