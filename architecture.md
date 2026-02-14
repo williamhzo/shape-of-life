@@ -4,7 +4,7 @@ This document describes the architecture currently implemented in this repositor
 
 ## 1. System Overview
 
-Shape of Life is a Bun monorepo with three active surfaces:
+Shape of Life is a Bun monorepo with four active surfaces:
 
 - `packages/sim`: TypeScript canonical simulation primitives and parity oracle.
 - `packages/contracts`: Solidity engine parity + round-lifecycle guard implementation (Foundry-tested).
@@ -13,6 +13,10 @@ Shape of Life is a Bun monorepo with three active surfaces:
 - `apps/web`: Next.js App Router scaffold for spectator-facing UI and simple API routes.
 
 Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
+
+Additional docs:
+- `concept.md`: user-facing game rules and Conway's Game of Life concept explainer (non-technical).
+- `plan.md`: full v0.1 spec, implementation plan, progress log, and readiness checklist.
 
 ## 2. Workspace Topology
 
@@ -45,6 +49,10 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `src/ConwayEngine.sol`:
     - Solidity parity engine for one generation
     - Invariant checks (`InvalidDimensions`, `InvalidRowsLength`, `OverlappingCells`)
+  - `src/ArenaRegistry.sol`:
+    - Owner-managed registry storing `currentRound`, `pastRounds[]`, and `seasonMetadataHash`
+    - Functions: `setCurrentRound`, `setSeasonMetadataHash`, `transferOwnership`, `pastRoundCount`, `allPastRounds`
+    - Events: `CurrentRoundUpdated`, `SeasonMetadataHashUpdated`
   - `src/ConwayArenaRound.sol`:
     - Commit/reveal/sim/claim phase state machine with explicit phase and time-window guards
     - 64x64 board-state storage (`blueRows`, `redRows`) and final board-derived population/invasion snapshots
@@ -76,8 +84,24 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - Local lifecycle integration test from commit through claim with end-state accounting reconciliation
   - `test/ConwayArenaRoundGas.t.sol`:
     - Stable gas checkpoints for `commit`, `reveal`, `stepBatch`, `finalize`, and `claim`
+  - `test/ConwayArenaRoundCommitReveal.t.sol`:
+    - Slot reservation, territory enforcement, reveal ownership, preimage verification, seed budget
+  - `test/ConwayArenaRoundSimulation.t.sol`:
+    - Seed materialization, board stepping, population tracking, weighted winner resolution
+  - `test/ConwayArenaRoundWinnerPayout.t.sol`:
+    - Winner team claim distribution, draw split, non-winner zero-payout
+  - `test/ConwayArenaRoundEvents.t.sol`:
+    - Event emission for Committed, Revealed, Initialized, Stepped, Finalized, PlayerClaimed
+  - `test/ConwayArenaRoundReentrancy.t.sol`:
+    - Reentrancy guard against claim/withdrawKeeperCredit cross-function attack
+  - `test/ConwayArenaRoundClaimSafety.t.sol`:
+    - Double-claim prevention, owner verification, revealed slot requirement
+  - `test/ConwayArenaRoundKeeperWithdraw.t.sol`:
+    - Keeper credit withdrawal, insufficient credit error
   - `test/ConwayArenaRoundCommitHash.t.sol`:
     - Domain-separation tests for commit preimage hashing (`chainId`, `arena`, `player`)
+  - `test/ArenaRegistry.t.sol`:
+    - Round registration, ownership, past round archival, metadata hash, access control
   - `scripts/max-batch-benchmark.ts`:
     - Uses `cast estimate` against Shape Sepolia to measure `stepBatch(uint16)` gas across candidate step sizes
     - Selects a lock recommendation using configurable gas-limit headroom (`safetyBps`)
@@ -107,33 +131,53 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
     - viem-first Hardhat 3 scaffold using `@nomicfoundation/hardhat-toolbox-viem`
     - Shape Sepolia/Mainnet deterministic network wiring from env (`SHAPE_SEPOLIA_RPC_URL`, `SHAPE_MAINNET_RPC_URL`, `DEPLOYER_PRIVATE_KEY`)
     - optional custom-chain verify endpoint wiring for Shape explorers
-  - `ignition/modules/ConwayArenaRound.ts` + `ignition/parameters/shape-sepolia.json`:
-    - deterministic constructor-parameterized deployment module for `ConwayArenaRound`
+  - `ignition/modules/ConwayArenaRound.ts` + `ignition/modules/ArenaRegistry.ts` + `ignition/parameters/shape-sepolia.json`:
+    - deterministic constructor-parameterized deployment modules for `ConwayArenaRound` and `ArenaRegistry`
   - `scripts/verify-shape-sepolia.ts` + `scripts/show-shape-sepolia-round.ts`:
     - deployment-address extraction from Ignition artifacts
     - constructor-argument-aware verification entrypoint for latest Shape Sepolia deployment
 
 - `apps/web`
-  - `app/page.tsx`: spectator dashboard with wallet journey panel + live round polling panel
+  - `app/page.tsx`: spectator dashboard rendering `RoundDashboard` with live polling, participant/keeper feeds, board canvas, and end screen
+  - `app/replay/page.tsx`: replay route accepting seed-link query params (`?preset=acorn&t=r90,mx&slot=5&team=blue`) or falling back to demo board, with quick-replay preset links
   - `app/layout.tsx` + `app/providers.tsx`: wagmi SSR cookie hydration and client provider wiring (`WagmiProvider` + `QueryClientProvider`)
   - `app/api/health/route.ts`: health endpoint contract
-  - `app/api/round/live/route.ts`: server route that reads persisted indexer model and returns normalized live spectator payload
-  - `components/round-live-panel.tsx`: client polling UI for live round state (`/api/round/live`)
+  - `app/api/round/live/route.ts`: server route that reads persisted indexer model and returns normalized live spectator payload with participant roster and keeper leaderboard
+  - `components/round-dashboard.tsx`: orchestrator component owning poll state and distributing data to live panel, wallet panel, participant list, keeper feed, board canvas, and end card
+  - `components/round-live-panel.tsx`: client polling UI for live round state (`/api/round/live`) with freshness badge
   - `components/round-wallet-panel.tsx`: wagmi-based signup flow + browser-wallet commit/reveal/claim journey
     - Includes connect/disconnect actions, Shape Sepolia chain-gating, team-aware slot picker, 8x8 seed editor with presets/transforms + budget meter, and explicit tx lifecycle state feedback (`pending`, `sign`, `confirming`, `error`, `success`)
+  - `components/round-end-card.tsx`: end screen with winner announcement, scoring breakdown, payout summary, and claim button integrating claim eligibility logic
+  - `components/board-canvas.tsx`: `<canvas>` with `ImageData` for 64x64 board at 8px scale; three render modes (demo with blinker+acorn, live with onchain checkpoint sync, final static) with play/pause/reset/FPS controls and replay link
+  - `components/replay-canvas.tsx`: replay viewer with timeline scrubber (shadcn Slider), signature-moment jump buttons (peak, lead-change, extinction), play/pause/reset/FPS controls
+  - `components/participant-list.tsx`: scrollable table with player address, team badge, slot, lifecycle status, payout
+  - `components/keeper-feed.tsx`: ranked table with keeper address, step count, gens advanced, cumulative reward
+  - `hooks/use-round-live.ts`: polls `/api/round/live` every 5s with error state
+  - `hooks/use-board-state.ts`: calls contract `getBoardState()` when phase 2/3, caches by generation
   - `lib/board-summary.ts`: board population accounting + overlap/width invariants
+  - `lib/board-renderer.ts`: pure `renderBoardPixels()` converting `BoardState` bigint rows to scaled RGBA pixel array
+  - `lib/board-animation.ts`: forward-simulation animation controller with pause/maxGen/extinction guards
+  - `lib/board-fetch.ts`: contract row conversion to `BoardState` with validation
   - `lib/wagmi-config.ts`: Shape Sepolia chain/config transport setup for wagmi
   - `lib/wallet-onboarding.ts`: deterministic signup-state gating helper for connect/switch/ready transitions
-  - `lib/seed.ts`: deterministic seed editing primitives, presets, and transforms (rotate/mirror/translate)
+  - `lib/seed.ts`: deterministic seed editing primitives, 8 presets (glider through LWSS), and transforms (rotate/mirror/translate)
+  - `lib/seed-link.ts`: URL-based seed link encoding/decoding with preset ID, transforms (shorthand notation), slot index, and team suggestion
+  - `lib/seed-contribution.ts`: offchain seed survival simulation, per-seed territory and population tracking at final gen
   - `lib/wallet-signing.ts`: deterministic tx-write request and error-normalization helpers for commit/reveal/claim
-  - `lib/wallet-tx-feedback.ts`: deterministic tx lifecycle messaging + badge-state mapping for UI status rendering
-  - `lib/round-live.ts`: persisted read-model parsing + normalization for API responses
+  - `lib/wallet-submit.ts`: commit/reveal/claim input validation (territory, budget, salt format)
+  - `lib/wallet-tx-feedback.ts`: tx lifecycle messaging + badge-state mapping for UI status rendering
+  - `lib/round-rules.ts`: game constants (team IDs, slot counts, seed budget, scoring weights, territory validation)
+  - `lib/round-live.ts`: persisted read-model parsing + normalization for API responses with participant/keeper feed construction
+  - `lib/round-end.ts`: winner announcement, claim eligibility, payout summary derivation from finalized round state
+  - `lib/round-feeds.ts`: participant roster builder from committed/revealed/claimed events, keeper leaderboard aggregation from stepped events
   - `lib/round-tx.ts`: commit-hash + tx-calldata builders for round contract calls
-  - `test/*.test.ts`: route contract + board summary tests
-    - includes wallet onboarding state-transition tests
-    - includes wallet seed transform/preset tests
-    - includes wallet write-request/error mapping tests
-    - includes wallet failure-path validation tests and route consistency checks for spectator-read-model status
+  - `lib/replay.ts`: pre-computes full replay timeline from initial board state with signature moment detection (peak-population, lead-change, mass-extinction, board-empty)
+  - `test/*.test.ts`: 17 test files covering all deterministic lib logic and API routes
+    - includes board renderer, animation, and fetch tests
+    - includes seed transform/preset, seed-link encode/decode, and seed-contribution tests
+    - includes wallet onboarding, signing, and submit validation tests
+    - includes round rules, round-tx, round-end, round-feeds, and round-live tests
+    - includes replay timeline and signature moment tests
   - UI baseline from shadcn registry under `apps/web/components/ui`
 
 - `packages/indexer`
@@ -157,6 +201,10 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `test/reconcile-round-events.test.ts`:
     - Happy-path reconciliation assertions
     - Divergence and missing-event failure checks
+  - `test/round-sync.test.ts`:
+    - Incremental log merge with previous read model, deterministic ordering, reorg-safe overlap replacement
+  - `test/sync-window.test.ts`:
+    - Cursor window derivation, confirmation-depth clamping, explicit block bound overrides
 
 ## 3. Domain and Data Model
 
@@ -216,26 +264,29 @@ Current architecture guarantees rule parity confidence at engine level and now i
 
 - `GET /api/health` returns process liveness payload.
 - `summarizeBoard()` computes blue/red/total populations and validates board invariants for UI/accounting display.
-- `GET /api/round/live` reads the persisted indexer round snapshot and normalizes bigint-heavy payloads for client consumption.
-- Landing page now renders:
-  - live spectator panel (polling `/api/round/live`)
+- `GET /api/round/live` reads the persisted indexer round snapshot and normalizes bigint-heavy payloads for client consumption, including participant roster and keeper leaderboard.
+- Landing page renders via `RoundDashboard`:
+  - live spectator panel (polling `/api/round/live`) with freshness badge
   - wagmi-backed wallet journey panel with signup gating and `simulate -> sign -> receipt` tx flow
-  - local preview board summary card.
+  - 64x64 board canvas with local TS forward-simulation between onchain checkpoints (demo/live/final modes)
+  - participant list and keeper feed tables
+  - end screen card with winner announcement, scoring, and claim button
+- Replay page (`/replay`) renders:
+  - seed-link-driven or demo board replay with full timeline scrubber
+  - signature moment detection and jump buttons (peak, lead-change, extinction)
 
 ## 5. Planned Architecture (From plan.md, Not Fully Implemented Yet)
 
 The plan defines eventual expansion to:
 
-- `ConwayArena` round-state machine contract (commit/reveal/sim/claim).
-- Optional NFT artifact contract.
-- `packages/indexer` for event-driven read models.
-- Keeper bot for permissionless stepping liveness.
-- Hardhat deployment + verification scripts.
+- Optional NFT artifact contract (`RoundArtifactNFT`).
+- Shape-native features: Gasback registration/treasury loop, Stack medal integrations, VRF tiebreaks.
+- Browser-automation end-to-end tests (real UI interaction harness).
 
 Status snapshot:
 
-- Implemented: Phase A engine prototype base, web bootstrap slice, Solidity engine parity harness, simulation-backed round progression (seed materialization + board stepping), transition guard matrix, commit/reveal slot payload guards, claim idempotency guards, keeper withdrawal transfer plumbing, winner payout transfer allocation, accounting invariants (including mixed claim ordering), local round E2E, gas regression CI, and a Hardhat+Ignition deployment/verification scaffold for Shape Sepolia.
-- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact.
+- Implemented: TS engine with full parity suite, Solidity engine + round lifecycle contract (commit/reveal/sim/claim with accounting), ArenaRegistry for round discovery, chain-ingesting indexer with reorg-safe sync, full spectator UI (board canvas, participant/keeper feeds, end screen, replay page with seed links), keeper automation tooling (status/tick/loop), Hardhat+Ignition deployment scaffold, and gas regression CI.
+- Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact (blocked on env/deployment inputs).
 
 ## 6. Architectural Invariants
 

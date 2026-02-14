@@ -1504,54 +1504,50 @@ Execution rules:
 ### 20.1 Phase Checklist (Spec vs Current Workspace)
 
 - Phase A: Prototype the fun (offchain-first)
-  - Status: PARTIAL
-  - Done: TS engine primitives + parity tests, web scaffold, health route, board summary utilities.
-  - Missing to hit deliverable: fully playable offchain prototype (seed editor, local full-round interaction flow, replay UX).
+  - Status: COMPLETE
+  - Done: TS engine primitives + parity tests, web scaffold, health route, board summary utilities, seed editor with 8 presets + transforms + budget enforcement, local full-round wallet interaction flow (commit/reveal/claim), 64x64 board canvas with forward-simulation animation, replay page with seed links and timeline scrubber.
 - Phase B: Solidity engine (Foundry-first)
-  - Status: PARTIAL
+  - Status: COMPLETE (core)
   - Done: one-generation immigration engine with deterministic vector/fuzz parity coverage.
-  - Missing to fully match plan intent: explicit Solidity pack/unpack utilities as first-class tested helpers.
+  - Minor gap: Solidity pack/unpack utilities are inlined in `stepBatch` rather than exposed as first-class tested helpers.
 - Phase C: Round manager contract
-  - Status: PARTIAL
-  - Done: phase guards, commit/reveal payload checks, slot ownership/idempotency, 64x64 board seed materialization, engine-backed `stepBatch`, weighted board-derived max-gen winner resolution (`3*population + 2*invasion`), accounting clamps, transfer-capable keeper/winner claim paths, event and gas regression tests.
-  - Missing to satisfy "playable on local + Shape Sepolia":
-    - **BUG**: territory validation uses top/bottom (slot index) instead of left/right (tileX), misaligned with spec and invasion scoring
-    - **BUG**: `claim(uint8)` does not emit `Claimed` event; indexer reconciliation pipeline is broken for accounting rounds
-    - Missing social events: `Committed`, `Revealed`, `Initialized` (specified in section 8.6 but not implemented)
-    - Keep gas envelope acceptable after simulation integration and lock Sepolia-proven batch thresholds
+  - Status: COMPLETE
+  - Done: phase guards, commit/reveal payload checks (territory axis fixed to tileX left/right), slot ownership/idempotency, 64x64 board seed materialization, engine-backed `stepBatch`, weighted board-derived max-gen winner resolution (`3*population + 2*invasion`), accounting clamps, transfer-capable keeper/winner claim paths, `PlayerClaimed`/`Committed`/`Revealed`/`Initialized` events, reentrancy guards, ArenaRegistry for round discovery, event and gas regression tests.
+  - Remaining: lock Sepolia-proven batch thresholds via benchmark.
 - Phase D: Deployments and scripts (Hardhat + viem)
   - Status: PARTIAL
-  - Done: Hardhat + viem + Ignition scaffold with Shape Sepolia/Mainnet network wiring, deterministic module parameters, and deployment-address/verification utility scripts.
-  - Missing: live Sepolia deploy execution, benchmark artifact capture, and measured `maxBatch` lock on deployed round.
+  - Done: Hardhat + viem + Ignition scaffold with Shape Sepolia/Mainnet network wiring, deterministic module parameters, deployment-address/verification utility scripts, Sepolia smoke/release gates, one-command rollout pipeline, keeper automation tooling (status/tick/loop).
+  - Missing: live Sepolia deploy execution, benchmark artifact capture, and measured `maxBatch` lock on deployed round (blocked on env/deployment inputs; see section 20.6).
 - Phase E: Indexer + production UI
-  - Status: PARTIAL
-  - Done: deterministic reconciliation utility + tests for accounting-critical events, viem-backed chain ingestion + persisted round read-model sync tooling, cursor/reorg-aware incremental sync, baseline wallet/realtime spectator web surfaces, and keeper observability status command for live Sepolia rounds.
-  - Missing: replay production polish, end screen flow, canvas checkpoint animation from onchain snapshots, and dedicated browser interaction automation harness.
+  - Status: NEAR-COMPLETE
+  - Done: deterministic reconciliation utility + tests, viem-backed chain ingestion + persisted round read-model sync with cursor/reorg-aware incremental sync, full spectator UI (board canvas with onchain checkpoint sync, participant roster, keeper leaderboard, end screen with scoring/claim), replay page with seed links and signature-moment detection, per-player seed contribution tracking, keeper observability.
+  - Missing: dedicated browser interaction automation harness (P2.12).
 - Phase F: Shape-native features
   - Status: NOT STARTED
 
 ### 20.2 Impact-Ordered Priorities
 
-- P0 (correctness bugs, must fix before any Sepolia deployment):
-  - **Territory axis alignment**: contract `validateSlotForTeam` and web `isSlotIndexInTeamTerritory` enforce top/bottom (slot index) but spec and invasion scoring use left/right (tileX). Fix both to use `tileX = slotIndex % SLOT_COLUMNS`.
-  - **Claim event emission**: `claim(uint8)` does not emit `Claimed`; indexer reconciliation is broken for accounting rounds. Add per-claim event emission.
-  - Keep transfer paths explicitly reentrancy-safe after simulation integration.
+- P0 (correctness bugs): ALL RESOLVED.
+  - Territory axis alignment: fixed. Contract and web both use `tileX = slotIndex % SLOT_COLUMNS` (left/right split aligned with invasion scoring).
+  - Claim event emission: fixed. `PlayerClaimed` event emits for every claim path; indexer reconciles per-claim amounts.
+  - Reentrancy: guarded on all transfer paths (`claim`, `withdrawKeeperCredit`).
 - P1 (contract event completeness + Sepolia deployment):
-  - **Social lifecycle events**: add `Committed`, `Revealed`, `Initialized` event emissions to contract (specified in section 8.6, not yet implemented). Required for indexer participation streaming and social UX.
-  - Execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds.
-  - Add Sepolia smoke checks for `commit -> reveal -> sim -> finalize -> claim`.
-  - Add one-command rollout path so benchmark+lock execution is deterministic once env/deploy credentials are present.
-- P2 (spectator product + game feel):
-  - ~~**Canvas board rendering**: add `<canvas>` live board visualization with local TS forward-simulation between onchain checkpoints. This is the core spectator-first promise.~~ Done: `BoardCanvas` component renders 64x64 board with `ImageData`, local TS forward-simulation, play/pause/reset/FPS controls.
-  - **Methuselah seed presets**: add R-pentomino (5 cells), Acorn (7 cells), Diehard (7 cells), and Lightweight spaceship (9 cells) to web presets. All fit budget 12 and produce dramatic multi-generation evolution.
-  - **Round factory/registry**: add minimal `ArenaRegistry` contract that stores `currentRound`, past round list, and optional season metadata hash. Eliminates hardcoded `NEXT_PUBLIC_ROUND_ADDRESS` and enables round discovery/history.
-  - Completed for current web wallet UX scope: wagmi SSR onboarding + chain-gated tx signing/receipt flow + join-flow seed presets/transforms + explicit tx lifecycle UI states.
-  - Follow-up: run live-browser validation pass for the updated wagmi signing flow (connect, switch chain, commit/reveal/claim, rejection path).
-  - ~~Follow-up: close remaining frontend spec gaps (participant + keeper feed, end screen flow).~~ Done: participant roster and keeper leaderboard now surface in spectator UI via read model feeds. Remaining: end screen flow, canvas checkpoint animation from onchain snapshots.
-- P3:
-  - **Social sharing**: seed link encoding (preset + transforms + slot + team), post-round replay page with timeline scrubber, round artifact metadata.
-  - **Per-player contribution tracking**: offchain-computed seed survival duration, slot-region territory contribution, MVP seed ranking.
-  - Operator polish is in progress (keeper observability + runbook + command hints + keeper tick + keeper loop); remaining work is optional Shape-native features (Gasback/Stack/VRF).
+  - Social lifecycle events: done. `Committed`, `Revealed`, `Initialized` events implemented and indexed.
+  - Sepolia smoke checks, rollout pipeline, and keeper automation: done.
+  - Remaining: execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds (blocked on env/deployment inputs; see section 20.6).
+- P2 (spectator product + game feel): NEAR-COMPLETE.
+  - Canvas board rendering: done. `BoardCanvas` with demo/live/final modes, onchain checkpoint sync, play/pause/FPS controls.
+  - Methuselah seed presets: done. R-pentomino, Acorn, Diehard, LWSS added.
+  - Round registry: done. `ArenaRegistry` contract with round discovery and season metadata.
+  - Wallet UX: done. wagmi SSR onboarding, chain-gated tx signing, seed editor with presets/transforms, tx lifecycle feedback states.
+  - Participant/keeper feeds: done. Roster and leaderboard surface in spectator UI.
+  - End screen: done. Winner announcement, scoring breakdown, claim button with eligibility logic.
+  - Remaining: live-browser validation pass for wagmi wallet flow (P2.12).
+- P3: NEAR-COMPLETE.
+  - Social sharing: done. Seed link encoding, replay page with timeline scrubber and signature-moment detection.
+  - Per-player contribution tracking: done. Seed survival duration, territory contribution, MVP ranking.
+  - Keeper operator tooling: done. Observability, runbook, command hints, tick, loop.
+  - Remaining: Shape-native features (Gasback/Stack/VRF) are Phase F scope.
 
 ### 20.3 Atomic Action Queue
 
@@ -1609,10 +1605,7 @@ Execution rules:
 - Simulation integration may exceed gas envelope at higher batch sizes; mitigate with benchmark lock + CI gas gates.
 - Contract/indexer/web semantic drift may create user-visible inconsistencies; mitigate with shared fixtures and reconciliation-driven integration tests.
 - Payout path regressions under adversarial call ordering; mitigate with transfer-path probe tests + strict accounting invariants.
-- ~~Territory/scoring axis incoherence (P0.6) silently makes invasion scoring meaningless; must fix before any testnet round with real participants.~~ Fixed: territory now uses tileX left/right split aligned with invasion scoring masks.
-- ~~Missing claim events (P0.7) break indexer reconciliation for the primary accounting path; any deployed round will have untrackable claim state.~~ Fixed: `PlayerClaimed` event emits for every claim path; indexer reconciles per-claim amounts.
-- Degenerate seed metas (stable density spam) may reduce spectator drama; mitigate with low seed budget (12) and adding methuselah presets that create midgame collisions. Consider midline-weighted scoring in later seasons if needed.
-- Single-round contract model requires manual address updates for each new round; mitigate with registry contract (P2.18) before multi-round production use.
+- Degenerate seed metas (stable density spam) may reduce spectator drama; mitigate with low seed budget (12) and methuselah presets that create midgame collisions. Consider midline-weighted scoring in later seasons if needed.
 
 ### 20.6 Required Operator Inputs (Canonical Checklist)
 
