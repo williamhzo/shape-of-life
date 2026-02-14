@@ -7,3 +7,4 @@ coverage/
 packages/contracts/cache/
 .env
 **/.env
+.claude/settings.local.json
