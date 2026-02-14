@@ -1,3 +1,4 @@
+import "dotenv/config";
 import hardhatIgnition from "@nomicfoundation/hardhat-ignition";
 import hardhatToolboxViem from "@nomicfoundation/hardhat-toolbox-viem";
 import hardhatVerify from "@nomicfoundation/hardhat-verify";

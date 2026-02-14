@@ -436,11 +436,11 @@ flowchart TD
     PICK_SLOT --> EDIT_SEED[8x8 seed editor<br/>Presets: Glider, R-pentomino, Acorn...<br/>Transforms: rotate/mirror/translate<br/>Budget meter: max 12 live cells]
     EDIT_SEED --> GEN_SALT[Generate random salt<br/>client-side]
 
-    GEN_SALT --> COMMIT_TX[Submit commit tx<br/>commitHash = keccak256(<br/>  roundId, chainId, arena,<br/>  player, team, slot, seedBits, salt)]
+    GEN_SALT --> COMMIT_TX["Submit commit tx<br/>commitHash = keccak256(<br/>  roundId, chainId, arena,<br/>  player, team, slot, seedBits, salt)"]
     COMMIT_TX --> TX_FLOW_1[simulate -> sign -> confirm]
     TX_FLOW_1 --> WAIT_REVEAL[Wait for reveal phase]
 
-    WAIT_REVEAL --> REVEAL_TX[Submit reveal tx<br/>reveal(roundId, team, slot, seedBits, salt)]
+    WAIT_REVEAL --> REVEAL_TX["Submit reveal tx<br/>reveal(roundId, team, slot, seedBits, salt)"]
     REVEAL_TX --> TX_FLOW_2[simulate -> sign -> confirm]
     TX_FLOW_2 --> SPECTATE[Watch simulation unfold<br/>Board canvas: live mode<br/>Local TS forward-sim<br/>between onchain checkpoints]
 
@@ -451,7 +451,7 @@ flowchart TD
     CLAIM_TX --> TX_FLOW_3[simulate -> sign -> confirm]
     TX_FLOW_3 --> REPLAY
 
-    REPLAY --> SHARE[Share seed link<br/>?preset=acorn&t=r90,mx&slot=5&team=blue]
+    REPLAY --> SHARE["Share seed link<br/>?preset=acorn&amp;t=r90,mx&amp;slot=5&amp;team=blue"]
 ```
 
 ### 8.4 Data Flow: Onchain to UI
