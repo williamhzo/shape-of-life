@@ -1587,6 +1587,11 @@ Execution rules:
 [x] P2.18 Add minimal `ArenaRegistry` contract (or factory) that stores `currentRound` address, past round list, and optional season metadata hash for round discovery without hardcoded env vars.
 [x] P3.6 Add social sharing primitives: seed link encoding (preset + transforms + slot + team suggestion), post-round replay page with timeline scrubber and signature-moment detection.
 [x] P3.7 Add offchain per-player contribution tracking: seed survival duration, slot-region territory contribution at final gen, MVP seed ranking.
+[ ] P1.6 Refactor board storage from `uint64[64]` to `uint256[16]` with explicit pack/unpack in `loadBoardRows`/`storeBoardRows`. Solidity optimizer does not batch same-slot accesses across loop iterations, so the current layout generates 128 redundant SLOAD+SSTORE cycles per `stepBatch` call. Manual packing saves ~34% gas on the combined load+store hot path. Should land before the Sepolia benchmark (P1.2) to measure realistic gas.
+[ ] P2.19 Add `previewClaim(uint8 slotIndex)` view function to `ConwayArenaRound`. Returns expected payout amount for a given slot without sending a transaction. Specified in plan section 8.5 but not implemented. Lets the UI show payout before the user signs.
+[ ] P2.20 Add CI workflow for full test + lint + build matrix across all packages (`bun run test`, `bun run lint`, `cd apps/web && bun run build`). Current CI only covers Foundry gas regression. Plan section 17.2 requires package-level CI coverage.
+[ ] P3.8 Wire ArenaRegistry into web app and indexer CLI so current round address is auto-discovered from the registry contract instead of requiring `NEXT_PUBLIC_ROUND_ADDRESS` / `--round` manual input.
+[ ] P3.9 Enrich `Finalized` event with `winnerTeam`, `scoreBlue`, `scoreRed` fields so the event is self-describing for indexers without requiring separate state reads.
 
 ### 20.4 Validation Gates
 
