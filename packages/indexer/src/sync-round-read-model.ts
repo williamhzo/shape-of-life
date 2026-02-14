@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { isAddress, type Address } from "viem";
+import { createPublicClient, http, isAddress, parseAbi, type Address } from "viem";
 
 import { buildRoundReadModel, createViemRoundIndexerClient } from "./ingest-round-read-model";
 import { readRoundReadModelFile, writeRoundReadModelFile } from "./round-read-model-store";
@@ -82,6 +82,36 @@ function parseRoundAddress(raw: string | undefined): Address {
   }
 
   return raw;
+}
+
+const REGISTRY_ABI = parseAbi(["function currentRound() view returns (address)"]);
+
+async function resolveRoundAddress(args: Record<string, string>, rpcUrl: string): Promise<Address> {
+  const explicit = args.round ?? process.env.ROUND_ADDRESS;
+  if (explicit) {
+    return parseRoundAddress(explicit);
+  }
+
+  const registryAddr = args.registry ?? process.env.ARENA_REGISTRY_ADDRESS;
+  if (!registryAddr) {
+    throw new Error("--round, ROUND_ADDRESS, --registry, or ARENA_REGISTRY_ADDRESS is required");
+  }
+  if (!isAddress(registryAddr)) {
+    throw new Error(`invalid registry address: ${registryAddr}`);
+  }
+
+  const registryClient = createPublicClient({ transport: http(rpcUrl) });
+  const currentRound = await registryClient.readContract({
+    address: registryAddr,
+    abi: REGISTRY_ABI,
+    functionName: "currentRound",
+  });
+
+  if (!currentRound || currentRound === "0x0000000000000000000000000000000000000000") {
+    throw new Error("registry has no current round set");
+  }
+
+  return currentRound;
 }
 
 function parseCursor(raw: string): RoundSyncCursor {
@@ -192,7 +222,7 @@ async function main(): Promise<void> {
     throw new Error("--rpc or SHAPE_SEPOLIA_RPC_URL or SHAPE_MAINNET_RPC_URL is required");
   }
 
-  const roundAddress = parseRoundAddress(args.round ?? process.env.ROUND_ADDRESS);
+  const roundAddress = await resolveRoundAddress(args, rpcUrl);
   const explicitFromBlock = parseBlock(args["from-block"], "--from-block");
   const explicitToBlock = parseBlock(args["to-block"], "--to-block");
   const confirmations = parseNonNegativeBigInt(args.confirmations ?? "2", "--confirmations");

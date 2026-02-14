@@ -43,6 +43,9 @@ export type FinalizedIndexedEvent = {
   winnerPoolFinal: bigint;
   keeperPaid: bigint;
   treasuryDust: bigint;
+  winnerTeam: number;
+  scoreBlue: number;
+  scoreRed: number;
 };
 
 export type ClaimedIndexedEvent = {
@@ -176,7 +179,7 @@ const ROUND_READ_ABI = parseAbi([
 ]);
 
 const STEPPED_EVENT = parseAbiItem("event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward)");
-const FINALIZED_EVENT = parseAbiItem("event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust)");
+const FINALIZED_EVENT = parseAbiItem("event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust, uint8 winnerTeam, uint32 scoreBlue, uint32 scoreRed)");
 const CLAIMED_EVENT = parseAbiItem(
   "event Claimed(uint256 distributed, uint256 cumulativeWinnerPaid, uint256 treasuryDust, uint256 remainingWinnerPool)",
 );
@@ -301,6 +304,9 @@ export async function buildRoundReadModel(params: BuildRoundReadModelParams): Pr
         winnerPoolFinal: finalizedEvent.winnerPoolFinal,
         keeperPaid: finalizedEvent.keeperPaid,
         treasuryDust: finalizedEvent.treasuryDust,
+        winnerTeam: finalizedEvent.winnerTeam,
+        scoreBlue: finalizedEvent.scoreBlue,
+        scoreRed: finalizedEvent.scoreRed,
       },
       claimed: claimed.map((event) => ({
         distributed: event.distributed,
@@ -478,6 +484,9 @@ export function createViemRoundIndexerClient(rpcUrl: string): RoundIndexerClient
           winnerPoolFinal: bigint;
           keeperPaid: bigint;
           treasuryDust: bigint;
+          winnerTeam: bigint;
+          scoreBlue: bigint;
+          scoreRed: bigint;
         };
 
         return {
@@ -486,6 +495,9 @@ export function createViemRoundIndexerClient(rpcUrl: string): RoundIndexerClient
           winnerPoolFinal: args.winnerPoolFinal,
           keeperPaid: args.keeperPaid,
           treasuryDust: args.treasuryDust,
+          winnerTeam: toNumber(args.winnerTeam),
+          scoreBlue: toNumber(args.scoreBlue),
+          scoreRed: toNumber(args.scoreRed),
         };
       });
     },

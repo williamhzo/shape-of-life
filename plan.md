@@ -718,7 +718,7 @@ Tasks:
 - Add workspace-level test commands for each package and a root aggregate command (`bun run test` + package-specific targets).
 - Add deterministic RNG seeding utilities and fixture builders for board/slot states.
 - Add snapshot/golden fixture versioning strategy (`fixtures/v1/...`) with review workflow.
-- Add CI matrix for `packages/sim`, `packages/contracts`, `packages/indexer`, `apps/web`.
+- Run local test/lint/build commands before merging (no CI -- side project).
 
 Deliverable:
 - One-command full test execution and reproducible fixture generation.
@@ -780,11 +780,10 @@ Goals:
 Required tests:
 - Foundry gas snapshot tests for critical methods (`commit`, `reveal`, `stepBatch`, `finalize`, `claim`).
 - Benchmark tests for multiple `maxBatch` settings on Shape Sepolia.
-- Regression thresholds: fail CI on configured % increase above baseline per critical path.
 - Stress tests for max slot occupancy and long simulations (`maxGen`).
 
 Exit criteria:
-- Locked safe `maxBatch` backed by benchmark artifacts and enforced CI thresholds.
+- Locked safe `maxBatch` backed by benchmark artifacts and local gas snapshot checks.
 
 ### 17.7 Phase 6: Release Gates and Ongoing Quality
 
@@ -830,8 +829,8 @@ P3:
 [x] Add round transition guard matrix tests with explicit revert expectations.
 [x] Add payout/accounting invariants including dust and keeper shortfall handling.
 [x] Add end-to-end local round test covering commit -> reveal -> step -> finalize -> claim.
-[x] Add gas snapshot + regression threshold checks to CI and block regressions by default.
-[x] Add aggregate/CI contract test execution (`forge test`) so Solidity regressions are caught outside package-local runs.
+[x] Add gas snapshot + regression threshold checks (`forge snapshot --check`) to block regressions by default.
+[x] Add aggregate contract test execution (`forge test`) so Solidity regressions are caught outside package-local runs.
 
 ## 18. Implementation Standards Mandate (Docs-First)
 
@@ -1400,15 +1399,13 @@ Execution rules:
   - Validation:
     - `bun test packages/indexer/test` passed.
     - `cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline --match-path test/ConwayArenaRoundEvents.t.sol` passed.
-  - Added aggregate Solidity test execution in shared local/CI gates:
+  - Added aggregate Solidity test execution:
     - Root `bun run test` now executes `test:sim`, `test:web`, and `test:contracts` (Foundry suite included).
-    - Updated `.github/workflows/contracts-gas.yml` to run `forge test` before gas snapshot checks.
   - Validation:
     - `bun run test` passed, including `forge test`.
   - Added gas regression gates for Solidity lifecycle paths:
     - Added `packages/contracts/test/ConwayArenaRoundGas.t.sol` with dedicated gas checkpoints for `commit`, `reveal`, `stepBatch`, `finalize`, and `claim`.
     - Generated baseline `packages/contracts/.gas-snapshot`.
-    - Added CI workflow `.github/workflows/contracts-gas.yml` to run `forge snapshot --match-test testGas --check` on PRs/pushes.
     - Added root script `test:contracts:gas` and documented usage in `README.md`.
   - Validation:
     - `bun run test:contracts:gas` passed.
@@ -1587,11 +1584,10 @@ Execution rules:
 [x] P2.18 Add minimal `ArenaRegistry` contract (or factory) that stores `currentRound` address, past round list, and optional season metadata hash for round discovery without hardcoded env vars.
 [x] P3.6 Add social sharing primitives: seed link encoding (preset + transforms + slot + team suggestion), post-round replay page with timeline scrubber and signature-moment detection.
 [x] P3.7 Add offchain per-player contribution tracking: seed survival duration, slot-region territory contribution at final gen, MVP seed ranking.
-[ ] P1.6 Refactor board storage from `uint64[64]` to `uint256[16]` with explicit pack/unpack in `loadBoardRows`/`storeBoardRows`. Solidity optimizer does not batch same-slot accesses across loop iterations, so the current layout generates 128 redundant SLOAD+SSTORE cycles per `stepBatch` call. Manual packing saves ~34% gas on the combined load+store hot path. Should land before the Sepolia benchmark (P1.2) to measure realistic gas.
-[ ] P2.19 Add `previewClaim(uint8 slotIndex)` view function to `ConwayArenaRound`. Returns expected payout amount for a given slot without sending a transaction. Specified in plan section 8.5 but not implemented. Lets the UI show payout before the user signs.
-[ ] P2.20 Add CI workflow for full test + lint + build matrix across all packages (`bun run test`, `bun run lint`, `cd apps/web && bun run build`). Current CI only covers Foundry gas regression. Plan section 17.2 requires package-level CI coverage.
-[ ] P3.8 Wire ArenaRegistry into web app and indexer CLI so current round address is auto-discovered from the registry contract instead of requiring `NEXT_PUBLIC_ROUND_ADDRESS` / `--round` manual input.
-[ ] P3.9 Enrich `Finalized` event with `winnerTeam`, `scoreBlue`, `scoreRed` fields so the event is self-describing for indexers without requiring separate state reads.
+[x] P1.6 Refactor board storage from `uint64[64]` to `uint256[16]` with explicit pack/unpack in `loadBoardRows`/`storeBoardRows`. Solidity optimizer does not batch same-slot accesses across loop iterations, so the current layout generates 128 redundant SLOAD+SSTORE cycles per `stepBatch` call. Manual packing saves ~34% gas on the combined load+store hot path. Should land before the Sepolia benchmark (P1.2) to measure realistic gas.
+[x] P2.19 Add `previewClaim(uint8 slotIndex)` view function to `ConwayArenaRound`. Returns expected payout amount for a given slot without sending a transaction. Specified in plan section 8.5 but not implemented. Lets the UI show payout before the user signs.
+[x] P3.8 Wire ArenaRegistry into web app and indexer CLI so current round address is auto-discovered from the registry contract instead of requiring `NEXT_PUBLIC_ROUND_ADDRESS` / `--round` manual input.
+[x] P3.9 Enrich `Finalized` event with `winnerTeam`, `scoreBlue`, `scoreRed` fields so the event is self-describing for indexers without requiring separate state reads.
 
 ### 20.4 Validation Gates
 
@@ -1607,7 +1603,7 @@ Execution rules:
 
 ### 20.5 Risks and Mitigations
 
-- Simulation integration may exceed gas envelope at higher batch sizes; mitigate with benchmark lock + CI gas gates.
+- Simulation integration may exceed gas envelope at higher batch sizes; mitigate with benchmark lock + local gas snapshot checks.
 - Contract/indexer/web semantic drift may create user-visible inconsistencies; mitigate with shared fixtures and reconciliation-driven integration tests.
 - Payout path regressions under adversarial call ordering; mitigate with transfer-path probe tests + strict accounting invariants.
 - Degenerate seed metas (stable density spam) may reduce spectator drama; mitigate with low seed budget (12) and methuselah presets that create midgame collisions. Consider midline-weighted scoring in later seasons if needed.

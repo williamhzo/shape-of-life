@@ -54,6 +54,7 @@ contract ConwayArenaRound {
     uint8 public constant SEED_BUDGET = 12;
     uint8 public constant SCORE_WEIGHT_POP = 3;
     uint8 public constant SCORE_WEIGHT_INVADE = 2;
+    uint8 private constant PACKED_WORD_COUNT = 16;
     uint64 private constant RIGHT_HALF_MASK = type(uint64).max << 32;
     uint64 private constant LEFT_HALF_MASK = uint64(type(uint32).max);
 
@@ -61,7 +62,7 @@ contract ConwayArenaRound {
     event Revealed(address player, uint8 team, uint8 slotIndex);
     event Initialized();
     event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward);
-    event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust);
+    event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust, uint8 winnerTeam, uint32 scoreBlue, uint32 scoreRed);
     event Claimed(uint256 distributed, uint256 cumulativeWinnerPaid, uint256 treasuryDust, uint256 remainingWinnerPool);
     event PlayerClaimed(address player, uint8 slotIndex, uint256 amount);
     event KeeperCreditWithdrawn(address keeper, uint256 amount);
@@ -105,8 +106,8 @@ contract ConwayArenaRound {
     uint256 public keeperPaid;
     uint256 public winnerPaid;
     uint256 public treasuryDust;
-    uint64[BOARD_HEIGHT] public blueRows;
-    uint64[BOARD_HEIGHT] public redRows;
+    uint256[PACKED_WORD_COUNT] public bluePacked;
+    uint256[PACKED_WORD_COUNT] public redPacked;
     mapping(address keeper => uint256 credit) public keeperCredits;
     mapping(uint8 slotIndex => SlotData slot) public slots;
     mapping(address player => bool reserved) public hasReservedSlot;
@@ -294,7 +295,7 @@ contract ConwayArenaRound {
 
         phase = Phase.Claim;
 
-        emit Finalized(gen, winnerPool, keeperPaid, treasuryDust);
+        emit Finalized(gen, winnerPool, keeperPaid, treasuryDust, winnerTeam, scoreBlue, scoreRed);
     }
 
     function claim() external view {
@@ -339,6 +340,39 @@ contract ConwayArenaRound {
         }
 
         emit PlayerClaimed(msg.sender, slotIndex, amount);
+    }
+
+    function previewClaim(uint8 slotIndex) external view returns (uint256 amount) {
+        if (phase != Phase.Claim) {
+            return 0;
+        }
+        if (slotIndex >= SLOT_COUNT) {
+            return 0;
+        }
+
+        SlotData storage slot = slots[slotIndex];
+        if (slot.player == address(0) || !slot.revealed || slot.claimed) {
+            return 0;
+        }
+        if (!accountingConfigured || winnerClaimsSettled) {
+            return 0;
+        }
+
+        if (payoutLocked) {
+            if (payoutPerClaim > 0 && isPayoutEligible(slot.team)) {
+                return payoutPerClaim;
+            }
+            return 0;
+        }
+
+        uint256 eligibleClaims = eligibleClaimCount();
+        if (eligibleClaims == 0) {
+            return 0;
+        }
+        if (!isPayoutEligible(slot.team)) {
+            return 0;
+        }
+        return winnerPool / eligibleClaims;
     }
 
     function configureAccounting(uint256 totalFunded_, uint256 rewardPerGen_) external {
@@ -410,6 +444,30 @@ contract ConwayArenaRound {
         emit Claimed(distributed, winnerPaid, treasuryDust, winnerPool);
     }
 
+    function getBoardState()
+        external
+        view
+        returns (uint64[BOARD_HEIGHT] memory blue, uint64[BOARD_HEIGHT] memory red)
+    {
+        for (uint8 i = 0; i < PACKED_WORD_COUNT;) {
+            uint256 blueWord = bluePacked[i];
+            uint256 redWord = redPacked[i];
+            uint8 baseRow = i * 4;
+
+            blue[baseRow]     = uint64(blueWord);
+            blue[baseRow + 1] = uint64(blueWord >> 64);
+            blue[baseRow + 2] = uint64(blueWord >> 128);
+            blue[baseRow + 3] = uint64(blueWord >> 192);
+
+            red[baseRow]     = uint64(redWord);
+            red[baseRow + 1] = uint64(redWord >> 64);
+            red[baseRow + 2] = uint64(redWord >> 128);
+            red[baseRow + 3] = uint64(redWord >> 192);
+
+            unchecked { i += 1; }
+        }
+    }
+
     function requirePhase(Phase expected) internal view {
         if (phase != expected) {
             revert InvalidPhase(expected, phase);
@@ -472,32 +530,43 @@ contract ConwayArenaRound {
     }
 
     function materializeBoardFromRevealedSeeds() internal {
-        clearBoardRows();
+        clearBoardPacked();
+
+        uint64[] memory blueMemory = new uint64[](BOARD_HEIGHT);
+        uint64[] memory redMemory = new uint64[](BOARD_HEIGHT);
 
         for (uint8 slotIndex = 0; slotIndex < SLOT_COUNT;) {
             SlotData storage slot = slots[slotIndex];
             if (slot.revealed && slot.seedBits != 0) {
-                placeSeed(slot.team, slotIndex, slot.seedBits);
+                placeSeedInMemory(slot.team, slotIndex, slot.seedBits, blueMemory, redMemory);
             }
 
             unchecked {
                 slotIndex += 1;
             }
         }
+
+        storeBoardRows(blueMemory, redMemory);
     }
 
-    function clearBoardRows() internal {
-        for (uint8 y = 0; y < BOARD_HEIGHT;) {
-            blueRows[y] = 0;
-            redRows[y] = 0;
+    function clearBoardPacked() internal {
+        for (uint8 i = 0; i < PACKED_WORD_COUNT;) {
+            bluePacked[i] = 0;
+            redPacked[i] = 0;
 
             unchecked {
-                y += 1;
+                i += 1;
             }
         }
     }
 
-    function placeSeed(uint8 team, uint8 slotIndex, uint64 seedBits) internal {
+    function placeSeedInMemory(
+        uint8 team,
+        uint8 slotIndex,
+        uint64 seedBits,
+        uint64[] memory blueMemory,
+        uint64[] memory redMemory
+    ) internal pure {
         uint8 baseX = (slotIndex % SLOT_COLUMNS) * SLOT_EDGE;
         uint8 baseY = (slotIndex / SLOT_COLUMNS) * SLOT_EDGE;
 
@@ -509,9 +578,9 @@ contract ConwayArenaRound {
                 uint8 boardY = baseY + localY;
                 uint64 shiftedRowBits = rowBits << baseX;
                 if (team == TEAM_BLUE) {
-                    blueRows[boardY] |= shiftedRowBits;
+                    blueMemory[boardY] |= shiftedRowBits;
                 } else {
-                    redRows[boardY] |= shiftedRowBits;
+                    redMemory[boardY] |= shiftedRowBits;
                 }
             }
 
@@ -521,39 +590,47 @@ contract ConwayArenaRound {
         }
     }
 
-    function getBoardState()
-        external
-        view
-        returns (uint64[BOARD_HEIGHT] memory blue, uint64[BOARD_HEIGHT] memory red)
-    {
-        for (uint8 y = 0; y < BOARD_HEIGHT;) {
-            blue[y] = blueRows[y];
-            red[y] = redRows[y];
-            unchecked { y += 1; }
-        }
-    }
-
     function loadBoardRows() internal view returns (uint64[] memory blueRowsMemory, uint64[] memory redRowsMemory) {
         blueRowsMemory = new uint64[](BOARD_HEIGHT);
         redRowsMemory = new uint64[](BOARD_HEIGHT);
 
-        for (uint8 y = 0; y < BOARD_HEIGHT;) {
-            blueRowsMemory[y] = blueRows[y];
-            redRowsMemory[y] = redRows[y];
+        for (uint8 i = 0; i < PACKED_WORD_COUNT;) {
+            uint256 blueWord = bluePacked[i];
+            uint256 redWord = redPacked[i];
+            uint8 baseRow = i * 4;
+
+            blueRowsMemory[baseRow]     = uint64(blueWord);
+            blueRowsMemory[baseRow + 1] = uint64(blueWord >> 64);
+            blueRowsMemory[baseRow + 2] = uint64(blueWord >> 128);
+            blueRowsMemory[baseRow + 3] = uint64(blueWord >> 192);
+
+            redRowsMemory[baseRow]     = uint64(redWord);
+            redRowsMemory[baseRow + 1] = uint64(redWord >> 64);
+            redRowsMemory[baseRow + 2] = uint64(redWord >> 128);
+            redRowsMemory[baseRow + 3] = uint64(redWord >> 192);
 
             unchecked {
-                y += 1;
+                i += 1;
             }
         }
     }
 
     function storeBoardRows(uint64[] memory blueRowsMemory, uint64[] memory redRowsMemory) internal {
-        for (uint8 y = 0; y < BOARD_HEIGHT;) {
-            blueRows[y] = blueRowsMemory[y];
-            redRows[y] = redRowsMemory[y];
+        for (uint8 i = 0; i < PACKED_WORD_COUNT;) {
+            uint8 baseRow = i * 4;
+
+            bluePacked[i] = uint256(blueRowsMemory[baseRow])
+                | (uint256(blueRowsMemory[baseRow + 1]) << 64)
+                | (uint256(blueRowsMemory[baseRow + 2]) << 128)
+                | (uint256(blueRowsMemory[baseRow + 3]) << 192);
+
+            redPacked[i] = uint256(redRowsMemory[baseRow])
+                | (uint256(redRowsMemory[baseRow + 1]) << 64)
+                | (uint256(redRowsMemory[baseRow + 2]) << 128)
+                | (uint256(redRowsMemory[baseRow + 3]) << 192);
 
             unchecked {
-                y += 1;
+                i += 1;
             }
         }
     }
@@ -564,16 +641,23 @@ contract ConwayArenaRound {
         uint16 blueInvade;
         uint16 redInvade;
 
-        for (uint8 y = 0; y < BOARD_HEIGHT;) {
-            uint64 blueRow = blueRows[y];
-            uint64 redRow = redRows[y];
-            bluePop += uint16(popcount(blueRow));
-            redPop += uint16(popcount(redRow));
-            blueInvade += uint16(popcount(blueRow & RIGHT_HALF_MASK));
-            redInvade += uint16(popcount(redRow & LEFT_HALF_MASK));
+        for (uint8 i = 0; i < PACKED_WORD_COUNT;) {
+            uint256 blueWord = bluePacked[i];
+            uint256 redWord = redPacked[i];
+
+            for (uint8 j = 0; j < 4;) {
+                uint64 blueRow = uint64(blueWord >> (j * 64));
+                uint64 redRow = uint64(redWord >> (j * 64));
+                bluePop += uint16(popcount(blueRow));
+                redPop += uint16(popcount(redRow));
+                blueInvade += uint16(popcount(blueRow & RIGHT_HALF_MASK));
+                redInvade += uint16(popcount(redRow & LEFT_HALF_MASK));
+
+                unchecked { j += 1; }
+            }
 
             unchecked {
-                y += 1;
+                i += 1;
             }
         }
 

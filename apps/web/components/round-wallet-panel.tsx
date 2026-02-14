@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Toggle } from "@/components/ui/toggle";
+import { useCurrentRound } from "@/hooks/use-current-round";
 import { TARGET_CHAIN } from "@/lib/wagmi-config";
 import { deriveWalletOnboardingState } from "@/lib/wallet-onboarding";
 import { createTxFeedback, txBadgeVariant, type TxFeedback, type TxStage } from "@/lib/wallet-tx-feedback";
@@ -56,7 +57,7 @@ function getOnboardingMessage(stage: ReturnType<typeof deriveWalletOnboardingSta
     return {
       badge: "destructive",
       label: "Missing Round Address",
-      status: "Configure NEXT_PUBLIC_ROUND_ADDRESS to enable signup and transaction signing.",
+      status: "Configure NEXT_PUBLIC_ROUND_ADDRESS or NEXT_PUBLIC_ARENA_REGISTRY_ADDRESS to enable signup and transaction signing.",
     };
   }
 
@@ -107,7 +108,8 @@ function txStageLabel(stage: TxStage): string {
 }
 
 export function RoundWalletPanel() {
-  const roundAddress = process.env.NEXT_PUBLIC_ROUND_ADDRESS ?? "";
+  const { roundAddress: resolvedRound } = useCurrentRound();
+  const roundAddress = resolvedRound ?? "";
   const { address: account, chainId, isConnected } = useAccount();
   const connectors = useConnectors();
   const { connectAsync, isPending: isConnectPending } = useConnect();

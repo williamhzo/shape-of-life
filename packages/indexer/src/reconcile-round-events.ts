@@ -9,6 +9,9 @@ export type FinalizedEvent = {
   winnerPoolFinal: bigint;
   keeperPaid: bigint;
   treasuryDust: bigint;
+  winnerTeam: number;
+  scoreBlue: number;
+  scoreRed: number;
 };
 
 export type ClaimedEvent = {

@@ -14,6 +14,9 @@ describe("reconcileRoundEvents", () => {
         winnerPoolFinal: 8n,
         keeperPaid: 2n,
         treasuryDust: 1n,
+        winnerTeam: 0,
+        scoreBlue: 0,
+        scoreRed: 0,
       },
       claimed: [
         {
@@ -41,6 +44,9 @@ describe("reconcileRoundEvents", () => {
           winnerPoolFinal: 8n,
           keeperPaid: 2n,
           treasuryDust: 0n,
+          winnerTeam: 0,
+          scoreBlue: 0,
+          scoreRed: 0,
         },
         claimed: [],
         playerClaimed: [],
@@ -69,6 +75,9 @@ describe("reconcileRoundEvents", () => {
         winnerPoolFinal: 9n,
         keeperPaid: 1n,
         treasuryDust: 0n,
+        winnerTeam: 0,
+        scoreBlue: 0,
+        scoreRed: 0,
       },
       claimed: [],
       playerClaimed: [

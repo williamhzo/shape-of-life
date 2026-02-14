@@ -62,6 +62,9 @@ function completeClient(): RoundIndexerClient {
           winnerPoolFinal: 8n,
           keeperPaid: 2n,
           treasuryDust: 1n,
+          winnerTeam: 0,
+          scoreBlue: 438,
+          scoreRed: 312,
         },
       ];
     },
@@ -202,6 +205,9 @@ describe("buildRoundReadModel", () => {
             winnerPoolFinal: 8n,
             keeperPaid: 3n,
             treasuryDust: 1n,
+            winnerTeam: 0,
+            scoreBlue: 438,
+            scoreRed: 312,
           },
         ];
       },

@@ -16,7 +16,7 @@ contract ConwayArenaRoundEventsTest {
     event Revealed(address player, uint8 team, uint8 slotIndex);
     event Initialized();
     event Stepped(uint16 fromGen, uint16 toGen, address keeper, uint256 reward);
-    event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust);
+    event Finalized(uint16 finalGen, uint256 winnerPoolFinal, uint256 keeperPaid, uint256 treasuryDust, uint8 winnerTeam, uint32 scoreBlue, uint32 scoreRed);
     event Claimed(uint256 distributed, uint256 cumulativeWinnerPaid, uint256 treasuryDust, uint256 remainingWinnerPool);
     event PlayerClaimed(address player, uint8 slotIndex, uint256 amount);
 
@@ -83,7 +83,7 @@ contract ConwayArenaRoundEventsTest {
         round.stepBatch(2);
 
         vm.expectEmit(false, false, false, true);
-        emit Finalized(4, 0, 2, 9);
+        emit Finalized(4, 0, 2, 9, 2, 0, 0);
         round.finalize();
     }
 

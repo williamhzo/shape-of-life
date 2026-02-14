@@ -29,9 +29,10 @@ contract ConwayArenaRoundSimulationTest {
         vm.warp(122);
         round.initialize();
 
-        require(round.blueRows(0) == 0x03, "row 0 materialization mismatch");
-        require(round.blueRows(1) == 0x04, "row 1 materialization mismatch");
-        require(round.redRows(0) == 0, "unexpected red row state");
+        (uint64[64] memory blue, uint64[64] memory red) = round.getBoardState();
+        require(blue[0] == 0x03, "row 0 materialization mismatch");
+        require(blue[1] == 0x04, "row 1 materialization mismatch");
+        require(red[0] == 0, "unexpected red row state");
     }
 
     function testStepBatchRunsEngineOverMaterializedBoard() public {
@@ -51,9 +52,10 @@ contract ConwayArenaRoundSimulationTest {
         round.initialize();
         round.stepBatch(1);
 
-        require(round.blueRows(0) == 0x02, "row 0 blinker mismatch");
-        require(round.blueRows(1) == 0x02, "row 1 blinker mismatch");
-        require(round.blueRows(2) == 0x02, "row 2 blinker mismatch");
+        (uint64[64] memory blueAfterStep,) = round.getBoardState();
+        require(blueAfterStep[0] == 0x02, "row 0 blinker mismatch");
+        require(blueAfterStep[1] == 0x02, "row 1 blinker mismatch");
+        require(blueAfterStep[2] == 0x02, "row 2 blinker mismatch");
         require(round.finalBluePopulation() == 3, "blue population mismatch");
         require(round.finalRedPopulation() == 0, "red population mismatch");
     }

@@ -285,7 +285,7 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: TS engine with full parity suite, Solidity engine + round lifecycle contract (commit/reveal/sim/claim with accounting), ArenaRegistry for round discovery, chain-ingesting indexer with reorg-safe sync, full spectator UI (board canvas, participant/keeper feeds, end screen, replay page with seed links), keeper automation tooling (status/tick/loop), Hardhat+Ignition deployment scaffold, and gas regression CI.
+- Implemented: TS engine with full parity suite, Solidity engine + round lifecycle contract (commit/reveal/sim/claim with accounting), ArenaRegistry for round discovery, chain-ingesting indexer with reorg-safe sync, full spectator UI (board canvas, participant/keeper feeds, end screen, replay page with seed links), keeper automation tooling (status/tick/loop), and Hardhat+Ignition deployment scaffold.
 - Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact (blocked on env/deployment inputs).
 
 ## 6. Architectural Invariants
@@ -695,7 +695,7 @@ flowchart TD
     end
 
     subgraph "Gas Regression"
-        GAS[".gas-snapshot<br/>forge snapshot --check<br/>CI blocks on regression"]
+        GAS[".gas-snapshot<br/>forge snapshot --check<br/>local gate blocks regression"]
     end
 
     subgraph "Indexer Verification"

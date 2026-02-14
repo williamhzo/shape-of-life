@@ -21,6 +21,16 @@ function baseClient(overrides?: Partial<RoundIndexerClient>): RoundIndexerClient
         winnerPaid: 0n,
         keeperPaid: 2n,
         treasuryDust: 0n,
+        winnerTeam: 0,
+        scoreBlue: 0,
+        scoreRed: 0,
+        finalBluePopulation: 0,
+        finalRedPopulation: 0,
+        finalBlueInvasion: 0,
+        finalRedInvasion: 0,
+        payoutPerClaim: 0n,
+        blueExtinct: false,
+        redExtinct: false,
       };
     },
     async getSteppedEvents() {
@@ -35,6 +45,9 @@ function baseClient(overrides?: Partial<RoundIndexerClient>): RoundIndexerClient
           winnerPoolFinal: 8n,
           keeperPaid: 2n,
           treasuryDust: 0n,
+          winnerTeam: 0,
+          scoreBlue: 0,
+          scoreRed: 0,
         },
       ];
     },
@@ -80,6 +93,16 @@ describe("incremental round sync", () => {
           winnerPaid: 0n,
           keeperPaid: 3n,
           treasuryDust: 0n,
+          winnerTeam: 0,
+          scoreBlue: 0,
+          scoreRed: 0,
+          finalBluePopulation: 0,
+          finalRedPopulation: 0,
+          finalBlueInvasion: 0,
+          finalRedInvasion: 0,
+          payoutPerClaim: 0n,
+          blueExtinct: false,
+          redExtinct: false,
         };
       },
       async getSteppedEvents() {
@@ -97,6 +120,9 @@ describe("incremental round sync", () => {
             winnerPoolFinal: 7n,
             keeperPaid: 3n,
             treasuryDust: 0n,
+            winnerTeam: 0,
+            scoreBlue: 0,
+            scoreRed: 0,
           },
         ];
       },
