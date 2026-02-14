@@ -912,8 +912,8 @@ Execution rules:
     - `bun run test:contracts:gas` passed.
 - 2026-02-13 (session 3):
   - Completed P2.17 methuselah seed presets with strict TDD (`Red -> Green`):
-    - Added failing test first in `apps/web/test/wallet-ux.test.ts` asserting existence and cell-count correctness for R-pentomino, Acorn, Diehard, and LWSS presets.
-    - Added four new presets to `SEED_PRESETS` in `apps/web/lib/wallet-ux.ts`:
+    - Added failing test first in `apps/web/test/seed.test.ts` asserting existence and cell-count correctness for R-pentomino, Acorn, Diehard, and LWSS presets.
+    - Added four new presets to `SEED_PRESETS` in `apps/web/lib/seed.ts`:
       - R-pentomino (5 cells): classic methuselah, 1103 generations to stabilize.
       - Acorn (7 cells): evolves for 5206 generations before stabilizing.
       - Diehard (7 cells): all cells die by generation 130.
@@ -994,10 +994,10 @@ Execution rules:
     - Updated `architecture.md` test-coverage notes to match the current web test surface.
   - Completed P2.13 web join-flow + tx-feedback spec-gap slice with strict TDD (`Red -> Green`):
     - Added failing tests first:
-      - `apps/web/test/wallet-ux.test.ts` for seed transform coverage (rotate/mirror/translate) and preset budget guarantees.
+      - `apps/web/test/seed.test.ts` for seed transform coverage (rotate/mirror/translate) and preset budget guarantees.
       - `apps/web/test/wallet-tx-feedback.test.ts` for explicit tx lifecycle feedback (`pending`, `sign`, `confirming`, `error`, `success`).
     - Implemented deterministic helpers:
-      - `apps/web/lib/wallet-ux.ts` now includes seed presets + transform primitives.
+      - `apps/web/lib/seed.ts` now includes seed presets + transform primitives.
       - `apps/web/lib/wallet-tx-feedback.ts` centralizes tx-stage messages and badge mapping.
     - Refactored `apps/web/components/round-wallet-panel.tsx`:
       - added seed preset/transform controls and budget progress meter.
@@ -1108,11 +1108,11 @@ Execution rules:
     - `bun run test` passed.
     - `bun run test:contracts:gas` passed.
   - Completed P2.4 wallet UX expansion slice with strict TDD (`Red -> Green`):
-    - Added failing tests first in `apps/web/test/wallet-ux.test.ts` for:
+    - Added failing tests first in `apps/web/test/seed.test.ts` for:
       - seed bit toggling/inspection semantics
       - slot-index grid mapping
       - team-territory slot enforcement
-    - Implemented UX primitives in `apps/web/lib/wallet-ux.ts` and integrated into `apps/web/components/round-wallet-panel.tsx`:
+    - Implemented UX primitives in `apps/web/lib/seed.ts` and integrated into `apps/web/components/round-wallet-panel.tsx`:
       - team-aware slot picker (64-slot grid with territory guardrails)
       - 8x8 seed editor with budget enforcement (`<= 12` live cells)
       - optimistic pending-submit feedback during commit/reveal/claim sends

@@ -1,4 +1,4 @@
-import { isSlotIndexInTeamTerritory, SEED_BUDGET, SLOT_COUNT, countLiveSeedCells } from "@/lib/wallet-ux";
+import { isSlotIndexInTeamTerritory, SEED_BUDGET, SLOT_COUNT, countLiveSeedCells } from "@/lib/seed";
 
 export type WalletAction = "commit" | "reveal" | "claim";
 

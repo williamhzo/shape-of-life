@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 import type { BoardState } from "@shape-of-life/sim";
-import { SEED_PRESETS } from "@/lib/wallet-ux";
+import { SEED_PRESETS } from "@/lib/seed";
 import { SEED_EDGE } from "@/lib/round-rules";
 import { decodeSeedLink, resolveSeedBits, encodeSeedLink } from "@/lib/seed-link";
 import { ReplayCanvas } from "@/components/replay-canvas";

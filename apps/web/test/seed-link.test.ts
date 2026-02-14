@@ -7,7 +7,7 @@ import {
   type SeedLinkParams,
 } from "../lib/seed-link";
 import { TEAM_BLUE, TEAM_RED } from "../lib/round-rules";
-import { getSeedPresetById, applySeedTransform } from "../lib/wallet-ux";
+import { getSeedPresetById, applySeedTransform } from "../lib/seed";
 
 describe("encodeSeedLink", () => {
   it("encodes a preset with team and slot", () => {

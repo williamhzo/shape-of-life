@@ -124,7 +124,7 @@ Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
   - `lib/board-summary.ts`: board population accounting + overlap/width invariants
   - `lib/wagmi-config.ts`: Shape Sepolia chain/config transport setup for wagmi
   - `lib/wallet-onboarding.ts`: deterministic signup-state gating helper for connect/switch/ready transitions
-  - `lib/wallet-ux.ts`: deterministic seed editing primitives, presets, and transforms (rotate/mirror/translate)
+  - `lib/seed.ts`: deterministic seed editing primitives, presets, and transforms (rotate/mirror/translate)
   - `lib/wallet-signing.ts`: deterministic tx-write request and error-normalization helpers for commit/reveal/claim
   - `lib/wallet-tx-feedback.ts`: deterministic tx lifecycle messaging + badge-state mapping for UI status rendering
   - `lib/round-live.ts`: persisted read-model parsing + normalization for API responses

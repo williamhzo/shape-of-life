@@ -27,7 +27,7 @@ import {
   isSlotIndexInTeamTerritory,
   slotIndexToGrid,
   toggleSeedCell,
-} from "@/lib/wallet-ux";
+} from "@/lib/seed";
 import { buildWalletWriteRequest, normalizeWalletWriteError } from "@/lib/wallet-signing";
 
 type TxKind = "commit" | "reveal" | "claim";

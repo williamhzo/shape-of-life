@@ -1,4 +1,4 @@
-import { type SeedTransform, getSeedPresetById, applySeedTransform } from "@/lib/wallet-ux";
+import { type SeedTransform, getSeedPresetById, applySeedTransform } from "@/lib/seed";
 import { TEAM_BLUE, TEAM_RED, SLOT_COUNT } from "@/lib/round-rules";
 
 export type SeedLinkParams = {
