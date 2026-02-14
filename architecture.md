@@ -314,3 +314,599 @@ Current gaps relative to full plan:
 - Keeper bot and browser-automation end-to-end tests (real UI interaction harness) are not yet implemented.
 
 Primary near-term risk: documentation or UI assumptions diverging from actual engine semantics; parity fixtures and mirrored tests are the current mitigation.
+
+## 8. Architecture Diagrams
+
+### 8.1 System Architecture Overview
+
+High-level monorepo topology: packages, their responsibilities, and cross-package dependencies.
+
+```mermaid
+graph TB
+    subgraph "Bun Monorepo (bun@1.3.6)"
+        subgraph "apps/web [Next.js 15 / React 19]"
+            WEB_PAGES["Pages<br/>/ (spectator dashboard)<br/>/replay (seed replay)"]
+            WEB_API["API Routes<br/>GET /api/health<br/>GET /api/round/live"]
+            WEB_COMPONENTS["Components<br/>RoundDashboard<br/>BoardCanvas / ReplayCanvas<br/>RoundWalletPanel<br/>RoundLivePanel / RoundEndCard<br/>ParticipantList / KeeperFeed"]
+            WEB_LIB["Lib (deterministic logic)<br/>board-renderer / board-animation<br/>seed / seed-link / replay<br/>round-tx / round-live / round-end<br/>wallet-onboarding / wallet-signing<br/>wallet-submit / wallet-tx-feedback"]
+            WEB_HOOKS["Hooks<br/>useRoundLive (5s poll)<br/>useBoardState (contract read)"]
+        end
+
+        subgraph "packages/sim [TS Engine]"
+            SIM_ENGINE["engine.ts<br/>stepGeneration()<br/>packRows() / unpackRows()<br/>BoardState type"]
+        end
+
+        subgraph "packages/contracts [Solidity + Foundry + Hardhat]"
+            SOL_ENGINE["ConwayEngine.sol<br/>(library: step, pack/unpack, popcount)"]
+            SOL_ROUND["ConwayArenaRound.sol<br/>(state machine + accounting)"]
+            SOL_REGISTRY["ArenaRegistry.sol<br/>(round discovery)"]
+            IGNITION["Ignition Modules<br/>+ shape-sepolia.json params"]
+            SCRIPTS["Keeper Scripts<br/>status / tick / loop<br/>benchmark / smoke / rollout"]
+        end
+
+        subgraph "packages/indexer [TS Indexer]"
+            IDX_INGEST["ingest-round-read-model.ts<br/>(viem log fetcher + state reader)"]
+            IDX_RECONCILE["reconcile-round-events.ts<br/>(accounting invariant checks)"]
+            IDX_SYNC["sync-round-read-model.ts<br/>(CLI: cursor + reorg-safe)"]
+            IDX_STORE["round-read-model-store.ts<br/>(BigInt-safe JSON persistence)"]
+        end
+
+        FIXTURES["fixtures/engine/parity.v1.json<br/>(cross-language golden vectors)"]
+    end
+
+    SIM_ENGINE -->|"imported by"| WEB_LIB
+    SIM_ENGINE -.->|"parity contract"| FIXTURES
+    SOL_ENGINE -.->|"parity contract"| FIXTURES
+    SOL_ENGINE -->|"used by"| SOL_ROUND
+    IDX_INGEST -->|"reads events from"| SOL_ROUND
+    IDX_INGEST -->|"reads state from"| SOL_ROUND
+    IDX_STORE -->|"persisted JSON"| WEB_API
+    WEB_API -->|"serves"| WEB_HOOKS
+    WEB_HOOKS -->|"feeds"| WEB_COMPONENTS
+    WEB_LIB -->|"used by"| WEB_COMPONENTS
+    IGNITION -->|"deploys"| SOL_ROUND
+    IGNITION -->|"deploys"| SOL_REGISTRY
+    SCRIPTS -->|"calls via cast"| SOL_ROUND
+```
+
+### 8.2 Round Lifecycle State Machine
+
+The 4-phase state machine governing every round, with transition guards and actor permissions.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Commit: createRound() [owner]
+
+    Commit --> Reveal: beginReveal() [anyone, after commitEnd]
+    Commit --> Commit: commit(team, slot, hash) [player, before commitEnd]
+
+    Reveal --> Reveal: reveal(roundId, team, slot, seedBits, salt) [committed player, before revealEnd]
+    Reveal --> Sim: initialize() [anyone, after revealEnd]
+
+    Sim --> Sim: stepBatch(steps) [anyone/keeper, gen < maxGen]
+    Sim --> Claim: finalize() [anyone, gen==maxGen OR team extinct]
+
+    Claim --> Claim: claim(slotIndex) [revealed slot owner, once per slot]
+    Claim --> [*]: all claims settled
+
+    note right of Commit
+        Guards: valid team/slot territory,
+        empty slot, one slot per address,
+        before commitEnd timestamp
+    end note
+
+    note right of Reveal
+        Guards: caller == committed player,
+        preimage matches commitHash,
+        seedBits popcount <= 12 (budget),
+        not already revealed
+    end note
+
+    note right of Sim
+        actualSteps = min(requested, maxBatch, maxGen - gen)
+        Keeper reward = actualSteps * rewardPerGen
+        clamped to keeperPoolRemaining
+    end note
+
+    note right of Claim
+        nonReentrant guard,
+        pull-payment pattern,
+        dust routed to treasury
+    end note
+```
+
+### 8.3 Player Journey
+
+End-to-end user experience from spectating to claiming rewards.
+
+```mermaid
+flowchart TD
+    START([Spectator visits /]) --> WATCH[Watch live board canvas<br/>See participant list + keeper feed]
+    WATCH --> DECIDE{Join round?}
+    DECIDE -->|No| WATCH
+
+    DECIDE -->|Yes| CONNECT[Connect wallet via wagmi<br/>Injected connector]
+    CONNECT --> CHAIN_CHECK{On Shape Sepolia?}
+    CHAIN_CHECK -->|No| SWITCH[Switch network prompt]
+    SWITCH --> CHAIN_CHECK
+    CHAIN_CHECK -->|Yes| READY[Wallet ready]
+
+    READY --> PICK_TEAM[Choose Blue or Red team]
+    PICK_TEAM --> PICK_SLOT[Pick slot from<br/>team territory grid<br/>Blue: tileX 0-3<br/>Red: tileX 4-7]
+    PICK_SLOT --> EDIT_SEED[8x8 seed editor<br/>Presets: Glider, R-pentomino, Acorn...<br/>Transforms: rotate/mirror/translate<br/>Budget meter: max 12 live cells]
+    EDIT_SEED --> GEN_SALT[Generate random salt<br/>client-side]
+
+    GEN_SALT --> COMMIT_TX[Submit commit tx<br/>commitHash = keccak256(<br/>  roundId, chainId, arena,<br/>  player, team, slot, seedBits, salt)]
+    COMMIT_TX --> TX_FLOW_1[simulate -> sign -> confirm]
+    TX_FLOW_1 --> WAIT_REVEAL[Wait for reveal phase]
+
+    WAIT_REVEAL --> REVEAL_TX[Submit reveal tx<br/>reveal(roundId, team, slot, seedBits, salt)]
+    REVEAL_TX --> TX_FLOW_2[simulate -> sign -> confirm]
+    TX_FLOW_2 --> SPECTATE[Watch simulation unfold<br/>Board canvas: live mode<br/>Local TS forward-sim<br/>between onchain checkpoints]
+
+    SPECTATE --> END_SCREEN[End screen appears<br/>Winner, scores, payout summary]
+    END_SCREEN --> ELIGIBLE{Eligible to claim?}
+    ELIGIBLE -->|Winner or Draw| CLAIM_TX[Submit claim tx]
+    ELIGIBLE -->|Lost| REPLAY[View replay with<br/>signature moments]
+    CLAIM_TX --> TX_FLOW_3[simulate -> sign -> confirm]
+    TX_FLOW_3 --> REPLAY
+
+    REPLAY --> SHARE[Share seed link<br/>?preset=acorn&t=r90,mx&slot=5&team=blue]
+```
+
+### 8.4 Data Flow: Onchain to UI
+
+How data flows from Shape L2 contract state through the indexer to the browser.
+
+```mermaid
+flowchart LR
+    subgraph "Shape L2 (Sepolia / Mainnet)"
+        CONTRACT["ConwayArenaRound<br/>contract state"]
+        EVENTS["Contract Events<br/>Committed, Revealed,<br/>Initialized, Stepped,<br/>Finalized, PlayerClaimed"]
+    end
+
+    subgraph "Indexer (packages/indexer)"
+        VIEM_CLIENT["viem publicClient<br/>(Alchemy RPC)"]
+        INGEST["buildRoundReadModel()<br/>parallel: readState + getLogs"]
+        RECONCILE["reconcileRoundEvents()<br/>keeper-reward consistency<br/>accounting invariant check"]
+        STORE["JSON snapshot file<br/>round-read-model.latest.json<br/>(BigInt-safe serialization)"]
+        CURSOR["Cursor file<br/>round-read-model.cursor.json<br/>(resumable sync window)"]
+    end
+
+    subgraph "Web Server (Next.js)"
+        API_LIVE["GET /api/round/live<br/>reads persisted snapshot<br/>normalizes bigint payloads<br/>builds participant roster<br/>builds keeper leaderboard"]
+    end
+
+    subgraph "Browser (React 19)"
+        POLL_HOOK["useRoundLive()<br/>polls /api/round/live<br/>every 5 seconds"]
+        BOARD_HOOK["useBoardState()<br/>direct contract read<br/>getBoardState() view<br/>cached by generation"]
+        DASHBOARD["RoundDashboard<br/>(owns poll state,<br/>distributes to children)"]
+        CANVAS["BoardCanvas<br/>onchain checkpoint +<br/>local TS forward-sim<br/>between checkpoints"]
+    end
+
+    CONTRACT -->|"state reads"| VIEM_CLIENT
+    EVENTS -->|"log queries"| VIEM_CLIENT
+    VIEM_CLIENT --> INGEST
+    INGEST --> RECONCILE
+    RECONCILE --> STORE
+    INGEST --> CURSOR
+
+    STORE -->|"file read"| API_LIVE
+    API_LIVE -->|"JSON response"| POLL_HOOK
+    POLL_HOOK --> DASHBOARD
+    CONTRACT -->|"direct RPC read<br/>(wagmi publicClient)"| BOARD_HOOK
+    BOARD_HOOK --> CANVAS
+    DASHBOARD --> CANVAS
+```
+
+### 8.5 Board Representation and Rendering Pipeline
+
+How board state is represented, packed for storage, and rendered to pixels.
+
+```mermaid
+flowchart TD
+    subgraph "Canonical Board (TS: BoardState)"
+        TS_BOARD["width: 64, height: 64<br/>blueRows: bigint[64]<br/>redRows: bigint[64]<br/>Each row: 64-bit, bit x = (1n << BigInt(x))"]
+    end
+
+    subgraph "Onchain Storage (Solidity)"
+        PACKED["uint256[16] bluePacked<br/>uint256[16] redPacked<br/>(4 rows per word: 4 x 64 = 256 bits)"]
+        MEMORY["In-memory stepping:<br/>uint64[64] blueRows<br/>uint64[64] redRows"]
+    end
+
+    subgraph "Stepping (one generation)"
+        STEP_ALGO["For each cell (x, y):<br/>1. Count 8 Moore neighbors<br/>   Y: cylinder wrap (mod height)<br/>   X: hard edges (out-of-bounds = dead)<br/>2. B3/S23 rule:<br/>   dead + 3 neighbors = born<br/>   alive + 2-3 neighbors = survive<br/>3. Immigration color rule:<br/>   survivor keeps color<br/>   newborn = majority color of 3 parents<br/>4. Mask to width, assert no overlap"]
+    end
+
+    subgraph "Board Rendering (browser)"
+        FETCH["contractRowsToBoardState()<br/>convert uint64[] to bigint[]<br/>with validation"]
+        RENDER["renderBoardPixels(board, scale=8)<br/>For each cell (x, y):<br/>  test bit: (row >> BigInt(x)) & 1n<br/>  Blue: #3B82F6<br/>  Red: #EF4444<br/>  Dead: #1A1A2E<br/>Output: Uint8ClampedArray RGBA"]
+        CANVAS_EL["canvas 512x512<br/>ImageData + putImageData<br/>(64x64 board at 8px scale)"]
+        ANIMATION["createAnimationState()<br/>stepAnimation()<br/>uses stepGeneration() from sim<br/>pause / maxGen / extinction guards"]
+    end
+
+    TS_BOARD -->|"stepGeneration()"| STEP_ALGO
+    STEP_ALGO -->|"new BoardState"| TS_BOARD
+
+    PACKED -->|"unpackRows()"| MEMORY
+    MEMORY -->|"ConwayEngine.step()"| MEMORY
+    MEMORY -->|"packRows()"| PACKED
+
+    PACKED -->|"getBoardState() view"| FETCH
+    FETCH --> RENDER
+    RENDER --> CANVAS_EL
+    TS_BOARD -->|"local forward-sim"| ANIMATION
+    ANIMATION --> RENDER
+```
+
+### 8.6 Wallet Transaction Pipeline
+
+The full tx signing flow from draft to confirmation.
+
+```mermaid
+sequenceDiagram
+    participant User as Player (Browser)
+    participant WO as wallet-onboarding
+    participant WS as wallet-submit
+    participant WSig as wallet-signing
+    participant TxFb as wallet-tx-feedback
+    participant Wagmi as wagmi/viem
+    participant Chain as Shape L2 (RPC)
+
+    User->>WO: deriveWalletOnboardingState()
+    WO-->>User: stage: missing-round / connect / switch / ready
+
+    Note over User: canSubmitTx = true when ready
+
+    User->>WS: validateWalletSubmissionDraft()
+    WS-->>User: validated draft (territory, budget, salt checks)
+
+    User->>WSig: buildWalletWriteRequest(action, draft)
+    Note over WSig: commit: compute commitHash (domain-separated)<br/>reveal: pass through preimage<br/>claim: slot index only
+    WSig-->>User: WalletWriteRequest {abi, address, functionName, args}
+
+    User->>TxFb: createTxFeedback({action, stage: "pending"})
+    TxFb-->>User: "Commit pending. Validating and simulating..."
+
+    User->>Wagmi: simulateContract(writeRequest)
+    Wagmi->>Chain: eth_call (simulation)
+    Chain-->>Wagmi: success / revert
+    Wagmi-->>User: simulation result
+
+    User->>TxFb: createTxFeedback({action, stage: "sign"})
+    TxFb-->>User: "Sign commit transaction in wallet."
+
+    User->>Wagmi: writeContract(writeRequest)
+    Note over Wagmi: wallet popup for signature
+    Wagmi-->>User: txHash
+
+    User->>TxFb: createTxFeedback({action, stage: "confirming", txHash})
+    TxFb-->>User: "Commit submitted (0xabc123...), waiting..."
+
+    User->>Wagmi: waitForTransactionReceipt(txHash)
+    Wagmi->>Chain: poll for receipt
+    Chain-->>Wagmi: receipt {blockNumber}
+    Wagmi-->>User: confirmed
+
+    User->>TxFb: createTxFeedback({action, stage: "success", blockNumber})
+    TxFb-->>User: "Commit success. Confirmed in block 12345."
+```
+
+### 8.7 Keeper Automation Loop
+
+How keepers advance the simulation from commit through finalize.
+
+```mermaid
+flowchart TD
+    subgraph "Keeper Toolchain"
+        STATUS["sepolia-keeper-status.ts<br/>Reads: phase, timestamps,<br/>gen, maxGen, extinction flags<br/>Outputs: KeeperRecommendation"]
+        TICK["sepolia-keeper-tick.ts<br/>Loads status output<br/>Builds cast send args<br/>--execute flag for live tx"]
+        LOOP["sepolia-keeper-loop.ts<br/>Recurring ticks<br/>configurable interval/iterations<br/>stops on first submitted tx"]
+    end
+
+    subgraph "Recommendation Engine"
+        R_COMMIT["Phase 0 (Commit)<br/>action: wait-commit<br/>ready: false"]
+        R_REVEAL["Phase 0, after commitEnd<br/>action: begin-reveal<br/>ready: true"]
+        R_WAIT_REVEAL["Phase 1 (Reveal)<br/>action: wait-reveal<br/>ready: false"]
+        R_INIT["Phase 1, after revealEnd<br/>action: initialize<br/>ready: true"]
+        R_STEP["Phase 2 (Sim), gen < maxGen<br/>action: step-batch<br/>ready: true<br/>recommendedSteps: maxBatch"]
+        R_FINAL["Phase 2, gen==maxGen or extinct<br/>action: finalize<br/>ready: true"]
+        R_CLAIM["Phase 3 (Claim)<br/>action: claim<br/>ready: false"]
+    end
+
+    subgraph "Shape L2"
+        CONTRACT_K["ConwayArenaRound"]
+    end
+
+    STATUS -->|"reads via cast call"| CONTRACT_K
+    STATUS --> R_COMMIT & R_REVEAL & R_WAIT_REVEAL & R_INIT & R_STEP & R_FINAL & R_CLAIM
+    R_REVEAL & R_INIT & R_STEP & R_FINAL -->|"if ready=true"| TICK
+    TICK -->|"cast send<br/>(with KEEPER_PRIVATE_KEY)"| CONTRACT_K
+    LOOP -->|"invokes"| TICK
+```
+
+### 8.8 Scoring and Payout Flow
+
+Accounting flow from round funding through to winner claims and keeper withdrawals.
+
+```mermaid
+flowchart TD
+    subgraph "Round Configuration"
+        FUND["configureAccounting()<br/>totalFunded (from contract balance)<br/>Guard: totalFunded <= address(this).balance"]
+        SPLIT["Pool Split (v0.1)<br/>winnerBps: 8000 (80%)<br/>keeperBps: 2000 (20%)<br/>treasuryBps: 0"]
+        POOLS["winnerPool = totalFunded * 8000 / 10000<br/>keeperPool = totalFunded * 2000 / 10000"]
+    end
+
+    subgraph "During Simulation"
+        STEP_REWARD["stepBatch(N):<br/>actualSteps = min(N, maxBatch, maxGen-gen)<br/>reward = actualSteps * rewardPerGen<br/>reward = min(reward, keeperPoolRemaining)<br/>keeperCredit[keeper] += reward<br/>keeperPaid += reward"]
+    end
+
+    subgraph "At Finalize"
+        SCORE["Score computation:<br/>popBlue = popcount(blue)<br/>popRed = popcount(red)<br/>invBlue = popcount(blue AND rightHalf)<br/>invRed = popcount(red AND leftHalf)<br/>scoreBlue = 3*popBlue + 2*invBlue<br/>scoreRed = 3*popRed + 2*invRed"]
+        WINNER["Winner resolution:<br/>if one team extinct: other wins<br/>else: higher score wins<br/>equal scores: draw"]
+        ROLLOVER["keeperRemainder = keeperPool - keeperPaid<br/>winnerPoolFinal = winnerPool + keeperRemainder"]
+        ZERO_CHECK{Any eligible<br/>revealed slots?}
+        PAYOUT_CALC["payoutPerClaim = winnerPoolFinal / eligibleCount<br/>dust = winnerPoolFinal % eligibleCount<br/>treasuryDust += dust"]
+        DUST_ROUTE["winnerPoolFinal -> treasuryDust<br/>(no claims possible)"]
+    end
+
+    subgraph "Claims (Phase 3)"
+        CLAIM_CHECK["claim(slotIndex):<br/>Guard: revealed, owner, not claimed<br/>nonReentrant"]
+        WINNER_CLAIM["If winner team (or draw):<br/>transfer payoutPerClaim to player<br/>winnerPaid += payoutPerClaim"]
+        ZERO_CLAIM["If losing team:<br/>transfer 0, mark claimed"]
+        KEEPER_WITHDRAW["withdrawKeeperCredit():<br/>Guard: credit > 0, nonReentrant<br/>transfer keeperCredit[msg.sender]"]
+    end
+
+    subgraph "Invariant"
+        INV["winnerPaid + keeperPaid + treasuryDust <= totalFunded<br/>(always holds, verified by indexer reconciliation)"]
+    end
+
+    FUND --> SPLIT --> POOLS
+    POOLS --> STEP_REWARD
+    STEP_REWARD --> SCORE
+    SCORE --> WINNER --> ROLLOVER
+    ROLLOVER --> ZERO_CHECK
+    ZERO_CHECK -->|Yes| PAYOUT_CALC
+    ZERO_CHECK -->|No| DUST_ROUTE
+    PAYOUT_CALC --> CLAIM_CHECK
+    CLAIM_CHECK --> WINNER_CLAIM & ZERO_CLAIM
+    STEP_REWARD --> KEEPER_WITHDRAW
+    WINNER_CLAIM & ZERO_CLAIM & KEEPER_WITHDRAW --> INV
+```
+
+### 8.9 Parity Testing Architecture
+
+How TS and Solidity engines are verified against each other.
+
+```mermaid
+flowchart TD
+    subgraph "Golden Fixtures"
+        FIXTURE["fixtures/engine/parity.v1.json<br/>version: v1, topology: cylinder<br/>Cases with input boards + expected outputs<br/>Including edge cases:<br/>- hard X edges (no horizontal wrap)<br/>- cylinder Y seam wrap<br/>- immigration majority at boundaries"]
+    end
+
+    subgraph "TS Engine (packages/sim)"
+        TS_UNIT["engine.test.ts<br/>pack/unpack invertibility<br/>B3/S23 oscillator behavior<br/>immigration majority color"]
+        TS_PARITY["parity.test.ts<br/>1. Load golden vectors from fixture<br/>2. Run stepGeneration() on each input<br/>3. Assert output == expected<br/>4. Seeded random fuzz: generate N boards<br/>   run M steps, compare vs reference impl"]
+    end
+
+    subgraph "Solidity Engine (packages/contracts)"
+        SOL_UNIT["ConwayEngineParity.t.sol<br/>1. Fixed vectors mirroring fixture cases<br/>2. Seeded random fuzz parity vs<br/>   Solidity in-test reference engine"]
+        SOL_LIFECYCLE["11 test files covering:<br/>StateMachine, CommitReveal, Simulation,<br/>Accounting, WinnerPayout, E2E, Gas,<br/>ClaimSafety, Reentrancy, KeeperWithdraw,<br/>CommitHash, Events, ArenaRegistry"]
+    end
+
+    subgraph "Gas Regression"
+        GAS[".gas-snapshot<br/>forge snapshot --check<br/>CI blocks on regression"]
+    end
+
+    subgraph "Indexer Verification"
+        IDX_TEST["reconcile-round-events.test.ts<br/>ingest-round-read-model.test.ts<br/>round-sync.test.ts<br/>sync-window.test.ts"]
+    end
+
+    subgraph "Web Logic Tests (Vitest)"
+        WEB_TEST["17 test files covering:<br/>board-renderer, board-animation, board-fetch<br/>seed, seed-link, seed-contribution<br/>wallet-onboarding, wallet-signing, wallet-submit<br/>round-rules, round-tx, round-end<br/>round-feeds, round-live, replay<br/>health-route, board-summary"]
+    end
+
+    FIXTURE --> TS_PARITY
+    FIXTURE -.->|"semantics mirrored"| SOL_UNIT
+    TS_PARITY -.->|"same rules,<br/>same outputs"| SOL_UNIT
+    SOL_UNIT --> GAS
+    SOL_LIFECYCLE --> GAS
+```
+
+### 8.10 Deployment and Operations Topology
+
+How the system is deployed and operated on Shape Sepolia.
+
+```mermaid
+flowchart TB
+    subgraph "Operator Workstation"
+        DEPLOY["Hardhat Ignition<br/>deploy:contracts:shape-sepolia<br/>ConwayArenaRoundModule<br/>ArenaRegistryModule"]
+        VERIFY["verify:contracts:shape-sepolia<br/>(constructor-arg-aware)"]
+        BENCH["benchmark:sepolia:max-batch<br/>(cast estimate stepBatch gas)"]
+        LOCK["lock:sepolia:max-batch<br/>(writes to ignition params)"]
+        SMOKE["smoke:sepolia:round<br/>(chain id, bytecode, state reads)"]
+    end
+
+    subgraph "Shape Sepolia (chainId 11011)"
+        ROUND["ConwayArenaRound<br/>(deployed via Ignition)"]
+        REGISTRY["ArenaRegistry<br/>(round discovery +<br/>season metadata)"]
+    end
+
+    subgraph "Keeper Infrastructure"
+        K_STATUS["observe:sepolia:keeper<br/>(status + recommendation)"]
+        K_TICK["tick:sepolia:keeper<br/>(one-shot tx submission)"]
+        K_LOOP["loop:sepolia:keeper<br/>(recurring automation)"]
+    end
+
+    subgraph "Indexer Pipeline"
+        SYNC["indexer:sync:round<br/>(CLI: --rpc --round)"]
+        SNAPSHOT["round-read-model.latest.json<br/>(persisted to disk)"]
+    end
+
+    subgraph "Web App (Next.js)"
+        APP["apps/web<br/>bun run dev / bun run build"]
+    end
+
+    subgraph "RPC Provider"
+        ALCHEMY["Alchemy<br/>SHAPE_SEPOLIA_RPC_URL"]
+    end
+
+    DEPLOY -->|"deploys"| ROUND & REGISTRY
+    VERIFY -->|"verifies on explorer"| ROUND & REGISTRY
+    BENCH -->|"cast estimate"| ROUND
+    LOCK -->|"updates params JSON"| DEPLOY
+    SMOKE -->|"cast call"| ROUND
+
+    K_STATUS -->|"cast call"| ROUND
+    K_TICK -->|"cast send"| ROUND
+    K_LOOP -->|"invokes"| K_TICK
+
+    SYNC -->|"viem getLogs + readContract"| ROUND
+    SYNC -->|"writes"| SNAPSHOT
+    SNAPSHOT -->|"file read"| APP
+
+    ROUND & REGISTRY & K_STATUS & K_TICK & SYNC ---|"via"| ALCHEMY
+```
+
+### 8.11 Component Hierarchy (Web UI)
+
+React component tree showing data flow from hooks to leaf components.
+
+```mermaid
+flowchart TD
+    subgraph "app/layout.tsx"
+        PROVIDERS["Providers<br/>(WagmiProvider + QueryClientProvider)<br/>SSR cookie hydration"]
+    end
+
+    subgraph "app/page.tsx"
+        PAGE["Home Page"]
+    end
+
+    subgraph "RoundDashboard (orchestrator)"
+        POLL["useRoundLive() hook<br/>owns: payload, error state"]
+    end
+
+    PROVIDERS --> PAGE --> POLL
+
+    POLL -->|"payload, error"| LIVE_PANEL["RoundLivePanel<br/>Phase, gen, timestamps<br/>Accounting, reconciliation<br/>Freshness badge (Live/Stale)"]
+
+    POLL -->|"payload"| WALLET_PANEL["RoundWalletPanel<br/>Connect/Switch/Ready gating<br/>Team picker, Slot grid<br/>8x8 Seed editor + presets<br/>Commit/Reveal/Claim tx flow<br/>Tx feedback status panel"]
+
+    POLL -->|"payload.participants"| PARTICIPANTS["ParticipantList<br/>Player address, team badge<br/>Slot, lifecycle status, payout"]
+
+    POLL -->|"payload.keepers"| KEEPERS["KeeperFeed<br/>Ranked by reward<br/>Steps, gens advanced"]
+
+    POLL -->|"payload + board hook"| BOARD["BoardCanvas<br/>3 modes: demo / live / final<br/>useBoardState() for checkpoints<br/>Local TS forward-sim animation<br/>Play/Pause/Reset/FPS controls<br/>Replay link button"]
+
+    POLL -->|"payload (finalized)"| END_CARD["RoundEndCard<br/>Winner announcement<br/>Score breakdown<br/>Payout summary<br/>Claim button"]
+
+    subgraph "app/replay/page.tsx"
+        REPLAY_PAGE["Replay Page<br/>Seed-link query params<br/>or demo board fallback"]
+        REPLAY_CANVAS["ReplayCanvas<br/>Timeline scrubber (Slider)<br/>Signature moment jumps<br/>(peak, lead-change, extinction)<br/>Play/Pause/Reset/FPS"]
+    end
+
+    REPLAY_PAGE --> REPLAY_CANVAS
+```
+
+### 8.12 Commit/Reveal Cryptographic Flow
+
+Domain-separated commit hash construction and reveal verification.
+
+```mermaid
+sequenceDiagram
+    participant Player as Player (Browser)
+    participant RoundTx as lib/round-tx
+    participant Contract as ConwayArenaRound
+
+    Note over Player: Phase 0: Commit
+
+    Player->>Player: Choose team, slot, design seed (8x8, max 12 cells)
+    Player->>Player: Generate random 32-byte salt
+
+    Player->>RoundTx: computeCommitHash({roundId, chainId, arena, player, team, slotIndex, seedBits, salt})
+    Note over RoundTx: keccak256(abi.encode(<br/>  roundId,<br/>  chainId,       // replay protection<br/>  arena,         // cross-deploy protection<br/>  player,        // impersonation protection<br/>  team,<br/>  slotIndex,<br/>  seedBits,<br/>  salt           // hiding<br/>))
+    RoundTx-->>Player: commitHash (bytes32)
+
+    Player->>Contract: commit(team, slotIndex, commitHash)
+    Note over Contract: Guards:<br/>phase == Commit<br/>block.timestamp < commitEnd<br/>slot empty<br/>no prior reservation for player<br/>team matches slot territory<br/>Stores: slots[slotIndex] = {player, team, commitHash}
+    Contract-->>Player: emit Committed(player, team, slotIndex)
+
+    Note over Player: Phase 1: Reveal
+
+    Player->>Contract: reveal(roundId, team, slotIndex, seedBits, salt)
+    Note over Contract: Guards:<br/>phase == Reveal<br/>block.timestamp < revealEnd<br/>msg.sender == slots[slotIndex].player<br/>not already revealed<br/>popcount(seedBits) <= seedBudget (12)<br/>hashCommit(roundId, chainId, this, player, team, slot, seedBits, salt)<br/>  == slots[slotIndex].commitHash
+    Contract-->>Player: emit Revealed(player, team, slotIndex)
+```
+
+### 8.13 Board Topology and Slot Territory Layout
+
+Visual representation of the 64x64 board, cylinder topology, slot grid, and team territories.
+
+```mermaid
+flowchart TD
+    subgraph "64x64 Board (Cylinder Topology)"
+        subgraph "Y-axis: Wraps (cylinder)"
+            ROW0["Row 0"]
+            ROW1["Row 1"]
+            DOTS1["..."]
+            ROW63["Row 63"]
+            ROW0 -.->|"wraps to"| ROW63
+            ROW63 -.->|"wraps to"| ROW0
+        end
+
+        subgraph "X-axis: Hard edges (no wrap)"
+            COL_NOTE["x=0 (left edge, dead beyond)<br/>...<br/>x=31 (Blue/Red boundary)<br/>x=32<br/>...<br/>x=63 (right edge, dead beyond)"]
+        end
+    end
+
+    subgraph "8x8 Slot Grid (64 total slots)"
+        subgraph "Blue Territory (tileX 0-3)"
+            BT["Slots where slotIndex % 8 < 4<br/>32 slots on left half<br/>x: 0-31"]
+        end
+        subgraph "Red Territory (tileX 4-7)"
+            RT["Slots where slotIndex % 8 >= 4<br/>32 slots on right half<br/>x: 32-63"]
+        end
+    end
+
+    subgraph "Invasion Scoring Masks"
+        BLUE_INV["Blue invasion = popcount(blue AND rightHalf)<br/>rightHalf: bits x >= 32"]
+        RED_INV["Red invasion = popcount(red AND leftHalf)<br/>leftHalf: bits x < 32"]
+    end
+
+    BT -->|"Blue spawns here"| BLUE_INV
+    RT -->|"Red spawns here"| RED_INV
+```
+
+### 8.14 Indexer Reconciliation and Sync Pipeline
+
+Detailed view of how the indexer maintains accounting integrity with reorg safety.
+
+```mermaid
+flowchart TD
+    subgraph "Sync CLI (sync-round-read-model.ts)"
+        ARGS["CLI args: --rpc, --round,<br/>--from-block, --to-block,<br/>--confirmations (default 2),<br/>--reorg-lookback (default 12)"]
+        WINDOW["computeSyncWindow()<br/>confirmedTip = latest - confirmations<br/>fromBlock = cursor - reorgLookback<br/>(overlap reprocessing for reorg safety)"]
+    end
+
+    subgraph "Ingestion (ingest-round-read-model.ts)"
+        PARALLEL["Promise.all([<br/>  getChainId(),<br/>  readRoundState(),<br/>  getSteppedEvents(),<br/>  getFinalizedEvents(),<br/>  getClaimedEvents(),<br/>  getPlayerClaimedEvents(),<br/>  getCommittedEvents(),<br/>  getRevealedEvents()<br/>])"]
+        MERGE["Merge with previousModel:<br/>1. Keep events before fromBlock<br/>2. Replace overlap range with fresh<br/>3. Sort by (blockNumber, logIndex)"]
+    end
+
+    subgraph "Reconciliation (reconcile-round-events.ts)"
+        R_KEEPER["sum(stepped.reward) == finalized.keeperPaid"]
+        R_INVARIANT["winnerPaid + keeperPaid + treasuryDust <= totalFunded"]
+        R_STATUS["reconciliationStatus: ok | pending-finalize"]
+    end
+
+    subgraph "Persistence"
+        MODEL_FILE["round-read-model.latest.json<br/>(BigInt-safe: replacer/reviver)"]
+        CURSOR_FILE["round-read-model.cursor.json<br/>{version, chainId, roundAddress,<br/> lastSyncedBlock, syncedAt}"]
+    end
+
+    ARGS --> WINDOW
+    WINDOW --> PARALLEL
+    PARALLEL --> MERGE
+    MERGE --> R_KEEPER & R_INVARIANT & R_STATUS
+    R_KEEPER & R_INVARIANT & R_STATUS --> MODEL_FILE & CURSOR_FILE
+```
