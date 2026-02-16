@@ -1,18 +1,46 @@
 "use client";
 
+import { Suspense, useCallback, useRef, useSyncExternalStore } from "react";
 import type { Address } from "viem";
 
 import { BoardCanvas, type BoardCanvasMode } from "@/components/board-canvas";
-import { KeeperFeed } from "@/components/keeper-feed";
-import { ParticipantList } from "@/components/participant-list";
-import { RoundEndCard } from "@/components/round-end-card";
-import { RoundLivePanel } from "@/components/round-live-panel";
-import { RoundWalletPanel } from "@/components/round-wallet-panel";
+import { DebugPanel } from "@/components/debug-panel";
+import { JoinSheet } from "@/components/join/join-sheet";
+import { RoundEndDialog } from "@/components/round-end-card";
+import { RoundInfoCollapsible } from "@/components/round-info-collapsible";
+import { RoundStatusBar } from "@/components/round-status-bar";
 import { useBoardState } from "@/hooks/use-board-state";
 import { useRoundLive } from "@/hooks/use-round-live";
 
+function useDialogDismissed() {
+  const dismissed = useRef(false);
+  const listeners = useRef(new Set<() => void>());
+
+  const subscribe = useCallback((cb: () => void) => {
+    listeners.current.add(cb);
+    return () => { listeners.current.delete(cb); };
+  }, []);
+
+  const getSnapshot = useCallback(() => dismissed.current, []);
+
+  const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  const dismiss = useCallback(() => {
+    dismissed.current = true;
+    listeners.current.forEach((cb) => cb());
+  }, []);
+
+  const reopen = useCallback(() => {
+    dismissed.current = false;
+    listeners.current.forEach((cb) => cb());
+  }, []);
+
+  return { dismissed: value, dismiss, reopen };
+}
+
 export function RoundDashboard() {
   const { payload, error, isFetching } = useRoundLive();
+  const { dismissed, dismiss, reopen } = useDialogDismissed();
 
   const roundAddress = payload?.round.roundAddress as Address | undefined;
   const phase = payload?.round.phase ?? null;
@@ -31,12 +59,31 @@ export function RoundDashboard() {
     boardMode = { kind: "final", board, maxGen };
   }
 
-  const showEndScreen = payload?.round.finalized && payload.scoring;
+  const finalized = payload?.round.finalized && payload.scoring;
+  const dialogOpen = !!finalized && !dismissed;
 
   return (
     <>
-      {showEndScreen ? (
-        <RoundEndCard
+      <BoardCanvas mode={boardMode} />
+
+      <RoundStatusBar
+        payload={payload}
+        error={error}
+        isFetching={isFetching}
+        onViewResults={finalized ? reopen : undefined}
+      />
+
+      <RoundInfoCollapsible
+        participants={payload?.participants ?? []}
+        keepers={payload?.keepers ?? []}
+      />
+
+      <JoinSheet participants={payload?.participants ?? []} />
+
+      {finalized ? (
+        <RoundEndDialog
+          open={dialogOpen}
+          onOpenChange={(open) => { if (!open) dismiss(); }}
           scoring={payload.scoring!}
           accounting={payload.accounting}
           participants={payload.participants}
@@ -44,17 +91,9 @@ export function RoundDashboard() {
         />
       ) : null}
 
-      <BoardCanvas mode={boardMode} />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <RoundLivePanel payload={payload} error={error} isFetching={isFetching} />
-        <RoundWalletPanel />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ParticipantList participants={payload?.participants ?? []} />
-        <KeeperFeed keepers={payload?.keepers ?? []} />
-      </div>
+      <Suspense>
+        <DebugPanel payload={payload} />
+      </Suspense>
     </>
   );
 }
