@@ -13,7 +13,6 @@
     "test": "turbo test",
     "test:gas": "turbo test:gas",
     "release:gate:sepolia": "turbo test test:gas lint build && bun run smoke:sepolia:round",
-    "indexer:sync:round": "cd packages/indexer && bun run sync:round",
     "benchmark:sepolia:max-batch": "bun run packages/contracts/scripts/max-batch-benchmark.ts",
     "lock:sepolia:max-batch": "bun run packages/contracts/scripts/lock-max-batch-from-benchmark.ts",
     "benchmark:sepolia:max-batch:lock": "bun run benchmark:sepolia:max-batch && bun run lock:sepolia:max-batch",
