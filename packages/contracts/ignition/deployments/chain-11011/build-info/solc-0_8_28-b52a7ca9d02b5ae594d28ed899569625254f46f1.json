@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-b52a7ca9d02b5ae594d28ed899569625254f46f1",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "src/ArenaRegistry.sol": "project/src/ArenaRegistry.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/src/ArenaRegistry.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract ArenaRegistry {\n    error NotOwner();\n    error ZeroAddress();\n    error RoundAlreadyCurrent(address round);\n\n    event CurrentRoundUpdated(address indexed previousRound, address indexed newRound);\n    event SeasonMetadataHashUpdated(bytes32 previousHash, bytes32 newHash);\n\n    address public owner;\n    address public currentRound;\n    address[] public pastRounds;\n    bytes32 public seasonMetadataHash;\n\n    modifier onlyOwner() {\n        if (msg.sender != owner) revert NotOwner();\n        _;\n    }\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    function setCurrentRound(address round) external onlyOwner {\n        if (round == address(0)) revert ZeroAddress();\n        if (round == currentRound) revert RoundAlreadyCurrent(round);\n\n        address previous = currentRound;\n        if (previous != address(0)) {\n            pastRounds.push(previous);\n        }\n        currentRound = round;\n        emit CurrentRoundUpdated(previous, round);\n    }\n\n    function setSeasonMetadataHash(bytes32 hash) external onlyOwner {\n        bytes32 previous = seasonMetadataHash;\n        seasonMetadataHash = hash;\n        emit SeasonMetadataHashUpdated(previous, hash);\n    }\n\n    function transferOwnership(address newOwner) external onlyOwner {\n        if (newOwner == address(0)) revert ZeroAddress();\n        owner = newOwner;\n    }\n\n    function pastRoundCount() external view returns (uint256) {\n        return pastRounds.length;\n    }\n\n    function allPastRounds() external view returns (address[] memory) {\n        return pastRounds;\n    }\n}\n"
+      }
+    }
+  }
+}
