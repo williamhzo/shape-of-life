@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardState } from "@shape-of-life/sim";
 import { renderBoardPixels } from "@/lib/board-renderer";
 import { buildReplayTimeline, type SignatureMoment } from "@/lib/replay";
+import { useReducedMotion } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -29,6 +30,8 @@ export function ReplayCanvas({
   const [gen, setGen] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [fps, setFps] = useState(DEFAULT_FPS);
+  const reducedMotion = useReducedMotion();
+  const effectiveFps = reducedMotion ? Math.min(fps, 2) : fps;
 
   const timeline = useMemo(
     () => buildReplayTimeline(initialBoard, maxGenerations),
@@ -67,9 +70,9 @@ export function ReplayCanvas({
         }
         return next;
       });
-    }, 1000 / fps);
+    }, 1000 / effectiveFps);
     return () => clearInterval(id);
-  }, [playing, fps, maxFrame]);
+  }, [playing, effectiveFps, maxFrame]);
 
   const handleSeek = useCallback((value: number[]) => {
     setGen(value[0]);
@@ -145,7 +148,7 @@ export function ReplayCanvas({
         >
           Reset
         </Button>
-        <span className="text-muted-foreground ml-auto text-xs">
+        <span className="text-muted-foreground ml-auto tabular-nums text-xs">
           {fps} fps
         </span>
         <Button
@@ -153,6 +156,7 @@ export function ReplayCanvas({
           size="sm"
           onClick={() => setFps((f) => Math.max(1, f - 2))}
           disabled={fps <= 1}
+          aria-label="Decrease fps"
         >
           -
         </Button>
@@ -161,6 +165,7 @@ export function ReplayCanvas({
           size="sm"
           onClick={() => setFps((f) => Math.min(30, f + 2))}
           disabled={fps >= 30}
+          aria-label="Increase fps"
         >
           +
         </Button>

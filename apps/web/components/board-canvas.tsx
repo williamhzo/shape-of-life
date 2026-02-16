@@ -11,6 +11,7 @@ import {
   stepAnimation,
   type AnimationState,
 } from "@/lib/board-animation";
+import { useReducedMotion } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -80,6 +81,8 @@ function DemoCanvas() {
   const [gen, setGen] = useState(0);
   const [paused, setPaused] = useState(false);
   const [fps, setFps] = useState(DEFAULT_FPS);
+  const reducedMotion = useReducedMotion();
+  const effectiveFps = reducedMotion ? Math.min(fps, 2) : fps;
 
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
@@ -103,9 +106,9 @@ function DemoCanvas() {
 
   useEffect(() => {
     if (paused) return;
-    const id = setInterval(tick, 1000 / fps);
+    const id = setInterval(tick, 1000 / effectiveFps);
     return () => clearInterval(id);
-  }, [paused, fps, tick]);
+  }, [paused, effectiveFps, tick]);
 
   useEffect(() => {
     animRef.current = { ...animRef.current, paused };
@@ -163,6 +166,8 @@ function LiveCanvas({
   const [gen, setGen] = useState(checkpointGen);
   const [paused, setPaused] = useState(false);
   const [fps, setFps] = useState(DEFAULT_FPS);
+  const reducedMotion = useReducedMotion();
+  const effectiveFps = reducedMotion ? Math.min(fps, 2) : fps;
 
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
@@ -186,9 +191,9 @@ function LiveCanvas({
 
   useEffect(() => {
     if (paused) return;
-    const id = setInterval(tick, 1000 / fps);
+    const id = setInterval(tick, 1000 / effectiveFps);
     return () => clearInterval(id);
-  }, [paused, fps, tick]);
+  }, [paused, effectiveFps, tick]);
 
   useEffect(() => {
     animRef.current = { ...animRef.current, paused };
@@ -294,13 +299,13 @@ function AnimationControls({
       <Button variant="outline" size="sm" onClick={onReset}>
         Reset
       </Button>
-      <span className="text-muted-foreground ml-auto text-xs">
+      <span className="text-muted-foreground ml-auto tabular-nums text-xs">
         {fps} fps
       </span>
-      <Button variant="ghost" size="sm" onClick={onFpsDown} disabled={fps <= 1}>
+      <Button variant="ghost" size="sm" onClick={onFpsDown} disabled={fps <= 1} aria-label="Decrease fps">
         -
       </Button>
-      <Button variant="ghost" size="sm" onClick={onFpsUp} disabled={fps >= 30}>
+      <Button variant="ghost" size="sm" onClick={onFpsUp} disabled={fps >= 30} aria-label="Increase fps">
         +
       </Button>
     </div>
