@@ -11,7 +11,6 @@ import { decodeSeedLink, resolveSeedBits, encodeSeedLink } from "@/lib/seed-link
 import { ReplayCanvas } from "@/components/replay-canvas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const BOARD_SIZE = 64;
 const MAX_GEN = 256;
@@ -76,22 +75,20 @@ function ReplayPageInner() {
       : "Replay: Demo";
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 p-6 md:p-10">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3">
-          <div className="space-y-1">
-            <CardTitle className="text-2xl">Replay</CardTitle>
-            <p className="text-muted-foreground text-sm">
-              Scrub through generations and discover signature moments.
-            </p>
-          </div>
-          <Link href="/">
-            <Button variant="outline" size="sm">
-              Back
-            </Button>
-          </Link>
-        </CardHeader>
-      </Card>
+    <main className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col gap-6 p-6 md:p-10">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-balance">Replay</h1>
+          <p className="text-pretty text-muted-foreground text-sm">
+            Scrub through generations and discover signature moments.
+          </p>
+        </div>
+        <Link href="/">
+          <Button variant="outline" size="sm">
+            Back
+          </Button>
+        </Link>
+      </div>
 
       <ReplayCanvas
         initialBoard={board}
@@ -99,11 +96,9 @@ function ReplayPageInner() {
         title={title}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Quick Replays</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Quick Replays</p>
+        <div className="flex flex-wrap gap-2">
           {SEED_PRESETS.map((preset) => (
             <Link
               key={preset.id}
@@ -114,8 +109,8 @@ function ReplayPageInner() {
               </Badge>
             </Link>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </main>
   );
 }

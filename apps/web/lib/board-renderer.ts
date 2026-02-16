@@ -1,4 +1,4 @@
-export const CELL_DEAD: [number, number, number] = [15, 15, 15];
+export const CELL_DEAD: [number, number, number] = [10, 10, 10];
 export const CELL_BLUE: [number, number, number] = [59, 130, 246];
 export const CELL_RED: [number, number, number] = [239, 68, 68];
 

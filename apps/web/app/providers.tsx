@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { type State, WagmiProvider } from "wagmi";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { getWagmiConfig } from "@/lib/wagmi-config";
 
 type ProvidersProps = {
@@ -27,7 +28,9 @@ export function Providers({ children, initialState }: ProvidersProps) {
 
   return (
     <WagmiProvider config={config} initialState={initialState}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>{children}</TooltipProvider>
+      </QueryClientProvider>
     </WagmiProvider>
   );
 }

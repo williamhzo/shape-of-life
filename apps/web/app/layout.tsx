@@ -11,6 +11,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Shape of Life",
   description: "Spectator-first Conway Arena on Shape L2",
+  other: { "color-scheme": "dark" },
 };
 
 type RootLayoutProps = {
