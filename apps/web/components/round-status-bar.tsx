@@ -42,7 +42,7 @@ export function RoundStatusBar({
   if (!payload) {
     return (
       <div className="flex items-center gap-3 rounded-lg border p-3 text-sm">
-        <span className="text-muted-foreground">{isFetching ? "Loading round state..." : "Waiting for contract state..."}</span>
+        <span className="text-muted-foreground">{isFetching ? "Loading round state\u2026" : "Waiting for contract state\u2026"}</span>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export function RoundStatusBar({
         {participantCount} player{participantCount !== 1 ? "s" : ""}
       </span>
 
-      <span className={cn("size-2 rounded-full", isFetching ? "bg-yellow-500" : "bg-green-500")} />
+      <span className={cn("size-2 rounded-full", isFetching ? "bg-yellow-500" : "bg-green-500")} aria-hidden="true" />
 
       {finalized && onViewResults ? (
         <Button variant="outline" size="sm" onClick={onViewResults}>

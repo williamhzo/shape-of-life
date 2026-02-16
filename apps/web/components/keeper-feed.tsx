@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { KeeperEntry } from "@/lib/round-feeds";
 
 function truncateAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  return `${address.slice(0, 6)}\u2026${address.slice(-4)}`;
 }
 
 export function KeeperFeed({ keepers }: { keepers: KeeperEntry[] }) {
@@ -34,28 +34,30 @@ export function KeeperFeed({ keepers }: { keepers: KeeperEntry[] }) {
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="max-h-64">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead className="text-right">Steps</TableHead>
-                <TableHead className="text-right">Gens</TableHead>
-                <TableHead className="text-right">Reward</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {keepers.map((k, i) => (
-                <TableRow key={k.address}>
-                  <TableCell className="font-mono">{i + 1}</TableCell>
-                  <TableCell className="font-mono text-xs">{truncateAddress(k.address)}</TableCell>
-                  <TableCell className="text-right font-mono">{k.stepCount}</TableCell>
-                  <TableCell className="text-right font-mono">{k.gensAdvanced}</TableCell>
-                  <TableCell className="text-right font-mono text-xs">{k.totalReward} wei</TableCell>
+          <div className="min-w-[420px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>#</TableHead>
+                  <TableHead>Address</TableHead>
+                  <TableHead className="text-right">Steps</TableHead>
+                  <TableHead className="text-right">Gens</TableHead>
+                  <TableHead className="text-right">Reward</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {keepers.map((k, i) => (
+                  <TableRow key={k.address}>
+                    <TableCell className="font-mono tabular-nums">{i + 1}</TableCell>
+                    <TableCell className="font-mono text-xs">{truncateAddress(k.address)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{k.stepCount}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{k.gensAdvanced}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-xs">{k.totalReward} wei</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </ScrollArea>
       </CardContent>
     </Card>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { cookieToInitialState } from "wagmi";
@@ -12,6 +12,13 @@ export const metadata: Metadata = {
   title: "Shape of Life",
   description: "Spectator-first Conway Arena on Shape L2",
   other: { "color-scheme": "dark" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#242424",
 };
 
 type RootLayoutProps = {

@@ -30,7 +30,7 @@ export function RoundLivePanel({
         {!payload ? <p className="text-muted-foreground">Waiting for contract state...</p> : null}
         {payload ? (
           <>
-            <p>Round: {payload.round.roundAddress}</p>
+            <p className="break-all">Round: {payload.round.roundAddress}</p>
             <p>
               Phase {payload.round.phase}, generation {payload.round.gen}/{payload.round.maxGen}
             </p>

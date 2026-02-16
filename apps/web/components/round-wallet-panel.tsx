@@ -85,7 +85,7 @@ function getOnboardingMessage(stage: ReturnType<typeof deriveWalletOnboardingSta
 }
 
 function shortenAddress(address: Address): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  return `${address.slice(0, 6)}\u2026${address.slice(-4)}`;
 }
 
 function txStageLabel(stage: TxStage): string {

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { ParticipantEntry } from "@/lib/round-feeds";
 
 function truncateAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  return `${address.slice(0, 6)}\u2026${address.slice(-4)}`;
 }
 
 function teamLabel(team: number): string {
@@ -49,34 +49,36 @@ export function ParticipantList({ participants }: { participants: ParticipantEnt
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="max-h-64">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Player</TableHead>
-                <TableHead>Team</TableHead>
-                <TableHead className="text-right">Slot</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Payout</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {participants.map((p) => (
-                <TableRow key={p.address}>
-                  <TableCell className="font-mono text-xs">{truncateAddress(p.address)}</TableCell>
-                  <TableCell>
-                    <Badge variant={teamBadgeVariant(p.team)} className="text-xs">
-                      {teamLabel(p.team)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">{p.slotIndex}</TableCell>
-                  <TableCell>{statusBadge(p)}</TableCell>
-                  <TableCell className="text-right font-mono text-xs">
-                    {p.claimedAmount !== null ? `${p.claimedAmount} wei` : "-"}
-                  </TableCell>
+          <div className="min-w-[480px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Player</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead className="text-right">Slot</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Payout</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {participants.map((p) => (
+                  <TableRow key={p.address}>
+                    <TableCell className="font-mono text-xs">{truncateAddress(p.address)}</TableCell>
+                    <TableCell>
+                      <Badge variant={teamBadgeVariant(p.team)} className="text-xs">
+                        {teamLabel(p.team)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{p.slotIndex}</TableCell>
+                    <TableCell>{statusBadge(p)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-xs">
+                      {p.claimedAmount !== null ? `${p.claimedAmount} wei` : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </ScrollArea>
       </CardContent>
     </Card>
