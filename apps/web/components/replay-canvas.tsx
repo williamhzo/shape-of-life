@@ -97,12 +97,14 @@ export function ReplayCanvas({
       </div>
 
       <div className="w-full max-w-[640px] space-y-2">
-        <p className="text-muted-foreground text-sm">
-          {title}
-          {currentFrame
-            ? ` — Blue: ${currentFrame.summary.blue} | Red: ${currentFrame.summary.red} | Total: ${currentFrame.summary.total}`
-            : ""}
-        </p>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+          <span className="text-foreground font-medium">{title}</span>
+          {currentFrame ? (
+            <span className="text-muted-foreground tabular-nums text-xs">
+              Blue: {currentFrame.summary.blue} | Red: {currentFrame.summary.red} | Total: {currentFrame.summary.total}
+            </span>
+          ) : null}
+        </div>
         <Slider
           value={[gen]}
           min={0}
