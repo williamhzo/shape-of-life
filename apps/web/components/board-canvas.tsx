@@ -13,8 +13,6 @@ import {
 } from "@/lib/board-animation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 const BOARD_SIZE = 64;
 const CANVAS_SCALE = 8;
@@ -123,15 +121,12 @@ function DemoCanvas() {
   const atEnd = gen >= DEMO_MAX_GEN;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-3">
-        <div>
-          <CardTitle>Board</CardTitle>
-          <p className="text-muted-foreground text-sm">Demo</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative w-full max-w-[640px]">
+        <CanvasElement ref={canvasRef} />
+        <div className="absolute right-3 top-3 flex items-center gap-2">
           <Link href="/replay">
-            <Button variant="outline" size="sm">
+            <Button variant="secondary" size="sm">
               Replay
             </Button>
           </Link>
@@ -139,20 +134,16 @@ function DemoCanvas() {
             Gen {gen}/{DEMO_MAX_GEN}
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <CanvasElement ref={canvasRef} />
-        <Separator />
-        <AnimationControls
-          paused={paused}
-          fps={fps}
-          onTogglePause={() => setPaused((p) => !p)}
-          onReset={handleReset}
-          onFpsDown={() => setFps((f) => Math.max(1, f - 2))}
-          onFpsUp={() => setFps((f) => Math.min(30, f + 2))}
-        />
-      </CardContent>
-    </Card>
+      </div>
+      <AnimationControls
+        paused={paused}
+        fps={fps}
+        onTogglePause={() => setPaused((p) => !p)}
+        onReset={handleReset}
+        onFpsDown={() => setFps((f) => Math.max(1, f - 2))}
+        onFpsUp={() => setFps((f) => Math.min(30, f + 2))}
+      />
+    </div>
   );
 }
 
@@ -213,15 +204,12 @@ function LiveCanvas({
   const atEnd = gen >= maxGen;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-3">
-        <div>
-          <CardTitle>Board</CardTitle>
-          <p className="text-muted-foreground text-sm">Live</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative w-full max-w-[640px]">
+        <CanvasElement ref={canvasRef} />
+        <div className="absolute right-3 top-3 flex items-center gap-2">
           <Link href="/replay">
-            <Button variant="outline" size="sm">
+            <Button variant="secondary" size="sm">
               Replay
             </Button>
           </Link>
@@ -229,20 +217,16 @@ function LiveCanvas({
             Gen {gen}/{maxGen}
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <CanvasElement ref={canvasRef} />
-        <Separator />
-        <AnimationControls
-          paused={paused}
-          fps={fps}
-          onTogglePause={() => setPaused((p) => !p)}
-          onReset={handleReset}
-          onFpsDown={() => setFps((f) => Math.max(1, f - 2))}
-          onFpsUp={() => setFps((f) => Math.min(30, f + 2))}
-        />
-      </CardContent>
-    </Card>
+      </div>
+      <AnimationControls
+        paused={paused}
+        fps={fps}
+        onTogglePause={() => setPaused((p) => !p)}
+        onReset={handleReset}
+        onFpsDown={() => setFps((f) => Math.max(1, f - 2))}
+        onFpsUp={() => setFps((f) => Math.min(30, f + 2))}
+      />
+    </div>
   );
 }
 
@@ -259,39 +243,31 @@ function FinalCanvas({ board, maxGen }: { board: BoardState; maxGen: number }) {
   }, [board]);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-3">
-        <div>
-          <CardTitle>Board</CardTitle>
-          <p className="text-muted-foreground text-sm">Final</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative w-full max-w-[640px]">
+        <CanvasElement ref={canvasRef} />
+        <div className="absolute right-3 top-3 flex items-center gap-2">
           <Link href="/replay">
-            <Button variant="outline" size="sm">
+            <Button variant="secondary" size="sm">
               Replay
             </Button>
           </Link>
           <Badge>Gen {maxGen}/{maxGen}</Badge>
         </div>
-      </CardHeader>
-      <CardContent>
-        <CanvasElement ref={canvasRef} />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 const CanvasElement = forwardRef<HTMLCanvasElement>(function CanvasElement(_, ref) {
   return (
-    <div className="flex justify-center">
-      <canvas
-        ref={ref}
-        width={CANVAS_PX}
-        height={CANVAS_PX}
-        className="rounded border"
-        style={{ width: CANVAS_PX / 2, height: CANVAS_PX / 2, imageRendering: "pixelated" }}
-      />
-    </div>
+    <canvas
+      ref={ref}
+      width={CANVAS_PX}
+      height={CANVAS_PX}
+      className="w-full rounded-lg"
+      style={{ imageRendering: "pixelated" }}
+    />
   );
 });
 
@@ -311,7 +287,7 @@ function AnimationControls({
   onFpsUp: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
       <Button variant="outline" size="sm" onClick={onTogglePause}>
         {paused ? "Play" : "Pause"}
       </Button>

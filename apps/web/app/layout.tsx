@@ -21,7 +21,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const initialState = cookieToInitialState(getWagmiConfig(), (await headers()).get("cookie"));
 
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body>
         <Providers initialState={initialState}>{children}</Providers>
       </body>
