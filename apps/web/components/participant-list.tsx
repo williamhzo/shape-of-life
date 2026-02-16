@@ -49,36 +49,34 @@ export function ParticipantList({ participants }: { participants: ParticipantEnt
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="max-h-64">
-          <div className="min-w-[480px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead className="text-right">Slot</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Payout</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Player</TableHead>
+                <TableHead>Team</TableHead>
+                <TableHead className="text-right">Slot</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Payout</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {participants.map((p) => (
+                <TableRow key={p.address}>
+                  <TableCell className="font-mono text-xs">{truncateAddress(p.address)}</TableCell>
+                  <TableCell>
+                    <Badge variant={teamBadgeVariant(p.team)} className="text-xs">
+                      {teamLabel(p.team)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{p.slotIndex}</TableCell>
+                  <TableCell>{statusBadge(p)}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums text-xs">
+                    {p.claimedAmount !== null ? `${p.claimedAmount} wei` : "\u2013"}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {participants.map((p) => (
-                  <TableRow key={p.address}>
-                    <TableCell className="font-mono text-xs">{truncateAddress(p.address)}</TableCell>
-                    <TableCell>
-                      <Badge variant={teamBadgeVariant(p.team)} className="text-xs">
-                        {teamLabel(p.team)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">{p.slotIndex}</TableCell>
-                    <TableCell>{statusBadge(p)}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-xs">
-                      {p.claimedAmount !== null ? `${p.claimedAmount} wei` : "-"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </ScrollArea>
       </CardContent>
     </Card>
