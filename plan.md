@@ -560,7 +560,7 @@ Monorepo (Turborepo + Bun workspaces):
   - `src/`, `test/`, `foundry.toml`
   - `hardhat.config.ts`, `ignition/`, `scripts/`
 - `packages/sim` (TS engine + fixtures)
-- `packages/indexer` (Ponder)
+- ~~`packages/indexer`~~ (removed; replaced by client-side wagmi/React Query reads)
 
 Key principle: use the TS engine to generate Solidity test fixtures.
 Refs:
@@ -574,7 +574,7 @@ Refs:
 Use both, with boundaries:
 - Foundry: unit tests, fuzzing, invariants, gas snapshots
 - Hardhat: deployments (Ignition), viem-based scripts, verification
-- Vitest: TypeScript unit/integration tests for `packages/sim`, `packages/indexer`, and `apps/web` API/util modules
+- Vitest: TypeScript unit/integration tests for `packages/sim` and `apps/web` lib modules
 
 ---
 
@@ -675,7 +675,7 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 
 ### Validation
 - Foundry fuzz/invariant suite passes for state transitions, accounting, and claim idempotency.
-- Vitest suite passes for `packages/sim`, `packages/indexer`, and `apps/web` API/util paths.
+- Vitest suite passes for `packages/sim` and `apps/web` lib paths.
 - TS vs Solidity golden tests show zero divergence across random seeds and multiple generations.
 - Sepolia benchmark confirms safe gas headroom for chosen `maxBatch`.
 
@@ -849,6 +849,17 @@ Execution rules:
 
 ## 19. Progress Log
 
+- 2026-02-16:
+  - Removed `packages/indexer` and `GET /api/round/live` API route.
+  - Replaced with client-side wagmi `useReadContracts` multicall (18 state vars, 5s poll) and TanStack Query `useQuery` with viem `getLogs` (4 event types, 10s poll).
+  - New hooks: `use-round-state.ts`, `use-round-events.ts`. Rewritten `use-round-live.ts` composes both + `useCurrentRound`.
+  - Added `lib/round-abi.ts` with `parseAbi` definitions for round contract state readers and events.
+  - Simplified `lib/round-live.ts` to type exports only (removed `source` field, simplified `accounting` to 4 fields).
+  - Updated `round-live-panel.tsx` (removed freshness/reconciliation, added Live/Fetching badge).
+  - Updated `round-dashboard.tsx` to pass `isFetching`.
+  - Updated `round-end.test.ts` accounting mocks.
+  - Deleted: `apps/web/app/api/round/live/route.ts`, `apps/web/test/round-live-route.test.ts`, `apps/web/test/round-live-consistency.test.ts`, `packages/indexer/`.
+  - Updated `CLAUDE.md`, `architecture.md`, `plan.md`, root `package.json`.
 - 2026-02-14:
   - Completed P1.2 Sepolia deployment and benchmark:
     - Deployed ConwayArenaRound to Shape Sepolia via Hardhat Ignition at `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b`.

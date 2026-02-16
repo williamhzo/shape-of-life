@@ -4,13 +4,11 @@ This document describes the architecture currently implemented in this repositor
 
 ## 1. System Overview
 
-Shape of Life is a Bun monorepo with four active surfaces:
+Shape of Life is a Bun monorepo with three active surfaces:
 
 - `packages/sim`: TypeScript canonical simulation primitives and parity oracle.
 - `packages/contracts`: Solidity engine parity + round-lifecycle guard implementation (Foundry-tested).
-- `packages/indexer`: TypeScript reconciliation checks for accounting-critical round events.
-  - Includes chain-ingesting round read-model sync tooling with persisted JSON snapshots.
-- `apps/web`: Next.js App Router scaffold for spectator-facing UI and simple API routes.
+- `apps/web`: Next.js App Router scaffold for spectator-facing UI. Uses wagmi `useReadContracts` multicall and TanStack Query with viem `getLogs` for direct contract reads.
 
 Shared deterministic fixtures live in `fixtures/engine/parity.v1.json`.
 
@@ -25,10 +23,9 @@ Additional docs:
 - Runtime/package manager: Bun (`packageManager: bun@1.3.6`).
 - Workspaces: `apps/*`, `packages/*` (root `package.json`).
 - Core test commands:
-  - `bun test` (aggregate sim + web + indexer + contract-script + Solidity contract tests)
+  - `bun test` (aggregate sim + web + contract-script + Solidity contract tests)
   - `bun test packages/sim/test`
   - `cd apps/web && bun run test`
-  - `bun test packages/indexer/test`
   - `bun test packages/contracts/scripts/*.test.ts`
   - `cd packages/contracts && forge test --offline`
   - `bun run test:contracts:gas` (`forge snapshot --offline --match-test testGas --check`)
@@ -142,7 +139,6 @@ Additional docs:
   - `app/replay/page.tsx`: replay route accepting seed-link query params (`?preset=acorn&t=r90,mx&slot=5&team=blue`) or falling back to demo board, with quick-replay preset links
   - `app/layout.tsx` + `app/providers.tsx`: wagmi SSR cookie hydration and client provider wiring (`WagmiProvider` + `QueryClientProvider`)
   - `app/api/health/route.ts`: health endpoint contract
-  - `app/api/round/live/route.ts`: server route that reads persisted indexer model and returns normalized live spectator payload with participant roster and keeper leaderboard
   - `components/round-dashboard.tsx`: orchestrator component owning poll state and distributing data to live panel, wallet panel, participant list, keeper feed, board canvas, and end card
   - `components/round-live-panel.tsx`: client polling UI for live round state (`/api/round/live`) with freshness badge
   - `components/round-wallet-panel.tsx`: wagmi-based signup flow + browser-wallet commit/reveal/claim journey
@@ -152,7 +148,9 @@ Additional docs:
   - `components/replay-canvas.tsx`: replay viewer with timeline scrubber (shadcn Slider), signature-moment jump buttons (peak, lead-change, extinction), play/pause/reset/FPS controls
   - `components/participant-list.tsx`: scrollable table with player address, team badge, slot, lifecycle status, payout
   - `components/keeper-feed.tsx`: ranked table with keeper address, step count, gens advanced, cumulative reward
-  - `hooks/use-round-live.ts`: polls `/api/round/live` every 5s with error state
+  - `hooks/use-round-state.ts`: wagmi `useReadContracts` multicall for 18 round state vars, polls every 5s
+  - `hooks/use-round-events.ts`: TanStack `useQuery` with viem `getLogs` for 4 event types, polls every 10s
+  - `hooks/use-round-live.ts`: composes `useRoundState` + `useRoundEvents` + `useCurrentRound`, derives `RoundLivePayload`
   - `hooks/use-board-state.ts`: calls contract `getBoardState()` when phase 2/3, caches by generation
   - `lib/board-summary.ts`: board population accounting + overlap/width invariants
   - `lib/board-renderer.ts`: pure `renderBoardPixels()` converting `BoardState` bigint rows to scaled RGBA pixel array
@@ -167,44 +165,19 @@ Additional docs:
   - `lib/wallet-submit.ts`: commit/reveal/claim input validation (territory, budget, salt format)
   - `lib/wallet-tx-feedback.ts`: tx lifecycle messaging + badge-state mapping for UI status rendering
   - `lib/round-rules.ts`: game constants (team IDs, slot counts, seed budget, scoring weights, territory validation)
-  - `lib/round-live.ts`: persisted read-model parsing + normalization for API responses with participant/keeper feed construction
+  - `lib/round-live.ts`: type definitions for `RoundLivePayload` and `RoundLiveState`
+  - `lib/round-abi.ts`: viem `parseAbi` definitions for round contract state readers and event types
   - `lib/round-end.ts`: winner announcement, claim eligibility, payout summary derivation from finalized round state
   - `lib/round-feeds.ts`: participant roster builder from committed/revealed/claimed events, keeper leaderboard aggregation from stepped events
   - `lib/round-tx.ts`: commit-hash + tx-calldata builders for round contract calls
   - `lib/replay.ts`: pre-computes full replay timeline from initial board state with signature moment detection (peak-population, lead-change, mass-extinction, board-empty)
-  - `test/*.test.ts`: 17 test files covering all deterministic lib logic and API routes
+  - `test/*.test.ts`: test files covering deterministic lib logic
     - includes board renderer, animation, and fetch tests
     - includes seed transform/preset, seed-link encode/decode, and seed-contribution tests
     - includes wallet onboarding, signing, and submit validation tests
-    - includes round rules, round-tx, round-end, round-feeds, and round-live tests
+    - includes round rules, round-tx, round-end, and round-feeds tests
     - includes replay timeline and signature moment tests
   - UI baseline from shadcn registry under `apps/web/components/ui`
-
-- `packages/indexer`
-  - `src/ingest-round-read-model.ts`:
-    - viem-backed chain ingestion adapter for `Stepped`, `Finalized`, and `Claimed` logs
-    - onchain state reads (`phase`, `gen`, `maxGen`, `maxBatch`, accounting counters)
-    - deterministic read-model builder with finalize-aware reconciliation status
-  - `src/round-read-model-store.ts`:
-    - Stable BigInt-safe JSON serialization/parsing for persisted read models
-    - File read/write helpers for indexer snapshot artifacts
-  - `src/sync-round-read-model.ts`:
-    - CLI entrypoint for RPC-backed sync (`--rpc`, `--round`, optional block bounds, output path)
-    - confirmation-depth filtering and resumable cursor windowing (`--confirmations`, `--reorg-lookback`)
-    - overlap reprocessing for reorg-safe event replacement before merge
-  - `src/reconcile-round-events.ts`:
-    - Deterministic event-stream reconciliation over `Stepped`, `Finalized`, and `Claimed` payloads
-    - Enforces keeper-reward consistency (`sum(stepped.reward) == finalized.keeperPaid`)
-    - Produces accounting invariant checks (`winnerPaid + keeperPaid + treasuryDust <= totalFunded`)
-  - `test/ingest-round-read-model.test.ts`:
-    - Read-model construction, pending-finalize behavior, reconciliation divergence failure checks
-  - `test/reconcile-round-events.test.ts`:
-    - Happy-path reconciliation assertions
-    - Divergence and missing-event failure checks
-  - `test/round-sync.test.ts`:
-    - Incremental log merge with previous read model, deterministic ordering, reorg-safe overlap replacement
-  - `test/sync-window.test.ts`:
-    - Cursor window derivation, confirmation-depth clamping, explicit block bound overrides
 
 ## 3. Domain and Data Model
 
@@ -264,9 +237,9 @@ Current architecture guarantees rule parity confidence at engine level and now i
 
 - `GET /api/health` returns process liveness payload.
 - `summarizeBoard()` computes blue/red/total populations and validates board invariants for UI/accounting display.
-- `GET /api/round/live` reads the persisted indexer round snapshot and normalizes bigint-heavy payloads for client consumption, including participant roster and keeper leaderboard.
+- Client-side contract reads via wagmi `useReadContracts` multicall (18 state vars, 5s poll) + TanStack Query `useQuery` with viem `getLogs` (4 event types, 10s poll). No server-side indexer or API route needed.
 - Landing page renders via `RoundDashboard`:
-  - live spectator panel (polling `/api/round/live`) with freshness badge
+  - live spectator panel with contract state polling and live/fetching badge
   - wagmi-backed wallet journey panel with signup gating and `simulate -> sign -> receipt` tx flow
   - 64x64 board canvas with local TS forward-simulation between onchain checkpoints (demo/live/final modes)
   - participant list and keeper feed tables
@@ -285,7 +258,7 @@ The plan defines eventual expansion to:
 
 Status snapshot:
 
-- Implemented: TS engine with full parity suite, Solidity engine + round lifecycle contract (commit/reveal/sim/claim with accounting), ArenaRegistry for round discovery, chain-ingesting indexer with reorg-safe sync, full spectator UI (board canvas, participant/keeper feeds, end screen, replay page with seed links), keeper automation tooling (status/tick/loop), and Hardhat+Ignition deployment scaffold.
+- Implemented: TS engine with full parity suite, Solidity engine + round lifecycle contract (commit/reveal/sim/claim with accounting), ArenaRegistry for round discovery, self-contained web app with client-side wagmi/React Query contract reads, full spectator UI (board canvas, participant/keeper feeds, end screen, replay page with seed links), keeper automation tooling (status/tick/loop), and Hardhat+Ignition deployment scaffold.
 - Pending/high impact next: execute Sepolia benchmark run with deployment metadata, then lock `maxBatch` from measured artifact (blocked on env/deployment inputs).
 
 ## 6. Architectural Invariants
@@ -326,10 +299,10 @@ graph TB
     subgraph "Bun Monorepo (bun@1.3.6)"
         subgraph "apps/web [Next.js 15 / React 19]"
             WEB_PAGES["Pages<br/>/ (spectator dashboard)<br/>/replay (seed replay)"]
-            WEB_API["API Routes<br/>GET /api/health<br/>GET /api/round/live"]
+            WEB_API["API Routes<br/>GET /api/health"]
             WEB_COMPONENTS["Components<br/>RoundDashboard<br/>BoardCanvas / ReplayCanvas<br/>RoundWalletPanel<br/>RoundLivePanel / RoundEndCard<br/>ParticipantList / KeeperFeed"]
             WEB_LIB["Lib (deterministic logic)<br/>board-renderer / board-animation<br/>seed / seed-link / replay<br/>round-tx / round-live / round-end<br/>wallet-onboarding / wallet-signing<br/>wallet-submit / wallet-tx-feedback"]
-            WEB_HOOKS["Hooks<br/>useRoundLive (5s poll)<br/>useBoardState (contract read)"]
+            WEB_HOOKS["Hooks<br/>useRoundState (multicall 5s)<br/>useRoundEvents (getLogs 10s)<br/>useRoundLive (composer)<br/>useBoardState (contract read)"]
         end
 
         subgraph "packages/sim [TS Engine]"
@@ -344,13 +317,6 @@ graph TB
             SCRIPTS["Keeper Scripts<br/>status / tick / loop<br/>benchmark / smoke / rollout"]
         end
 
-        subgraph "packages/indexer [TS Indexer]"
-            IDX_INGEST["ingest-round-read-model.ts<br/>(viem log fetcher + state reader)"]
-            IDX_RECONCILE["reconcile-round-events.ts<br/>(accounting invariant checks)"]
-            IDX_SYNC["sync-round-read-model.ts<br/>(CLI: cursor + reorg-safe)"]
-            IDX_STORE["round-read-model-store.ts<br/>(BigInt-safe JSON persistence)"]
-        end
-
         FIXTURES["fixtures/engine/parity.v1.json<br/>(cross-language golden vectors)"]
     end
 
@@ -358,10 +324,7 @@ graph TB
     SIM_ENGINE -.->|"parity contract"| FIXTURES
     SOL_ENGINE -.->|"parity contract"| FIXTURES
     SOL_ENGINE -->|"used by"| SOL_ROUND
-    IDX_INGEST -->|"reads events from"| SOL_ROUND
-    IDX_INGEST -->|"reads state from"| SOL_ROUND
-    IDX_STORE -->|"persisted JSON"| WEB_API
-    WEB_API -->|"serves"| WEB_HOOKS
+    SOL_ROUND -->|"multicall + getLogs"| WEB_HOOKS
     WEB_HOOKS -->|"feeds"| WEB_COMPONENTS
     WEB_LIB -->|"used by"| WEB_COMPONENTS
     IGNITION -->|"deploys"| SOL_ROUND
@@ -456,44 +419,29 @@ flowchart TD
 
 ### 8.4 Data Flow: Onchain to UI
 
-How data flows from Shape L2 contract state through the indexer to the browser.
+How data flows from Shape L2 contract state directly to the browser via wagmi/React Query.
 
 ```mermaid
 flowchart LR
     subgraph "Shape L2 (Sepolia / Mainnet)"
         CONTRACT["ConwayArenaRound<br/>contract state"]
-        EVENTS["Contract Events<br/>Committed, Revealed,<br/>Initialized, Stepped,<br/>Finalized, PlayerClaimed"]
+        EVENTS["Contract Events<br/>Committed, Revealed,<br/>Stepped, PlayerClaimed"]
     end
 
-    subgraph "Indexer (packages/indexer)"
-        VIEM_CLIENT["viem publicClient<br/>(Alchemy RPC)"]
-        INGEST["buildRoundReadModel()<br/>parallel: readState + getLogs"]
-        RECONCILE["reconcileRoundEvents()<br/>keeper-reward consistency<br/>accounting invariant check"]
-        STORE["JSON snapshot file<br/>round-read-model.latest.json<br/>(BigInt-safe serialization)"]
-        CURSOR["Cursor file<br/>round-read-model.cursor.json<br/>(resumable sync window)"]
-    end
-
-    subgraph "Web Server (Next.js)"
-        API_LIVE["GET /api/round/live<br/>reads persisted snapshot<br/>normalizes bigint payloads<br/>builds participant roster<br/>builds keeper leaderboard"]
-    end
-
-    subgraph "Browser (React 19)"
-        POLL_HOOK["useRoundLive()<br/>polls /api/round/live<br/>every 5 seconds"]
+    subgraph "Browser (React 19 + wagmi + TanStack Query)"
+        STATE_HOOK["useRoundState()<br/>wagmi useReadContracts<br/>multicall 18 state vars<br/>polls every 5s"]
+        EVENT_HOOK["useRoundEvents()<br/>TanStack useQuery<br/>viem getLogs (4 event types)<br/>polls every 10s"]
+        LIVE_HOOK["useRoundLive()<br/>composes state + events<br/>+ useCurrentRound<br/>derives RoundLivePayload"]
         BOARD_HOOK["useBoardState()<br/>direct contract read<br/>getBoardState() view<br/>cached by generation"]
-        DASHBOARD["RoundDashboard<br/>(owns poll state,<br/>distributes to children)"]
+        DASHBOARD["RoundDashboard<br/>(distributes to children)"]
         CANVAS["BoardCanvas<br/>onchain checkpoint +<br/>local TS forward-sim<br/>between checkpoints"]
     end
 
-    CONTRACT -->|"state reads"| VIEM_CLIENT
-    EVENTS -->|"log queries"| VIEM_CLIENT
-    VIEM_CLIENT --> INGEST
-    INGEST --> RECONCILE
-    RECONCILE --> STORE
-    INGEST --> CURSOR
-
-    STORE -->|"file read"| API_LIVE
-    API_LIVE -->|"JSON response"| POLL_HOOK
-    POLL_HOOK --> DASHBOARD
+    CONTRACT -->|"multicall RPC"| STATE_HOOK
+    EVENTS -->|"getLogs RPC"| EVENT_HOOK
+    STATE_HOOK --> LIVE_HOOK
+    EVENT_HOOK --> LIVE_HOOK
+    LIVE_HOOK --> DASHBOARD
     CONTRACT -->|"direct RPC read<br/>(wagmi publicClient)"| BOARD_HOOK
     BOARD_HOOK --> CANVAS
     DASHBOARD --> CANVAS
@@ -698,12 +646,8 @@ flowchart TD
         GAS[".gas-snapshot<br/>forge snapshot --check<br/>local gate blocks regression"]
     end
 
-    subgraph "Indexer Verification"
-        IDX_TEST["reconcile-round-events.test.ts<br/>ingest-round-read-model.test.ts<br/>round-sync.test.ts<br/>sync-window.test.ts"]
-    end
-
     subgraph "Web Logic Tests (Vitest)"
-        WEB_TEST["17 test files covering:<br/>board-renderer, board-animation, board-fetch<br/>seed, seed-link, seed-contribution<br/>wallet-onboarding, wallet-signing, wallet-submit<br/>round-rules, round-tx, round-end<br/>round-feeds, round-live, replay<br/>health-route, board-summary"]
+        WEB_TEST["test files covering:<br/>board-renderer, board-animation, board-fetch<br/>seed, seed-link, seed-contribution<br/>wallet-onboarding, wallet-signing, wallet-submit<br/>round-rules, round-tx, round-end<br/>round-feeds, replay, board-summary"]
     end
 
     FIXTURE --> TS_PARITY
@@ -738,13 +682,8 @@ flowchart TB
         K_LOOP["loop:sepolia:keeper<br/>(recurring automation)"]
     end
 
-    subgraph "Indexer Pipeline"
-        SYNC["indexer:sync:round<br/>(CLI: --rpc --round)"]
-        SNAPSHOT["round-read-model.latest.json<br/>(persisted to disk)"]
-    end
-
     subgraph "Web App (Next.js)"
-        APP["apps/web<br/>bun run dev / bun run build"]
+        APP["apps/web<br/>bun run dev / bun run build<br/>wagmi multicall + getLogs"]
     end
 
     subgraph "RPC Provider"
@@ -761,11 +700,9 @@ flowchart TB
     K_TICK -->|"cast send"| ROUND
     K_LOOP -->|"invokes"| K_TICK
 
-    SYNC -->|"viem getLogs + readContract"| ROUND
-    SYNC -->|"writes"| SNAPSHOT
-    SNAPSHOT -->|"file read"| APP
+    ROUND -->|"multicall + getLogs"| APP
 
-    ROUND & REGISTRY & K_STATUS & K_TICK & SYNC ---|"via"| ALCHEMY
+    ROUND & REGISTRY & K_STATUS & K_TICK & APP ---|"via"| ALCHEMY
 ```
 
 ### 8.11 Component Hierarchy (Web UI)
@@ -783,12 +720,12 @@ flowchart TD
     end
 
     subgraph "RoundDashboard (orchestrator)"
-        POLL["useRoundLive() hook<br/>owns: payload, error state"]
+        POLL["useRoundLive() hook<br/>composes: useRoundState + useRoundEvents<br/>owns: payload, error, isFetching"]
     end
 
     PROVIDERS --> PAGE --> POLL
 
-    POLL -->|"payload, error"| LIVE_PANEL["RoundLivePanel<br/>Phase, gen, timestamps<br/>Accounting, reconciliation<br/>Freshness badge (Live/Stale)"]
+    POLL -->|"payload, error, isFetching"| LIVE_PANEL["RoundLivePanel<br/>Phase, gen, accounting<br/>Live/Fetching badge"]
 
     POLL -->|"payload"| WALLET_PANEL["RoundWalletPanel<br/>Connect/Switch/Ready gating<br/>Team picker, Slot grid<br/>8x8 Seed editor + presets<br/>Commit/Reveal/Claim tx flow<br/>Tx feedback status panel"]
 
@@ -877,36 +814,3 @@ flowchart TD
     RT -->|"Red spawns here"| RED_INV
 ```
 
-### 8.14 Indexer Reconciliation and Sync Pipeline
-
-Detailed view of how the indexer maintains accounting integrity with reorg safety.
-
-```mermaid
-flowchart TD
-    subgraph "Sync CLI (sync-round-read-model.ts)"
-        ARGS["CLI args: --rpc, --round,<br/>--from-block, --to-block,<br/>--confirmations (default 2),<br/>--reorg-lookback (default 12)"]
-        WINDOW["computeSyncWindow()<br/>confirmedTip = latest - confirmations<br/>fromBlock = cursor - reorgLookback<br/>(overlap reprocessing for reorg safety)"]
-    end
-
-    subgraph "Ingestion (ingest-round-read-model.ts)"
-        PARALLEL["Promise.all([<br/>  getChainId(),<br/>  readRoundState(),<br/>  getSteppedEvents(),<br/>  getFinalizedEvents(),<br/>  getClaimedEvents(),<br/>  getPlayerClaimedEvents(),<br/>  getCommittedEvents(),<br/>  getRevealedEvents()<br/>])"]
-        MERGE["Merge with previousModel:<br/>1. Keep events before fromBlock<br/>2. Replace overlap range with fresh<br/>3. Sort by (blockNumber, logIndex)"]
-    end
-
-    subgraph "Reconciliation (reconcile-round-events.ts)"
-        R_KEEPER["sum(stepped.reward) == finalized.keeperPaid"]
-        R_INVARIANT["winnerPaid + keeperPaid + treasuryDust <= totalFunded"]
-        R_STATUS["reconciliationStatus: ok | pending-finalize"]
-    end
-
-    subgraph "Persistence"
-        MODEL_FILE["round-read-model.latest.json<br/>(BigInt-safe: replacer/reviver)"]
-        CURSOR_FILE["round-read-model.cursor.json<br/>{version, chainId, roundAddress,<br/> lastSyncedBlock, syncedAt}"]
-    end
-
-    ARGS --> WINDOW
-    WINDOW --> PARALLEL
-    PARALLEL --> MERGE
-    MERGE --> R_KEEPER & R_INVARIANT & R_STATUS
-    R_KEEPER & R_INVARIANT & R_STATUS --> MODEL_FILE & CURSOR_FILE
-```

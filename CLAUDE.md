@@ -11,13 +11,12 @@ Conway Arena on Shape L2: a multiplayer competitive Conway's Game of Life with t
 Turborepo orchestrates build/test/lint across all workspaces with caching.
 
 ```bash
-# All tests (sim + web + indexer + contracts) -- parallel via turbo
+# All tests (sim + web + contracts) -- parallel via turbo
 bun run test
 
 # Single-package tests via turbo filter
 turbo test --filter=@shape-of-life/sim
 turbo test --filter=@shape-of-life/web
-turbo test --filter=@shape-of-life/indexer
 turbo test --filter=@shape-of-life/contracts
 
 # Single test file (bypass turbo, run directly)
@@ -46,15 +45,13 @@ Sepolia operations require env vars. See `plan.md` section 20.6 for the full che
 
 ## Architecture
 
-Turborepo + Bun monorepo (`bun@1.3.6`) with four packages:
+Turborepo + Bun monorepo (`bun@1.3.6`) with three packages:
 
 - **`packages/sim`** -- Canonical TypeScript simulation engine. Exports `stepGeneration`, `packRows`/`unpackRows`, `BoardState`. 64-bit bigint row representation, cylinder topology (Y wraps, X hard edges), B3/S23 with immigration majority color rule.
 
 - **`packages/contracts`** -- Solidity parity engine (`ConwayEngine.sol`) + round lifecycle contract (`ConwayArenaRound.sol`). Foundry for tests/fuzzing/gas snapshots, Hardhat+Ignition for deployment/verification. Must produce identical simulation output to the TS engine.
 
-- **`packages/indexer`** -- Chain-ingesting round read-model sync with viem. Persisted JSON snapshots, cursor/reorg-aware incremental sync, deterministic accounting reconciliation checks.
-
-- **`apps/web`** -- Next.js 15 App Router (React 19, Tailwind 4, shadcn/ui new-york style). Spectator-first UI scaffold. wagmi + viem for wallet/tx lifecycle. Path alias `@/*` maps to the `apps/web` root. Tests use Vitest (configured in `apps/web/vitest.config.ts`), scoped to deterministic `lib/*` logic and API routes only -- no component-markup tests.
+- **`apps/web`** -- Next.js 15 App Router (React 19, Tailwind 4, shadcn/ui new-york style). Spectator-first UI scaffold. wagmi `useReadContracts` multicall + TanStack Query `useQuery` with viem `getLogs` for direct contract reads (no separate indexer). Path alias `@/*` maps to the `apps/web` root. Tests use Vitest (configured in `apps/web/vitest.config.ts`), scoped to deterministic `lib/*` logic only -- no component-markup tests.
 
 - **`fixtures/engine/parity.v1.json`** -- Golden test vectors. Both TS and Solidity test suites validate against these. This is the cross-language parity contract.
 
