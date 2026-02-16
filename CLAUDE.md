@@ -8,44 +8,33 @@ Conway Arena on Shape L2: a multiplayer competitive Conway's Game of Life with t
 
 ## Commands
 
+Turborepo orchestrates build/test/lint across all workspaces with caching.
+
 ```bash
-# All tests (sim + web + indexer + contract scripts + Solidity contracts)
+# All tests (sim + web + indexer + contracts) -- parallel via turbo
 bun run test
 
-# Simulation engine tests only
-bun test packages/sim/test
+# Single-package tests via turbo filter
+turbo test --filter=@shape-of-life/sim
+turbo test --filter=@shape-of-life/web
+turbo test --filter=@shape-of-life/indexer
+turbo test --filter=@shape-of-life/contracts
 
-# Single sim test file
+# Single test file (bypass turbo, run directly)
 bun test packages/sim/test/engine.test.ts
-
-# Web app tests only (Vitest, not bun:test)
-cd apps/web && bun run test
-
-# Indexer tests
-bun test packages/indexer/test
-
-# Contract script utility tests
-bun test packages/contracts/scripts/*.test.ts
+cd packages/contracts && forge test --offline --match-path test/ConwayArenaRoundE2E.t.sol
 
 # Lint (strict, max-warnings=0)
 bun run lint
 
-# Solidity tests (requires Foundry; root script sets sandbox env)
-bun run test:contracts
-# or directly:
-cd packages/contracts && forge test --offline
-
-# Single Solidity test file
-cd packages/contracts && forge test --offline --match-path test/ConwayArenaRoundE2E.t.sol
-
 # Solidity gas regression check against committed snapshot
-bun run test:contracts:gas
+bun run test:gas
 
 # Dev server
-cd apps/web && bun run dev
+bun run dev
 
 # Production build
-cd apps/web && bun run build
+bun run build
 ```
 
 Sepolia operations require env vars. See `plan.md` section 20.6 for the full checklist:
@@ -57,7 +46,7 @@ Sepolia operations require env vars. See `plan.md` section 20.6 for the full che
 
 ## Architecture
 
-Bun monorepo (`bun@1.3.6`) with four packages:
+Turborepo + Bun monorepo (`bun@1.3.6`) with four packages:
 
 - **`packages/sim`** -- Canonical TypeScript simulation engine. Exports `stepGeneration`, `packRows`/`unpackRows`, `BoardState`. 64-bit bigint row representation, cylinder topology (Y wraps, X hard edges), B3/S23 with immigration majority color rule.
 

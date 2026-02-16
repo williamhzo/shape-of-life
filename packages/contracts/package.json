@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline && bun test scripts/*.test.ts",
+    "test:gas": "HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge snapshot --offline --match-test testGas --check",
     "hardhat:compile": "hardhat compile",
     "deploy:shape-sepolia": "hardhat ignition deploy ignition/modules/ConwayArenaRound.ts --network shapeSepolia --parameters ignition/parameters/shape-sepolia.json",
     "deploy:registry:shape-sepolia": "hardhat ignition deploy ignition/modules/ArenaRegistry.ts --network shapeSepolia",

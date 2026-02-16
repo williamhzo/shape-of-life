@@ -7,16 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "bun run lint:web",
-    "lint:web": "cd apps/web && bun run lint",
-    "test": "bun run test:sim && bun run test:web && bun run test:indexer && bun run test:contracts:scripts && bun run test:contracts",
-    "test:sim": "bun test packages/sim/test",
-    "test:web": "cd apps/web && bun run test",
-    "test:indexer": "bun test packages/indexer/test",
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "test:gas": "turbo test:gas",
+    "release:gate:sepolia": "turbo test test:gas lint build && bun run smoke:sepolia:round",
     "indexer:sync:round": "cd packages/indexer && bun run sync:round",
-    "test:contracts:scripts": "bun test packages/contracts/scripts/*.test.ts",
-    "test:contracts": "cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge test --offline",
-    "test:contracts:gas": "cd packages/contracts && HOME=/tmp FOUNDRY_CACHE_ROOT=/tmp/foundry-cache forge snapshot --offline --match-test testGas --check",
     "benchmark:sepolia:max-batch": "bun run packages/contracts/scripts/max-batch-benchmark.ts",
     "lock:sepolia:max-batch": "bun run packages/contracts/scripts/lock-max-batch-from-benchmark.ts",
     "benchmark:sepolia:max-batch:lock": "bun run benchmark:sepolia:max-batch && bun run lock:sepolia:max-batch",
@@ -25,11 +22,13 @@
     "observe:sepolia:keeper": "bun run packages/contracts/scripts/sepolia-keeper-status.ts",
     "tick:sepolia:keeper": "bun run packages/contracts/scripts/sepolia-keeper-tick.ts",
     "loop:sepolia:keeper": "bun run packages/contracts/scripts/sepolia-keeper-loop.ts",
-    "release:gate:sepolia": "bun run test && bun run test:contracts:gas && bun run lint:web && cd apps/web && bun run build && bun run smoke:sepolia:round",
     "contracts:hardhat:compile": "cd packages/contracts && bun run hardhat:compile",
     "deploy:contracts:shape-sepolia": "cd packages/contracts && bun run deploy:shape-sepolia",
     "deploy:registry:shape-sepolia": "cd packages/contracts && bun run deploy:registry:shape-sepolia",
     "verify:contracts:shape-sepolia": "cd packages/contracts && bun run verify:shape-sepolia",
     "show:contracts:shape-sepolia:round": "cd packages/contracts && bun run show:shape-sepolia:round"
+  },
+  "devDependencies": {
+    "turbo": "^2.8.9"
   }
 }

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "bun test test",
     "sync:round": "bun run src/sync-round-read-model.ts"
   },
   "dependencies": {
