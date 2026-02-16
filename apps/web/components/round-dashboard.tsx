@@ -12,7 +12,7 @@ import { useBoardState } from "@/hooks/use-board-state";
 import { useRoundLive } from "@/hooks/use-round-live";
 
 export function RoundDashboard() {
-  const { payload, error } = useRoundLive();
+  const { payload, error, isFetching } = useRoundLive();
 
   const roundAddress = payload?.round.roundAddress as Address | undefined;
   const phase = payload?.round.phase ?? null;
@@ -47,7 +47,7 @@ export function RoundDashboard() {
       <BoardCanvas mode={boardMode} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <RoundLivePanel payload={payload} error={error} />
+        <RoundLivePanel payload={payload} error={error} isFetching={isFetching} />
         <RoundWalletPanel />
       </div>
 

@@ -178,7 +178,7 @@ describe("derivePayoutSummary", () => {
       participant({ address: "0xcc", team: 1, revealed: true, claimedAmount: null }),
       participant({ address: "0xdd", team: 0, revealed: false, claimedAmount: null }),
     ];
-    const accounting = { totalFunded: "10000000000000000000", winnerPaid: "3000000000000000000", keeperPaid: "0", treasuryDust: "0", derivedKeeperPaid: null, accountedTotal: null, invariantHolds: null, reconciliationStatus: "ok" as const };
+    const accounting = { totalFunded: "10000000000000000000", winnerPaid: "3000000000000000000", keeperPaid: "0", treasuryDust: "0" };
 
     const result = derivePayoutSummary({ scoring, accounting, participants });
     expect(result.eligibleCount).toBe(2);
@@ -193,7 +193,7 @@ describe("derivePayoutSummary", () => {
       participant({ address: "0xbb", team: 1, revealed: true }),
       participant({ address: "0xcc", team: 0, revealed: false }),
     ];
-    const accounting = { totalFunded: "10000000000000000000", winnerPaid: "0", keeperPaid: "0", treasuryDust: "0", derivedKeeperPaid: null, accountedTotal: null, invariantHolds: null, reconciliationStatus: "ok" as const };
+    const accounting = { totalFunded: "10000000000000000000", winnerPaid: "0", keeperPaid: "0", treasuryDust: "0" };
 
     const result = derivePayoutSummary({ scoring, accounting, participants });
     expect(result.eligibleCount).toBe(2);
