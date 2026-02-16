@@ -27,7 +27,7 @@ export function RoundLivePanel({
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         {error ? <p className="text-destructive">{error}</p> : null}
-        {!payload ? <p className="text-muted-foreground">Waiting for contract state...</p> : null}
+        {!payload ? <p className="text-muted-foreground">Waiting for contract state\u2026</p> : null}
         {payload ? (
           <>
             <p className="break-all">Round: {payload.round.roundAddress}</p>

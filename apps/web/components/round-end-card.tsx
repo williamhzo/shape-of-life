@@ -76,7 +76,7 @@ export function RoundEndDialog({
     if (!publicClient) return;
 
     try {
-      setClaimStatus("Simulating...");
+      setClaimStatus("Simulating\u2026");
       const simulation = await publicClient.simulateContract({
         address: roundAddress as Address,
         abi: ROUND_ABI,
@@ -85,10 +85,10 @@ export function RoundEndDialog({
         account: address,
       });
 
-      setClaimStatus("Waiting for signature...");
+      setClaimStatus("Waiting for signature\u2026");
       const txHash = await writeContractAsync(simulation.request);
 
-      setClaimStatus("Confirming...");
+      setClaimStatus("Confirming\u2026");
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
       if (receipt.status !== "success") {
         throw new Error("Claim transaction reverted");

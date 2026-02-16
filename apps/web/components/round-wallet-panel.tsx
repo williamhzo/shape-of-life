@@ -205,7 +205,7 @@ export function RoundWalletPanel() {
 
   async function connectWallet(connector: (typeof connectors)[number]): Promise<void> {
     try {
-      setStatus(`Connecting ${connector.name}...`);
+      setStatus(`Connecting ${connector.name}\u2026`);
       await connectAsync({ connector });
       setStatus(`Connected ${connector.name}`);
     } catch (error) {
@@ -215,7 +215,7 @@ export function RoundWalletPanel() {
 
   async function switchToTargetNetwork(): Promise<void> {
     try {
-      setStatus(`Switching to ${TARGET_CHAIN.name}...`);
+      setStatus(`Switching to ${TARGET_CHAIN.name}\u2026`);
       await switchChainAsync({ chainId: TARGET_CHAIN.id });
       setStatus(`Connected to ${TARGET_CHAIN.name}`);
     } catch (error) {
@@ -314,7 +314,7 @@ export function RoundWalletPanel() {
                     disabled={isConnectPending}
                     onClick={() => void connectWallet(connector)}
                   >
-                    {isConnectPending ? `Connecting ${connector.name}...` : `Connect ${connector.name}`}
+                    {isConnectPending ? `Connecting ${connector.name}\u2026` : `Connect ${connector.name}`}
                   </Button>
                 ))
               : null}
