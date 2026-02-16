@@ -7,8 +7,6 @@ import { renderBoardPixels } from "@/lib/board-renderer";
 import { buildReplayTimeline, type SignatureMoment } from "@/lib/replay";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 
 const BOARD_SIZE = 64;
@@ -79,105 +77,95 @@ export function ReplayCanvas({
   }, []);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-3">
-        <div>
-          <CardTitle>{title}</CardTitle>
-          <p className="text-muted-foreground text-sm">
-            {currentFrame
-              ? `Blue: ${currentFrame.summary.blue} | Red: ${currentFrame.summary.red} | Total: ${currentFrame.summary.total}`
-              : "No data"}
-          </p>
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative w-full max-w-[640px]">
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_PX}
+          height={CANVAS_PX}
+          className="w-full rounded-lg"
+          style={{ imageRendering: "pixelated" }}
+        />
+        <div className="absolute right-3 top-3">
+          <Badge variant={gen >= maxFrame ? "default" : "secondary"}>
+            Gen {gen}/{maxFrame}
+          </Badge>
         </div>
-        <Badge variant={gen >= maxFrame ? "default" : "secondary"}>
-          Gen {gen}/{maxFrame}
-        </Badge>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex justify-center">
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_PX}
-            height={CANVAS_PX}
-            className="rounded border"
-            style={{
-              width: CANVAS_PX / 2,
-              height: CANVAS_PX / 2,
-              imageRendering: "pixelated",
-            }}
-          />
-        </div>
+      </div>
 
-        <div className="space-y-2">
-          <Slider
-            value={[gen]}
-            min={0}
-            max={maxFrame}
-            step={1}
-            onValueChange={handleSeek}
-          />
-          {timeline.moments.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {timeline.moments.map((moment) => (
-                <Button
-                  key={`${moment.kind}-${moment.generation}`}
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-1.5"
-                  onClick={() => {
-                    setGen(moment.generation);
-                    setPlaying(false);
-                  }}
-                >
-                  <MomentBadge moment={moment} />
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="w-full max-w-[640px] space-y-2">
+        <p className="text-muted-foreground text-sm">
+          {title}
+          {currentFrame
+            ? ` — Blue: ${currentFrame.summary.blue} | Red: ${currentFrame.summary.red} | Total: ${currentFrame.summary.total}`
+            : ""}
+        </p>
+        <Slider
+          value={[gen]}
+          min={0}
+          max={maxFrame}
+          step={1}
+          onValueChange={handleSeek}
+        />
+        {timeline.moments.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {timeline.moments.map((moment) => (
+              <Button
+                key={`${moment.kind}-${moment.generation}`}
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5"
+                onClick={() => {
+                  setGen(moment.generation);
+                  setPlaying(false);
+                }}
+              >
+                <MomentBadge moment={moment} />
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
 
-        <Separator />
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPlaying((p) => !p)}
-          >
-            {playing ? "Pause" : "Play"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setGen(0);
-              setPlaying(false);
-            }}
-          >
-            Reset
-          </Button>
-          <span className="text-muted-foreground ml-auto text-xs">
-            {fps} fps
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setFps((f) => Math.max(1, f - 2))}
-            disabled={fps <= 1}
-          >
-            -
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setFps((f) => Math.min(30, f + 2))}
-            disabled={fps >= 30}
-          >
-            +
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPlaying((p) => !p)}
+        >
+          {playing ? "Pause" : "Play"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setGen(0);
+            setPlaying(false);
+          }}
+        >
+          Reset
+        </Button>
+        <span className="text-muted-foreground ml-auto text-xs">
+          {fps} fps
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setFps((f) => Math.max(1, f - 2))}
+          disabled={fps <= 1}
+        >
+          -
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setFps((f) => Math.min(30, f + 2))}
+          disabled={fps >= 30}
+        >
+          +
+        </Button>
+      </div>
+    </div>
   );
 }
 
