@@ -18,7 +18,7 @@ export function DebugPanel({ payload }: { payload: RoundLivePayload | null }) {
       <AccordionItem value="debug">
         <AccordionTrigger className="text-muted-foreground text-xs">Debug</AccordionTrigger>
         <AccordionContent>
-          <div className="space-y-2 font-mono text-xs text-muted-foreground">
+          <div className="space-y-2 break-all font-mono text-xs text-muted-foreground">
             <p>Round: {round.roundAddress}</p>
             <p>Chain: {round.chainId}</p>
             <p>Phase: {round.phase} | Gen: {round.gen}/{round.maxGen} | MaxBatch: {round.maxBatch}</p>
