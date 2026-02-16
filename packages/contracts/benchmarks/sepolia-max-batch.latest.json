@@ -1,0 +1,39 @@
+{
+  "network": "shape-sepolia",
+  "roundAddress": "0x7baBBAFdA0966464d6e0a03A488fccDaF9D5945b",
+  "measuredAt": "2026-02-14T09:04:11.908Z",
+  "gasLimit": "1200000",
+  "safetyBps": 8500,
+  "thresholdGas": "1020000",
+  "lockedMaxBatch": 32,
+  "measurements": [
+    {
+      "steps": 8,
+      "gasUsed": "21676"
+    },
+    {
+      "steps": 12,
+      "gasUsed": "21676"
+    },
+    {
+      "steps": 16,
+      "gasUsed": "21676"
+    },
+    {
+      "steps": 20,
+      "gasUsed": "21676"
+    },
+    {
+      "steps": 24,
+      "gasUsed": "21676"
+    },
+    {
+      "steps": 28,
+      "gasUsed": "21676"
+    },
+    {
+      "steps": 32,
+      "gasUsed": "21676"
+    }
+  ]
+}

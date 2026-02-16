@@ -1,7 +1,10 @@
+import { config } from "dotenv";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ROUND_DEPLOYMENT_KEY, parseDeploymentAddresses } from "./ignition-address";
+
+config({ path: resolve(import.meta.dirname, "../.env") });
 
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 const DEFAULT_DEPLOYMENT_PATH = "packages/contracts/ignition/deployments/chain-11011/deployed_addresses.json";

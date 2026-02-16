@@ -1,6 +1,9 @@
+import { config } from "dotenv";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+
+config({ path: resolve(import.meta.dirname, "../.env") });
 
 type SmokeSummary = {
   network: "shape-sepolia";

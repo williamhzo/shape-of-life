@@ -28,6 +28,7 @@
     "release:gate:sepolia": "bun run test && bun run test:contracts:gas && bun run lint:web && cd apps/web && bun run build && bun run smoke:sepolia:round",
     "contracts:hardhat:compile": "cd packages/contracts && bun run hardhat:compile",
     "deploy:contracts:shape-sepolia": "cd packages/contracts && bun run deploy:shape-sepolia",
+    "deploy:registry:shape-sepolia": "cd packages/contracts && bun run deploy:registry:shape-sepolia",
     "verify:contracts:shape-sepolia": "cd packages/contracts && bun run verify:shape-sepolia",
     "show:contracts:shape-sepolia:round": "cd packages/contracts && bun run show:shape-sepolia:round"
   }

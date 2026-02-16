@@ -1,6 +1,9 @@
+import { config } from "dotenv";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+
+config({ path: resolve(import.meta.dirname, "../.env") });
 
 export type Measurement = {
   steps: number;

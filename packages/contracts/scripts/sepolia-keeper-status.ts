@@ -1,5 +1,9 @@
+import { config } from "dotenv";
 import { execFileSync } from "node:child_process";
+import { resolve } from "node:path";
 import { hasContractCode, parseCastUint } from "./sepolia-smoke-round";
+
+config({ path: resolve(import.meta.dirname, "../.env") });
 
 export type KeeperAction =
   | "wait-commit"

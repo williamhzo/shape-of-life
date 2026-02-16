@@ -1,5 +1,9 @@
+import { config } from "dotenv";
 import { execFileSync } from "node:child_process";
+import { resolve } from "node:path";
 import type { KeeperAction } from "./sepolia-keeper-status";
+
+config({ path: resolve(import.meta.dirname, "../.env") });
 
 type ParsedArgs = {
   execute: boolean;

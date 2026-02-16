@@ -670,7 +670,7 @@ Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accou
 [x] Disable manual settlement griefing for accounting rounds and auto-route zero-eligible winner pools at finalize.
 [x] Add explicit non-reentrancy guard on transfer paths (`claim`, `withdrawKeeperCredit`) with cross-function probe test.
 [x] Enforce round funding invariant at accounting configuration (`totalFunded <= contract balance`) to fail early.
-[ ] Add Sepolia benchmarking script and lock `maxBatch` via measured thresholds.
+[x] Add Sepolia benchmarking script and lock `maxBatch` via measured thresholds.
 [x] Add indexer reconciliation checks against `Stepped`, `Finalized`, and `Claimed` events.
 
 ### Validation
@@ -849,6 +849,13 @@ Execution rules:
 
 ## 19. Progress Log
 
+- 2026-02-14:
+  - Completed P1.2 Sepolia deployment and benchmark:
+    - Deployed ConwayArenaRound to Shape Sepolia via Hardhat Ignition at `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b`.
+    - Ran `benchmark:sepolia:max-batch` against deployed contract; confirmed `maxBatch = 16` fits within Shape Sepolia gas limits.
+    - Locked `maxBatch = 16` in `ignition/parameters/shape-sepolia.json`.
+    - Verified contract source on Shape Sepolia block explorer.
+  - Remaining next steps: register round in ArenaRegistry, run smoke test, execute a test round lifecycle (commit/reveal/sim/finalize/claim), run indexer sync, validate web UI against live contract.
 - 2026-02-13 (session 6):
   - Completed P3.6 social sharing primitives:
     - Added `apps/web/lib/seed-link.ts`: URL-based seed link encoding/decoding with preset ID, transforms (shorthand notation: r90/r180/r270/mx/my), slot index, and team suggestion. `resolveSeedBits()` applies transforms to preset or raw seed.
@@ -1509,12 +1516,10 @@ Execution rules:
   - Minor gap: Solidity pack/unpack utilities are inlined in `stepBatch` rather than exposed as first-class tested helpers.
 - Phase C: Round manager contract
   - Status: COMPLETE
-  - Done: phase guards, commit/reveal payload checks (territory axis fixed to tileX left/right), slot ownership/idempotency, 64x64 board seed materialization, engine-backed `stepBatch`, weighted board-derived max-gen winner resolution (`3*population + 2*invasion`), accounting clamps, transfer-capable keeper/winner claim paths, `PlayerClaimed`/`Committed`/`Revealed`/`Initialized` events, reentrancy guards, ArenaRegistry for round discovery, event and gas regression tests.
-  - Remaining: lock Sepolia-proven batch thresholds via benchmark.
+  - Done: phase guards, commit/reveal payload checks (territory axis fixed to tileX left/right), slot ownership/idempotency, 64x64 board seed materialization, engine-backed `stepBatch`, weighted board-derived max-gen winner resolution (`3*population + 2*invasion`), accounting clamps, transfer-capable keeper/winner claim paths, `PlayerClaimed`/`Committed`/`Revealed`/`Initialized` events, reentrancy guards, ArenaRegistry for round discovery, event and gas regression tests. Sepolia benchmark confirmed `maxBatch = 16`.
 - Phase D: Deployments and scripts (Hardhat + viem)
-  - Status: PARTIAL
-  - Done: Hardhat + viem + Ignition scaffold with Shape Sepolia/Mainnet network wiring, deterministic module parameters, deployment-address/verification utility scripts, Sepolia smoke/release gates, one-command rollout pipeline, keeper automation tooling (status/tick/loop).
-  - Missing: live Sepolia deploy execution, benchmark artifact capture, and measured `maxBatch` lock on deployed round (blocked on env/deployment inputs; see section 20.6).
+  - Status: COMPLETE
+  - Done: Hardhat + viem + Ignition scaffold with Shape Sepolia/Mainnet network wiring, deterministic module parameters, deployment-address/verification utility scripts, Sepolia smoke/release gates, one-command rollout pipeline, keeper automation tooling (status/tick/loop). ConwayArenaRound deployed to Shape Sepolia at `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b`, benchmark executed, `maxBatch = 16` confirmed, contract verified on block explorer.
 - Phase E: Indexer + production UI
   - Status: NEAR-COMPLETE
   - Done: deterministic reconciliation utility + tests, viem-backed chain ingestion + persisted round read-model sync with cursor/reorg-aware incremental sync, full spectator UI (board canvas with onchain checkpoint sync, participant roster, keeper leaderboard, end screen with scoring/claim), replay page with seed links and signature-moment detection, per-player seed contribution tracking, keeper observability.
@@ -1528,10 +1533,10 @@ Execution rules:
   - Territory axis alignment: fixed. Contract and web both use `tileX = slotIndex % SLOT_COLUMNS` (left/right split aligned with invasion scoring).
   - Claim event emission: fixed. `PlayerClaimed` event emits for every claim path; indexer reconciles per-claim amounts.
   - Reentrancy: guarded on all transfer paths (`claim`, `withdrawKeeperCredit`).
-- P1 (contract event completeness + Sepolia deployment):
+- P1 (contract event completeness + Sepolia deployment): ALL RESOLVED.
   - Social lifecycle events: done. `Committed`, `Revealed`, `Initialized` events implemented and indexed.
   - Sepolia smoke checks, rollout pipeline, and keeper automation: done.
-  - Remaining: execute Sepolia benchmark artifact run and lock `maxBatch` from measured thresholds (blocked on env/deployment inputs; see section 20.6).
+  - Sepolia deployment: done. ConwayArenaRound deployed at `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b`, benchmark confirmed `maxBatch = 16`, contract verified on explorer.
 - P2 (spectator product + game feel): NEAR-COMPLETE.
   - Canvas board rendering: done. `BoardCanvas` with demo/live/final modes, onchain checkpoint sync, play/pause/FPS controls.
   - Methuselah seed presets: done. R-pentomino, Acorn, Diehard, LWSS added.
@@ -1554,7 +1559,7 @@ Execution rules:
 [x] P0.4 Extend accounting/winner-claim invariants to cover full simulation-backed lifecycle and mixed claim ordering.
 [x] P0.5 Extend finalize to emit/track weighted scoring outputs (final population + invasion) and resolve winner by score when no extinction occurs.
 [x] P1.1 Add Hardhat + viem deployment/verification scaffold for Shape Sepolia and deterministic config wiring.
-[ ] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch` (blocked; required inputs are centralized in section 20.6).
+[x] P1.2 Deploy round to Sepolia, run `benchmark:sepolia:max-batch`, persist artifact, and lock `maxBatch`. Deployed at `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b`, benchmark confirmed `maxBatch = 16`, contract verified on Shape Sepolia explorer.
 [x] P1.3 Add Sepolia smoke command and release gate documenting required env/config.
 [x] P1.4 Add single-command rollout pipeline (`deploy/address-resolve -> benchmark -> lock -> smoke`) to reduce operator drift.
 [x] P2.1 Implement chain-ingesting indexer pipeline and persisted round read model.
@@ -1608,23 +1613,19 @@ Execution rules:
 - Payout path regressions under adversarial call ordering; mitigate with transfer-path probe tests + strict accounting invariants.
 - Degenerate seed metas (stable density spam) may reduce spectator drama; mitigate with low seed budget (12) and methuselah presets that create midgame collisions. Consider midline-weighted scoring in later seasons if needed.
 
-### 20.6 Required Operator Inputs (Canonical Checklist)
+### 20.6 Operator Inputs (Canonical Checklist)
 
-This section is the single source of truth for user-supplied inputs required to unblock the remaining external-gated work (`P1.2`) and run Sepolia keeper automation safely.
+`P1.2` is resolved. ConwayArenaRound deployed at `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b` on Shape Sepolia (chainId `11011`), benchmark confirmed `maxBatch = 16`, contract verified on explorer.
 
-Required to unblock `P1.2`:
-- `SHAPE_SEPOLIA_RPC_URL`
-  - Shape Sepolia RPC endpoint (chainId `11011`).
-- One deployment path choice:
-  - Existing deployment path: provide `ROUND_ADDRESS` (deployed `ConwayArenaRound`).
-  - New deployment path: provide `DEPLOYER_PRIVATE_KEY` (funded on Shape Sepolia) so deployment can be executed and address resolved.
-- Deploy behavior decision (if both are available):
-  - Use existing `ROUND_ADDRESS`, or force a fresh deployment.
+Active env vars for ongoing Sepolia operations:
+- `SHAPE_SEPOLIA_RPC_URL` -- Alchemy endpoint for Shape Sepolia.
+- `ROUND_ADDRESS` = `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b`.
+- `DEPLOYER_PRIVATE_KEY` -- for future deployments/registry registration.
+- `KEEPER_PRIVATE_KEY` -- for keeper automation (`tick --execute`, `loop --execute`).
 
-Optional but recommended operator inputs:
+Optional inputs:
 - `BENCHMARK_CALLER` (explicit `cast estimate --from` address for benchmark consistency).
-- `KEEPER_PRIVATE_KEY` (required only for `tick:sepolia:keeper --execute` or `loop:sepolia:keeper --execute`).
-- Verification inputs (required only when running explorer verification):
+- Verification inputs (already used, retained for future deploys):
   - `SHAPE_SEPOLIA_VERIFY_API_URL`
   - `SHAPE_SEPOLIA_BROWSER_URL`
   - `SHAPE_SEPOLIA_VERIFY_API_KEY`
