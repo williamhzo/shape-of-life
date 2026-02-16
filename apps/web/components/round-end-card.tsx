@@ -1,12 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { type Address, formatEther } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import type { ParticipantEntry } from "@/lib/round-feeds";
 import type { RoundLivePayload } from "@/lib/round-live";
@@ -18,6 +25,7 @@ import {
   deriveClaimEligibility,
   derivePayoutSummary,
 } from "@/lib/round-end";
+import { cn } from "@/lib/utils";
 
 type Scoring = NonNullable<RoundLivePayload["scoring"]>;
 
@@ -33,12 +41,16 @@ function teamBadgeVariant(team: number): "default" | "secondary" | "destructive"
   return "secondary";
 }
 
-export function RoundEndCard({
+export function RoundEndDialog({
+  open,
+  onOpenChange,
   scoring,
   accounting,
   participants,
   roundAddress,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   scoring: Scoring;
   accounting: RoundLivePayload["accounting"];
   participants: ParticipantEntry[];
@@ -90,54 +102,58 @@ export function RoundEndCard({
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle>Round Complete</CardTitle>
-          <Badge variant={teamBadgeVariant(announcement.winnerTeam)}>{announcement.label}</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className={`font-medium ${teamColorClass(TEAM_BLUE)}`}>Blue</p>
-            <p>Population: {scoring.finalBluePopulation}{scoring.blueExtinct ? " (extinct)" : ""}</p>
-            <p>Invasion: {scoring.finalBlueInvasion}</p>
-            <p>Score: {scoring.scoreBlue}</p>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <DialogTitle>Round Complete</DialogTitle>
+            <Badge variant={teamBadgeVariant(announcement.winnerTeam)}>{announcement.label}</Badge>
           </div>
-          <div className="space-y-1">
-            <p className={`font-medium ${teamColorClass(TEAM_RED)}`}>Red</p>
-            <p>Population: {scoring.finalRedPopulation}{scoring.redExtinct ? " (extinct)" : ""}</p>
-            <p>Invasion: {scoring.finalRedInvasion}</p>
-            <p>Score: {scoring.scoreRed}</p>
+          <DialogDescription>Final scores and prize distribution.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className={cn("font-medium", teamColorClass(TEAM_BLUE))}>Blue</p>
+              <p>Population: {scoring.finalBluePopulation}{scoring.blueExtinct ? " (extinct)" : ""}</p>
+              <p>Invasion: {scoring.finalBlueInvasion}</p>
+              <p>Score: {scoring.scoreBlue}</p>
+            </div>
+            <div className="space-y-1">
+              <p className={cn("font-medium", teamColorClass(TEAM_RED))}>Red</p>
+              <p>Population: {scoring.finalRedPopulation}{scoring.redExtinct ? " (extinct)" : ""}</p>
+              <p>Invasion: {scoring.finalRedInvasion}</p>
+              <p>Score: {scoring.scoreRed}</p>
+            </div>
           </div>
-        </div>
 
-        <Separator />
+          <Separator />
 
-        <div className="space-y-1">
-          <p>Prize pool: {formatEther(BigInt(payout.prizePool))} ETH</p>
-          <p>Per winner: {formatEther(BigInt(payout.perWinnerShare))} ETH</p>
-          <p>Claimed: {payout.claimedCount}/{payout.eligibleCount} eligible</p>
-        </div>
+          <div className="space-y-1 tabular-nums">
+            <p>Prize pool: {formatEther(BigInt(payout.prizePool))} ETH</p>
+            <p>Per winner: {formatEther(BigInt(payout.perWinnerShare))} ETH</p>
+            <p>Claimed: {payout.claimedCount}/{payout.eligibleCount} eligible</p>
+          </div>
 
-        <Separator />
+          <Separator />
 
-        <div className="flex flex-wrap items-center gap-3">
-          {eligibility.eligible ? (
-            <Button onClick={() => void handleClaim()} disabled={isPending}>
-              {isPending ? "Claiming..." : "Claim Prize"}
+          <div className="flex flex-wrap items-center gap-3">
+            {eligibility.eligible ? (
+              <Button onClick={() => void handleClaim()} disabled={isPending}>
+                {isPending ? "Claiming\u2026" : "Claim Prize"}
+              </Button>
+            ) : (
+              <p className="text-muted-foreground">{eligibility.reason}</p>
+            )}
+            <Button variant="outline" asChild>
+              <Link href="/replay">View Replay</Link>
             </Button>
-          ) : (
-            <p className="text-muted-foreground">{eligibility.reason}</p>
-          )}
-          <Button variant="outline" asChild>
-            <a href="/replay">View Replay</a>
-          </Button>
-        </div>
+          </div>
 
-        {claimStatus ? <p className="text-muted-foreground">{claimStatus}</p> : null}
-      </CardContent>
-    </Card>
+          <p className="text-muted-foreground" aria-live="polite">{claimStatus ?? ""}</p>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
