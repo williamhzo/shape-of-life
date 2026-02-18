@@ -2,6 +2,10 @@
 
 Conway Arena on Shape L2. See `plan.md` for full product spec, phased implementation plan, and all progress tracking.
 
+## Delivery Checklist
+- EthSkills-aligned, repo-specific shipping gate:
+  - `ETHSKILLS_CHECKLIST.md`
+
 ## Workspace
 - Runtime/package manager: Bun
 - Package initialized:

@@ -3,6 +3,7 @@
 ## Project Context
 
 - Source of truth for scope and sequencing: `plan.md`.
+- EthSkills-aligned delivery gate for implementation/release readiness: `ETHSKILLS_CHECKLIST.md`.
 
 ## Non-Negotiable Working Rules
 
@@ -11,6 +12,7 @@
 3. Keep interfaces simple, deterministic, and explicit.
 4. Preserve domain separation/security invariants in all commit/reveal/accounting logic.
 5. Follow official docs and modern best-practice guidance for the relevant stack area on most implementation work.
+6. Run and satisfy relevant gates in `ETHSKILLS_CHECKLIST.md` for all feature/fix work before delivery.
 
 ## Standards and Best-Practice Baselines (Required)
 

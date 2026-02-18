@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Conway Arena on Shape L2: a multiplayer competitive Conway's Game of Life with two-color immigration rules, commit/reveal rounds, and onchain parity verification. See `plan.md` for the full spec and progress tracking. See `architecture.md` for implemented vs planned surfaces. See `concept.md` for user-facing game rules.
+Conway Arena on Shape L2: a multiplayer competitive Conway's Game of Life with two-color immigration rules, commit/reveal rounds, and onchain parity verification. See `plan.md` for the full spec and progress tracking. See `architecture.md` for implemented vs planned surfaces. See `concept.md` for user-facing game rules. See `ETHSKILLS_CHECKLIST.md` for the repo-specific implementation/release gate checklist.
 
 ## Commands
 
@@ -66,6 +66,7 @@ Turborepo + Bun monorepo (`bun@1.3.6`) with three packages:
 ## Working Rules
 
 - Source of truth for scope, sequencing, and progress: `plan.md`.
+- Delivery gate checklist for feature/fix/release readiness: `ETHSKILLS_CHECKLIST.md`.
 - Update `plan.md` checkboxes/status when tasks start or finish.
 - Tests before implementation for non-trivial rules changes.
 - One atomic, impact-ordered step at a time (P0 through P3).
