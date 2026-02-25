@@ -472,77 +472,13 @@ Even with bot, keep stepping permissionless.
 
 ## 10. Implementation Plan (Preferred Stack)
 
-### Phase A: Prototype the fun (offchain-first)
-Goal: validate watchability and game feel.
-1) TypeScript engine (same rules/topology/seedlets/slots/scoring).
-2) Next.js UI (spectator-first + seed editor + local sim rendering).
-3) Replay artifacts generated offchain.
-4) Vitest test harness for `packages/sim` and App Router API utilities.
+This project uses:
+- TypeScript + Next.js (`apps/web`) for UI and wallet flows.
+- Foundry + Hardhat (`packages/contracts`) for Solidity tests, gas checks, deployment, verification, and Sepolia operations.
+- TypeScript simulation engine (`packages/sim`) as deterministic parity reference.
 
-Deliverable: fully playable offchain prototype.
-
-### Phase B: Solidity engine (Foundry-first)
-Goal: correctness and gas profiling.
-Tooling: Foundry for tests/fuzzing/gas snapshots.
-
-Tasks:
-1) pack/unpack utilities (rows ↔ packed words)
-2) step-one-generation engine (Immigration + cylinder topology)
-3) popcount utilities
-4) golden tests (fixtures from TS engine)
-5) fuzz comparisons: Solidity vs TS for random boards over multiple steps
-
-Deliverable: `ConwayEngine` library with high confidence.
-
-### Phase C: Round manager contract (Foundry + integration)
-Tasks:
-1) round state machine + deadlines
-2) slot commit/reveal + budget enforcement
-3) initialize() from revealed seeds (bounded loop)
-4) stepBatch() in-memory stepping and single write-back
-5) finalize() scoring (final pop + invasion)
-6) claim() pull payouts with reentrancy guard
-
-Deliverable: end-to-end playable on local and Shape Sepolia.
-
-### Phase D: Deployments and scripts (Hardhat + viem)
-Recommendation: Use Hardhat for deployment/verification/scripts, Foundry for tests.
-
-- Use `@nomicfoundation/hardhat-toolbox-viem` for viem-first tooling.
-Ref:
-- https://hardhat.org/docs/plugins/hardhat-toolbox-viem
-
-Network setup:
-- Shape Sepolia: chainId 11011, RPC via `SHAPE_SEPOLIA_RPC_URL` (Alchemy)
-- Shape Mainnet: chainId 360, RPC via `SHAPE_MAINNET_RPC_URL` (Alchemy)
-Ref:
-- https://docs.shape.network/technical-details/network-information
-
-Deliverable: reproducible deployments (Ignition modules) + CI.
-
-### Phase E: Indexer + production UI
-Tasks:
-1) indexer (Ponder) for round/slot/step events
-2) realtime UI: slot occupancy, reveal status, keeper feed
-3) UX polish: minimal wallet prompts, optimistic slot reservation
-
-Deliverable: production-grade spectator-first app.
-
-### Phase F: Shape-native features
-1) Gasback registration and treasury loop
-Refs:
-- https://docs.shape.network/building-on-shape/gasback
-- https://docs.shape.network/tutorials/registering-contract-gasback/programmatically
-
-2) Stack alignment (events first, medals later)
-Ref:
-- https://docs.shape.network/the-stack
-
-3) Optional VRF for tiebreaks / randomized slot assignment
-Ref:
-- https://docs.shape.network/tools/oracles/gelato-vrf
-
-Deliverable: native incentives and identity.
+Historical phase-by-phase rollout items were removed as legacy/completed.
+Active implementation and release work is tracked in section 15.
 
 ---
 
@@ -621,271 +557,157 @@ Use both, with boundaries:
 
 ---
 
-## 15. Immediate Next Steps
+## 15. Final-Stage Sepolia Hardening Plan (2026-02-25)
 
-1) Build TS engine + UI prototype to validate game feel.
-2) Implement Solidity engine in Foundry with TS fixture comparisons.
-3) Deploy to Shape Sepolia and benchmark `stepBatch` gas to set safe `maxBatch`.
-4) Integrate indexer and ship spectator-first MVP.
+This section supersedes earlier "near-complete" framing from prior revisions and defines current release-readiness work.
+Goal: complete final-stage hardening through autonomous Shape Sepolia validation, contract security gates, and wallet UX flow reliability checks.
 
----
+### 15.1 Locked Execution Decisions
 
-## 16. Execution Structure (Impact-Ordered)
+- Round targeting: deploy a fresh Sepolia round per scenario run, plus smoke-check current deployed round.
+- Wallet strategy: generate ephemeral test wallets and require operator funding before run start.
+- Security gate depth: full hardening gate (fuzz/invariants + adversarial Sepolia scenarios + static analysis when available).
+- UX validation mode: add test-wallet mode to enable autonomous browser commit/reveal/claim and rejection-path testing.
+- Run intensity: balanced matrix (20-30 autonomous rounds) with varied seeds/slots/timing/adversarial cases.
+- Funding gate: enforce balance preflight checks before any scenario execution.
 
-### Objective
-Lock a low-stakes but production-safe v0.1 by prioritizing correctness and accounting clarity before polish.
+### 15.2 Impact-Ordered Priorities
 
-### Scope
-- In: deterministic engine parity, state-machine safety, payouts, keeper economics, Turborepo+Bun monorepo workflow.
-- Out: weighted contribution rewards, advanced anti-sybil systems, VRF-dependent gameplay.
-
-### Impact-Ordered Priorities
 - P0:
-  - Finalize transition semantics (`Sim -> Claim`) with explicit guard matrix.
-  - Deterministic payout math (winner/keeper pools, draw handling, dust handling).
-  - Replay protection (`chainId` + `arena` in commit hash).
-  - Keeper shortfall safety (`min(...)` reward clamp).
+  - Security/correctness blockers and adversarial lifecycle coverage.
+  - Autonomous Sepolia scenario orchestration and deterministic failure reporting.
+  - Preflight enforcement (keys, chain, wallet funding, toolchain, compile prerequisites).
 - P1:
-  - Gas envelope and benchmark thresholds on Shape Sepolia for all critical tx paths.
-  - End-to-end tests for non-reveal forfeits and one-claim-only safety.
-  - Team assignment and slot-policy consistency between UI and contract.
+  - Browser-level wallet UX automation and action sequencing validation.
+  - Event/state read-model robustness under longer high-event runs.
 - P2:
-  - Event completeness for indexer reconciliation and accounting audits.
-  - Turborepo task graph + Bun workspace ergonomics in CI.
+  - Release gate consolidation and command/doc consistency.
+  - Operator report artifacts and runbook clarity.
 - P3:
-  - Optional VRF tiebreaks, richer reward tuning, Stack medal integrations.
+  - Additional UX polish and long-run monitoring enhancements.
 
-### Validation
-- Foundry fuzz/invariant suite passes for state transitions, accounting, and claim idempotency.
-- Vitest suite passes for `packages/sim` and `apps/web` lib paths.
-- TS vs Solidity golden tests show zero divergence across random seeds and multiple generations.
-- Sepolia benchmark confirms safe gas headroom for chosen `maxBatch`.
+### 15.3 Execution Phases
 
-### Risks
-- Sybil slot capture in free casual mode: monitor and enable `reservationBond` when abuse appears.
-- Economic complexity drift: keep v0.1 on equal-share winner payouts; defer weighted rewards.
+#### Phase 1: P0 Baseline and Gate Drift Fix
 
----
+[ ] Add a single preflight script for Sepolia hardening runs:
+- Verify `SHAPE_SEPOLIA_RPC_URL`, required keys, chain id `11011`, cast availability, and minimum wallet balances.
+- Verify compile/gas prerequisites, including explicit failure messaging for missing `solc 0.8.28` when gas checks are requested.
 
-## 17. Testing-First Delivery Mandate (TDD)
-
-This section is additive and overrides execution style across all phases: core logic/rules/state/accounting features are delivered using strict TDD (Red -> Green -> Refactor), with tests written before implementation code and merged only when all gates pass. Frontend UI presentation is validated in a live browser session instead of component-markup tests.
-
-### 17.1 Global TDD Rules (non-optional)
-
-1) Red first
-- For each core logic/rule/state/accounting behavior change, write at least one failing test first (unit/integration/invariant as appropriate).
-- Commit history should show test-first progression for non-trivial features.
-
-2) Green with minimal code
-- Implement the smallest change that makes failing tests pass.
-- Do not batch unrelated features in a single change.
-
-3) Refactor with safety
-- Refactor only with test suite green.
-- Add regression tests for every discovered bug before fixing.
-
-4) No-test-no-merge policy
-- Any new core logic path without tests blocks merge.
-- Any production core-logic bug fix without a reproducer test blocks merge.
-- Frontend UI behavior changes require live browser validation notes in progress logs, not component-markup tests.
-
-### 17.2 Phase 1: Test Harness Foundation (before feature expansion)
-
-Goals:
-- Make tests easy to write/run locally and in CI.
-- Standardize deterministic fixtures shared by TS and Solidity.
-
-Tasks:
-- Add workspace-level test commands for each package and a root aggregate command (`bun run test` + package-specific targets).
-- Add deterministic RNG seeding utilities and fixture builders for board/slot states.
-- Add snapshot/golden fixture versioning strategy (`fixtures/v1/...`) with review workflow.
-- Run local test/lint/build commands before merging (no CI -- side project).
-
-Deliverable:
-- One-command full test execution and reproducible fixture generation.
-
-### 17.3 Phase 2: Engine TDD Matrix (TS + Solidity parity)
-
-Goals:
-- Prove deterministic automaton correctness before contract integration.
-
-Required tests:
-- Unit tests for pack/unpack invertibility and row/word alignment.
-- Rule tests for B3/S23 + Immigration color majority behavior.
-- Topology boundary tests (cylinder wrap on Y, hard edges on X).
-- Property/fuzz tests for random boards across multiple generations.
-- Cross-implementation parity tests (TS oracle vs Solidity) on fixed and random vectors.
-- Invariant tests (`blue & red == 0`, stable popcount bounds, deterministic replay hash).
+[ ] Remove command drift between checklist/docs and executable scripts:
+- Align root/web lint gate naming (`lint:web` vs `lint`).
+- Align gas gate naming (`test:gas` vs `test:contracts:gas`) across `README.md`, `ETHSKILLS_CHECKLIST.md`, and package scripts.
 
 Exit criteria:
-- Zero parity divergence across golden vectors and fuzz corpus.
+- Preflight provides deterministic pass/fail reasons.
+- Documented gate commands exactly match executable commands.
 
-### 17.4 Phase 3: Round State Machine TDD (contract behavior)
+#### Phase 2: P0 Autonomous Sepolia Scenario Harness
 
-Goals:
-- Guarantee lifecycle and accounting safety under adversarial usage.
+[ ] Add wallet generation utility and local wallet manifest output (gitignored).
+[ ] Add wallet funding check utility with explicit per-role thresholds.
+[ ] Add scenario orchestrator for deploy -> commit -> reveal -> initialize -> step -> finalize -> claim:
+- Multi-wallet participant competition and keeper actions.
+- Fresh round deployment by default; optional fixed round override.
+- Transaction/result artifact capture (hashes, statuses, gas, revert reason, phase transitions).
 
-Required tests:
-- Transition matrix tests for all phase gates (allowed + forbidden calls).
-- Commit/reveal tests: replay protection, wrong player/team/slot/salt rejection.
-- Budget enforcement tests (`seedBudget`) with exact boundary cases.
-- Initialize and step batching tests (`actualSteps` clamping, no overstep past `maxGen`).
-- Finalize tests for extinction, max-gen completion, tie handling.
-- Claim tests: one-claim-only, zero-eligible divisors, dust routing to treasury.
-- Reentrancy and pull-payment safety tests.
-- Invariant tests: `winnerPool + keeperPaid + treasuryDust <= totalFunded`.
-
-Exit criteria:
-- Full lifecycle simulation tests pass for casual and ranked rounds.
-
-### 17.5 Phase 4: Integration + E2E Validation (indexer, scripts, browser UI checks)
-
-Goals:
-- Validate user-visible behavior and event reconciliation end-to-end.
-
-Required checks:
-- Browser UI validation checklist for commit/reveal/claim flows and failure messaging in a live session.
-- Indexer tests validating reconstruction from `RoundCreated`, `Stepped`, `Finalized`, `Claimed`.
-- Deployment script tests (dry-run/fork) verifying expected addresses/config wiring.
-- Replay artifact generation tests ensuring deterministic outputs from same inputs.
-- Wallet transaction orchestration tests in deterministic `apps/web/lib/*` modules (provider mocked, no component-markup tests).
+[ ] Implement balanced scenario matrix (20-30 rounds):
+- Happy path with claims.
+- Non-reveal forfeits.
+- Slot contention and timing races.
+- Invalid reveal inputs (wrong team/slot/salt/player).
+- Terminal finalize behavior (maxGen/extinction/draw).
 
 Exit criteria:
-- Local end-to-end round from create -> claim is reproducible with deterministic checks.
+- One command executes full autonomous Sepolia matrix and writes report artifacts.
 
-### 17.6 Phase 5: Performance + Gas Regression TDD
+#### Phase 3: P0 Contract Security Hardening Gate
 
-Goals:
-- Prevent silent degradation in gas/latency as features evolve.
+[ ] Expand Foundry adversarial coverage:
+- Stateful sequencing for lifecycle transitions and claim ordering.
+- Accounting conservation under mixed claim/keeper withdrawal ordering.
+- Reentrancy and payout-path abuse attempts.
+- Step clamping and no over-advance guarantees.
+- Commit hash domain separation bypass attempts.
 
-Required tests:
-- Foundry gas snapshot tests for critical methods (`commit`, `reveal`, `stepBatch`, `finalize`, `claim`).
-- Benchmark tests for multiple `maxBatch` settings on Shape Sepolia.
-- Stress tests for max slot occupancy and long simulations (`maxGen`).
+[ ] Add static analysis stage (tool-available path, fail-closed on unresolved High/Critical findings).
 
 Exit criteria:
-- Locked safe `maxBatch` backed by benchmark artifacts and local gas snapshot checks.
+- No unresolved High/Critical findings.
+- Fuzz/invariant and adversarial suites green.
 
-### 17.7 Phase 6: Release Gates and Ongoing Quality
+#### Phase 4: P1 Browser UX Automation
 
-Required merge gates:
-- All tests green across packages.
-- New feature code accompanied by tests in same change.
-- Coverage floor per package (raise over time; no downward changes without explicit approval).
-- Bug fixes include failing test that reproduces bug pre-fix.
+[ ] Add test-wallet mode for deterministic browser automation.
+[ ] Add Playwright suite for core wallet flows:
+- Connect.
+- Wrong-network switch.
+- Commit/reveal/claim success path.
+- Rejection path and revert error surfacing.
+- Loading/disabled state guards against duplicate submissions.
 
-Required pre-release checks:
-- Full deterministic replay corpus pass.
-- Fuzz/invariant suite pass with fixed seed + rotating seed job.
-- Sepolia smoke suite pass on deployed contracts.
-- Indexer reconciliation report shows zero accounting drift.
+[ ] Resolve UX issues found by browser runs (action ordering, message clarity, phase-aware affordances).
 
-### 17.8 Failure-Mode-First Test Backlog (must be implemented early)
+Exit criteria:
+- Browser suite validates end-to-end wallet flow reliability on Sepolia-backed flows.
 
-P0:
-- Wrong commit preimage domain separation (`chainId`, `arena`, `player`) bypass attempts.
-- Keeper payout over-claim via large `steps` requests.
-- Claim double-spend/reentrancy attempts.
-- Divergent TS/Solidity behavior at cylinder boundaries.
+#### Phase 5: P1 Read-Model and Runtime Robustness
 
-P1:
-- Non-reveal forfeits and zero-winner edge routing.
-- Draw payout correctness with uneven team participation.
-- Slot contention and race conditions around commit deadlines.
+[ ] Hardening follow-ups for live reads/events:
+- Validate event query strategy under long-lived rounds and higher log counts.
+- Add regression tests for participant/keeper feed reconstruction under higher event volume.
 
-P2:
-- UI/indexer eventual consistency under reorg-like event ordering in local tests.
-- Artifact generation determinism under worker retries.
+Exit criteria:
+- Round live panels remain consistent and responsive through stress scenarios.
 
-P3:
-- Long-run simulation drift and visual replay fidelity checks.
+#### Phase 6: P2 Unified Release Gate and Artifacts
 
-## 18. Implementation Standards Mandate (Docs-First)
+[ ] Add one canonical release gate command combining:
+- Tests + fuzz/invariants.
+- Gas checks.
+- Web lint/build and browser validation.
+- Sepolia scenario matrix + smoke + keeper observability.
 
-Most implementation must meticulously follow official documentation and modern best-practice recommendations for the relevant tool/framework.
+[ ] Emit release artifact bundle:
+- Scenario report.
+- Security findings report.
+- Gas benchmark/lock evidence.
+- Deployment/verification metadata.
 
-Required baselines:
-- Contracts/security patterns: OpenZeppelin docs (`https://docs.openzeppelin.com/`).
-- Solidity dev/testing workflows: Foundry guides (`https://www.getfoundry.sh/guides`) and Hardhat docs (`https://hardhat.org/docs/getting-started`).
-- Web app architecture and APIs: Next.js docs (`https://nextjs.org/docs`).
-- Monorepo pipelines/task graph conventions: Turborepo docs (`https://turborepo.dev/docs`).
+Exit criteria:
+- Single-command go/no-go with auditable artifacts.
 
-Execution rules:
-- Prefer official docs for the exact version in use over blog posts or forum snippets.
-- When docs conflict or project constraints require deviation, document the decision and tradeoff in `plan.md` before or with implementation.
-- Treat docs-alignment gaps as impact-ordered follow-ups (`P0`-`P3`) and track them in the active plan queue.
+#### Phase 7: P2 Documentation and Plan Synchronization
 
-## 19. Progress Log
+[ ] Update `README.md` with canonical hardening commands.
+[ ] Update `ETHSKILLS_CHECKLIST.md` gates and package expectations to match repo reality.
+[ ] Keep this section and open checkboxes updated in each related PR.
 
-Removed for brevity. See git history for detailed session-by-session implementation records.
+Exit criteria:
+- No stale command/doc references.
+- Plan status reflects current implementation truth.
 
-## 20. Readiness Checklist and Sepolia Closeout Plan (2026-02-12)
+#### Phase 8: P3 Final Polish and Residual Risk Register
 
-### 20.1 Phase Status
+[ ] Triage remaining non-blocking UX bugs from automation/manual pass.
+[ ] Record deferred risks with trigger conditions and mitigation owner.
 
-- Phase A-D: COMPLETE. TS engine, Solidity engine, round manager, deployments, keeper tooling all shipped.
-- Phase E: NEAR-COMPLETE. Full spectator UI, replay, feeds, wallet flow. Missing: browser automation harness (P2.12).
-- Phase F (Shape-native: Gasback/Stack/VRF): NOT STARTED.
+Exit criteria:
+- Candidate release status: no known critical blockers, monitored residual risk only.
 
-### 20.2 Remaining Work
+### 15.4 Canonical Validation Gates for Final Stage
 
-- P0/P1: ALL RESOLVED (correctness, events, Sepolia deployment).
-- P2: One open item -- P2.12 (live browser validation of wagmi wallet flow).
-- P3: Shape-native features (Phase F scope) not started.
-
-### 20.3 Open Action Items
-
-[ ] P2.12 Validate updated wagmi wallet UI action sequencing in a live browser session (connect, chain switch, commit/reveal/claim, rejection path), while keeping code-level coverage in Vitest.
-
-### 20.4 Validation Gates
-
-- Core suite: `bun run test`
-- Gas regression: `bun run test:contracts:gas`
-- Web quality: `bun run lint:web` and `cd apps/web && bun run build`
-- Sepolia benchmark gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run benchmark:sepolia:max-batch`
-- Sepolia rollout gate: `SHAPE_SEPOLIA_RPC_URL=... DEPLOYER_PRIVATE_KEY=... bun run rollout:sepolia:max-batch`
+- Core test gate: `bun run test`
+- Gas gate: `bun run test:gas`
+- Lint gate: `bun run lint`
+- Web build gate: `cd apps/web && bun run build`
 - Sepolia smoke gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run smoke:sepolia:round`
-- Sepolia keeper observability: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run observe:sepolia:keeper`
-- Sepolia release gate: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run release:gate:sepolia`
-- Input/credential checklist for all Sepolia gates: see section 20.6.
+- Keeper observability: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run observe:sepolia:keeper`
+- Max-batch benchmark/lock: `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run benchmark:sepolia:max-batch:lock`
 
-### 20.5 Risks and Mitigations
+### 15.5 Risks and Failure Modes to Watch
 
-- Simulation integration may exceed gas envelope at higher batch sizes; mitigate with benchmark lock + local gas snapshot checks.
-- Contract/indexer/web semantic drift may create user-visible inconsistencies; mitigate with shared fixtures and reconciliation-driven integration tests.
-- Payout path regressions under adversarial call ordering; mitigate with transfer-path probe tests + strict accounting invariants.
-- Degenerate seed metas (stable density spam) may reduce spectator drama; mitigate with low seed budget (12) and methuselah presets that create midgame collisions. Consider midline-weighted scoring in later seasons if needed.
-
-### 20.6 Operator Inputs (Canonical Checklist)
-
-`P1.2` is resolved. ConwayArenaRound deployed at `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b` on Shape Sepolia (chainId `11011`), benchmark confirmed `maxBatch = 16`, contract verified on explorer.
-
-Active env vars for ongoing Sepolia operations:
-- `SHAPE_SEPOLIA_RPC_URL` -- Alchemy endpoint for Shape Sepolia.
-- `ROUND_ADDRESS` = `0x6836f13Fbb595ff6DcE21740D5Ccc6ea1C4b873b`.
-- `DEPLOYER_PRIVATE_KEY` -- for future deployments/registry registration.
-- `KEEPER_PRIVATE_KEY` -- for keeper automation (`tick --execute`, `loop --execute`).
-
-Optional inputs:
-- `BENCHMARK_CALLER` (explicit `cast estimate --from` address for benchmark consistency).
-- Verification inputs (already used, retained for future deploys):
-  - `SHAPE_SEPOLIA_VERIFY_API_URL`
-  - `SHAPE_SEPOLIA_BROWSER_URL`
-  - `SHAPE_SEPOLIA_VERIFY_API_KEY`
-
-Canonical execution commands (user can run directly, or provide inputs so agent executes):
-- New deploy + benchmark lock + smoke:
-  - `SHAPE_SEPOLIA_RPC_URL=... DEPLOYER_PRIVATE_KEY=... bun run rollout:sepolia:max-batch`
-- Existing deployment + benchmark lock + smoke (no deploy):
-  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run rollout:sepolia:max-batch --skip-deploy`
-- Benchmark only:
-  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run benchmark:sepolia:max-batch`
-- Full release gate:
-  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run release:gate:sepolia`
-- Keeper automation:
-  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run observe:sepolia:keeper`
-  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run tick:sepolia:keeper`
-  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... KEEPER_PRIVATE_KEY=... bun run tick:sepolia:keeper --execute`
-  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... bun run loop:sepolia:keeper --interval 15 --iterations 20`
-  - `SHAPE_SEPOLIA_RPC_URL=... ROUND_ADDRESS=... KEEPER_PRIVATE_KEY=... bun run loop:sepolia:keeper --execute --interval 15`
+- Sepolia orchestration flakiness (RPC latency/limits): mitigate with retries + deterministic run artifacts.
+- Security false confidence from happy-path bias: mitigate with adversarial sequencing and invariants.
+- Wallet UX drift between mocked/unit and real signing behavior: mitigate with browser automation + live wallet checks.
+- Gate/doc drift recurrence: mitigate with one canonical release command and synchronized checklist updates.
